@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { API_BASE_URL } from './config';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -12,7 +12,7 @@ import {
   TerminalSquare, Activity, Edit3, Save, FileText, X, Sparkles, Clock,
   Folder, MoreVertical, Plus, Hash, Cpu, FolderOpen, Trash2, Edit2,
   AlertTriangle, Archive, Check, Play, GripVertical, ShieldAlert,
-  UploadCloud, FileBox, HardDrive, RefreshCw
+  UploadCloud, FileBox, HardDrive, RefreshCw, Menu
 } from 'lucide-react';
 
 // ==========================================
@@ -188,13 +188,13 @@ const NewSessionModal = ({ isOpen, onClose, projects, initialContext, onSuccess 
 // ==========================================
 // 侧边导航栏
 // ==========================================
-const Sidebar = ({ currentTab, setCurrentTab }) => (
-  <div className="w-16 h-full bg-exo-panel border-r border-exo-border flex flex-col items-center justify-between py-6 z-50 flex-shrink-0">
-    <div className="flex flex-col space-y-6">
-      <div className="p-2 bg-exo-bg rounded-lg border border-exo-gold/30 cursor-pointer text-exo-gold"><Hexagon size={24} /></div>
-      <NavIcon icon={MessageSquare} isActive={currentTab === 'chat'} onClick={() => setCurrentTab('chat')} />
-      <NavIcon icon={BrainCircuit} isActive={currentTab === 'agent_hub'} onClick={() => setCurrentTab('agent_hub')} />
-      <NavIcon icon={User} isActive={currentTab === 'profile'} onClick={() => setCurrentTab('profile')} />
+const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList }) => (
+  <div className="w-12 md:w-16 h-full bg-exo-panel border-r border-exo-border flex flex-col items-center justify-between py-4 md:py-6 z-50 flex-shrink-0">
+    <div className="flex flex-col space-y-4 md:space-y-6">
+      <div className="p-1.5 md:p-2 bg-exo-bg rounded-lg border border-exo-gold/30 cursor-pointer text-exo-gold"><Hexagon size={20} /></div>
+      <NavIcon icon={MessageSquare} isActive={currentTab === 'chat'} onClick={() => { setCurrentTab('chat'); setShowConvList(true); }} />
+      <NavIcon icon={BrainCircuit} isActive={currentTab === 'agent_hub'} onClick={() => { setCurrentTab('agent_hub'); setShowConvList(false); }} />
+      <NavIcon icon={User} isActive={currentTab === 'profile'} onClick={() => { setCurrentTab('profile'); setShowConvList(false); }} />
     </div>
     <div className="hidden md:flex flex-col space-y-6">
       <NavIcon icon={Settings} isActive={currentTab === 'settings'} onClick={() => setCurrentTab('settings')} />
@@ -209,7 +209,7 @@ const NavIcon = ({ icon: Icon, isActive, onClick }) => (
 // ==========================================
 // 改造：动态会话列表
 // ==========================================
-const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refreshKey, openDestructor, openNewSession, activeFileProjectId, setActiveFileProjectId }) => {
+const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refreshKey, openDestructor, openNewSession, activeFileProjectId, setActiveFileProjectId, showConvList, onClose }) => {
   const [conversations, setConversations] = useState([]);
   const [expandedProjects, setExpandedProjects] = useState(new Set());
   const [activeMenuId, setActiveMenuId] = useState(null);
@@ -257,9 +257,15 @@ const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refre
   );
 
   return (
-    <div className="w-64 h-full bg-exo-panel border-r border-exo-border flex flex-col relative flex-shrink-0">
+    <>
+      {showConvList && <div className="md:hidden absolute inset-0 z-30 bg-black/60" onClick={onClose} />}
+    <div className={`${showConvList ? 'flex' : 'hidden'} md:flex absolute md:relative inset-y-0 left-0 md:left-auto z-40 md:z-auto w-72 md:w-64 h-full bg-exo-panel border-r border-exo-border flex-col flex-shrink-0`}>
       <div className="p-4 border-b border-exo-border text-sm font-bold text-exo-text tracking-widest flex justify-between items-center bg-black/20">
-        EXO CORE <button onClick={() => openNewSession()} className="p-1 rounded bg-exo-gold/10 text-exo-gold hover:bg-exo-gold hover:text-black"><Plus size={16} /></button>
+        <span>EXO CORE</span>
+        <div className="flex items-center gap-2">
+          <button onClick={() => openNewSession()} className="p-1 rounded bg-exo-gold/10 text-exo-gold hover:bg-exo-gold hover:text-black"><Plus size={16} /></button>
+          <button onClick={onClose} className="md:hidden p-1 rounded text-exo-muted hover:text-exo-text hover:bg-white/5"><X size={16} /></button>
+        </div>
       </div>
       <div className="flex-1 overflow-y-auto p-3 scrollbar-hide space-y-6" onClick={() => setActiveMenuId(null)}>
         {g045Sessions.length > 0 && (
@@ -320,12 +326,36 @@ const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refre
         </div>
       </div>
     </div>
+    </>
   );
 };
 
 // ==========================================
-// ChatArea (保留原有代码逻辑，只精简了换行)
+// 消息气泡 — memo 隔离，避免历史消息随流式输出重渲染
 // ==========================================
+const MessageBubble = React.memo(({ msg }) => (
+  <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start gap-4'}`}>
+    {msg.role !== 'user' && <img src="https://api.dicebear.com/7.x/bottts/svg?seed=G045" className="w-8 h-8 rounded-md border border-exo-gold/50 bg-black mt-1" alt="AI" />}
+    <div className={`max-w-[85%] ${msg.role === 'user' ? 'bg-exo-panel border border-exo-border rounded-2xl rounded-tr-sm p-4 text-sm text-exo-text' : 'space-y-2'}`}>
+      {msg.role !== 'user' && msg.reasoning_steps && msg.reasoning_steps.map((step, sIdx) => <div key={sIdx} className="text-[11px] text-exo-gold/70 bg-exo-gold/5 px-2 py-1 rounded">{step}</div>)}
+      {msg.role !== 'user' && msg.reasoning_content && (
+        <details className="bg-[#121215] border border-exo-border rounded-lg text-xs text-exo-muted cursor-pointer mb-2">
+          <summary className="p-2 flex items-center gap-2">Thinking Process</summary>
+          <div className="p-3 border-t border-exo-border bg-black/50 whitespace-pre-wrap font-mono">{msg.reasoning_content}</div>
+        </details>
+      )}
+      <div className={msg.role === 'user' ? 'whitespace-pre-wrap' : 'prose prose-invert prose-sm max-w-none'}>
+        {msg.role === 'user' ? msg.content : <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{msg.content}</ReactMarkdown>}
+      </div>
+    </div>
+  </div>
+));
+
+// ==========================================
+// ChatArea
+// ==========================================
+const MSGS_PER_PAGE = 40;
+
 const ChatArea = ({ activeSessionId }) => {
   const [messages, setMessages] = useState([]);
   const [sessionInfo, setSessionInfo] = useState(null);
@@ -334,23 +364,82 @@ const ChatArea = ({ activeSessionId }) => {
   const [thinkingLevel, setThinkingLevel] = useState("auto");
   const [temperature, setTemperature] = useState("1.0");
   const [attachedFiles, setAttachedFiles] = useState([]);
+  const [hasMore, setHasMore] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  const allHistoryRef = useRef([]);   // 完整历史，不参与渲染
+  const visibleStartRef = useRef(0);  // 当前可见窗口在 allHistory 中的起始索引
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const scrollContainerRef = useRef(null);
+  const topSentinelRef = useRef(null);
+
+  const scrollToBottom = (smooth = true) =>
+    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "instant" });
+
+  // 只有用户在接近底部时才自动跟随，避免往上翻看时被强制拉回
+  const isNearBottom = () => {
+    const c = scrollContainerRef.current;
+    if (!c) return true;
+    return c.scrollHeight - c.scrollTop - c.clientHeight < 120;
+  };
 
   useEffect(() => {
     if (!activeSessionId) return;
+    allHistoryRef.current = [];
+    visibleStartRef.current = 0;
+    setMessages([]);
+    setHasMore(false);
     fetch(`${baseUrl}/api/agents/chat/${activeSessionId}/`, { credentials: 'include' })
       .then(res => res.json())
-      .then(data => { setMessages(data); scrollToBottom(false); })
+      .then(data => {
+        allHistoryRef.current = data;
+        const startIdx = Math.max(0, data.length - MSGS_PER_PAGE);
+        visibleStartRef.current = startIdx;
+        setMessages(data.slice(startIdx));
+        setHasMore(startIdx > 0);
+        // 等 React 渲染完再滚，否则 DOM 还没更新
+        requestAnimationFrame(() => scrollToBottom(false));
+      })
       .catch(err => console.error("获取失败:", err));
   }, [activeSessionId]);
 
-  const scrollToBottom = (smooth = true) => setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" }), 50);
+  const loadMore = useCallback(() => {
+    if (isLoadingMore || !hasMore) return;
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    setIsLoadingMore(true);
+    const prevScrollHeight = container.scrollHeight;
+    const currentStart = visibleStartRef.current;
+    const newStart = Math.max(0, currentStart - MSGS_PER_PAGE);
+    const older = allHistoryRef.current.slice(newStart, currentStart);
+    visibleStartRef.current = newStart;
+    setMessages(prev => [...older, ...prev]);
+    setHasMore(newStart > 0);
+    requestAnimationFrame(() => {
+      if (container) container.scrollTop = container.scrollHeight - prevScrollHeight;
+      setIsLoadingMore(false);
+    });
+  }, [isLoadingMore, hasMore]);
+
+  useEffect(() => {
+    const sentinel = topSentinelRef.current;
+    const container = scrollContainerRef.current;
+    if (!sentinel || !container) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadMore(); },
+      { root: container, threshold: 0 }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadMore]);
 
   const handleSend = async () => {
     if ((!inputValue.trim() && attachedFiles.length === 0) || isGenerating) return;
     const userMsg = { role: 'user', content: inputValue };
-    setMessages(prev => [...prev, userMsg, { id: Date.now(), role: 'assistant', content: '', reasoning_content: '', reasoning_steps: [], new_anchors: [] }]);
+    const aiMsg = { id: Date.now(), role: 'assistant', content: '', reasoning_content: '', reasoning_steps: [], new_anchors: [] };
+    allHistoryRef.current = [...allHistoryRef.current, userMsg, aiMsg];
+    setMessages(prev => [...prev, userMsg, aiMsg]);
 
     const currentInput = inputValue; const currentFiles = [...attachedFiles];
     setInputValue(""); setAttachedFiles([]); setIsGenerating(true); scrollToBottom(true);
@@ -384,47 +473,53 @@ const ChatArea = ({ activeSessionId }) => {
           }
           if (!dataStr || eventType === 'done' || dataStr === '[DONE]') continue;
 
+          // SSE 中换行符以 \n（两字符）传输，需还原为真实换行，否则 Markdown 无法渲染
+          const text = eventType !== 'anchor_created' ? dataStr.replace(/\\n/g, '\n') : dataStr;
+
           setMessages(prev => {
-            const newMsgs = [...prev]; const lastMsg = newMsgs[newMsgs.length - 1];
+            const newMsgs = [...prev];
+            const lastMsg = { ...newMsgs[newMsgs.length - 1] };
+            newMsgs[newMsgs.length - 1] = lastMsg;
             if (eventType === 'reasoning') {
-              lastMsg.reasoning_steps = lastMsg.reasoning_steps || [];
-              if (lastMsg.reasoning_steps[lastMsg.reasoning_steps.length - 1] !== dataStr) lastMsg.reasoning_steps.push(dataStr);
-            } else if (eventType === 'thinking') lastMsg.reasoning_content = (lastMsg.reasoning_content || '') + dataStr;
-            else if (eventType === 'content') lastMsg.content = (lastMsg.content || '') + dataStr;
-            else if (eventType === 'anchor_created') { try { lastMsg.new_anchors = lastMsg.new_anchors || []; lastMsg.new_anchors.push(JSON.parse(dataStr)); } catch(e){} }
+              const steps = [...(lastMsg.reasoning_steps || [])];
+              if (steps[steps.length - 1] !== text) steps.push(text);
+              lastMsg.reasoning_steps = steps;
+            } else if (eventType === 'thinking') {
+              lastMsg.reasoning_content = (lastMsg.reasoning_content || '') + text;
+            } else if (eventType === 'content') {
+              lastMsg.content = (lastMsg.content || '') + text;
+            } else if (eventType === 'anchor_created') {
+              try { lastMsg.new_anchors = [...(lastMsg.new_anchors || []), JSON.parse(text)]; } catch(e) {}
+            }
+            allHistoryRef.current[allHistoryRef.current.length - 1] = lastMsg;
             return newMsgs;
           });
-          scrollToBottom(true);
         }
+        // 吸附底部：只在用户本来就在底部时才跟随滚动
+        if (isNearBottom()) scrollToBottom(false);
       }
     } catch (err) { console.error("中断:", err); } finally { setIsGenerating(false); }
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-exo-bg relative">
+    <div className="flex-1 min-w-0 flex flex-col h-full bg-exo-bg relative">
       <div className="h-14 border-b border-exo-border flex items-center justify-between px-6 bg-exo-panel/50 backdrop-blur-md">
         <div className="flex items-center gap-3">
           <div className={`w-2 h-2 rounded-full ${isGenerating ? 'bg-exo-gold animate-pulse' : 'bg-green-500'}`}></div>
           <span className="font-semibold text-exo-text">Session #{activeSessionId}</span>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
-        {messages.map((msg, idx) => (
-          <div key={msg.id || idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start gap-4'}`}>
-            {msg.role !== 'user' && <img src="https://api.dicebear.com/7.x/bottts/svg?seed=G045" className="w-8 h-8 rounded-md border border-exo-gold/50 bg-black mt-1" alt="AI" />}
-            <div className={`max-w-[85%] ${msg.role === 'user' ? 'bg-exo-panel border border-exo-border rounded-2xl rounded-tr-sm p-4 text-sm text-exo-text' : 'space-y-2'}`}>
-              {msg.role !== 'user' && msg.reasoning_steps && msg.reasoning_steps.map((step, sIdx) => <div key={sIdx} className="text-[11px] text-exo-gold/70 bg-exo-gold/5 px-2 py-1 rounded">{step}</div>)}
-              {msg.role !== 'user' && msg.reasoning_content && (
-                <details className="bg-[#121215] border border-exo-border rounded-lg text-xs text-exo-muted cursor-pointer mb-2">
-                  <summary className="p-2 flex items-center gap-2">Thinking Process</summary>
-                  <div className="p-3 border-t border-exo-border bg-black/50 whitespace-pre-wrap font-mono">{msg.reasoning_content}</div>
-                </details>
-              )}
-              <div className={msg.role === 'user' ? 'whitespace-pre-wrap' : 'prose prose-invert prose-sm max-w-none'}>
-                {msg.role === 'user' ? msg.content : <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{msg.content}</ReactMarkdown>}
-              </div>
-            </div>
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 space-y-6">
+        <div ref={topSentinelRef} className="h-px" />
+        {isLoadingMore && (
+          <div className="flex justify-center py-3">
+            <span className="text-xs text-exo-muted flex items-center gap-2 animate-pulse">
+              <RefreshCw size={12} className="animate-spin" /> 加载历史记录...
+            </span>
           </div>
+        )}
+        {messages.map((msg, idx) => (
+          <MessageBubble key={msg.id || idx} msg={msg} />
         ))}
         <div ref={messagesEndRef} />
       </div>
@@ -806,6 +901,7 @@ export default function App() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [projects, setProjects] = useState([]);
   const [activeFileProjectId, setActiveFileProjectId] = useState(null);
+  const [showConvList, setShowConvList] = useState(false);
 
   useEffect(() => {
     fetch(`${baseUrl}/api/core/projects/`, { credentials: 'include' })
@@ -821,7 +917,7 @@ export default function App() {
   const openNewSession = (initialContext = null) => setNewSessionConfig({ isOpen: true, initialContext });
 
   return (
-    <div className="w-full h-screen bg-exo-bg text-exo-text font-sans flex flex-row overflow-hidden">
+    <div className="w-full h-[100dvh] bg-exo-bg text-exo-text font-sans flex flex-row overflow-hidden">
 
       <DestructorModal {...destructorConfig} onClose={() => setDestructorConfig(p => ({...p, isOpen:false}))} />
 
@@ -836,23 +932,33 @@ export default function App() {
         }}
       />
 
-      <Sidebar currentTab={currentTab} setCurrentTab={setCurrentTab} />
+      <Sidebar currentTab={currentTab} setCurrentTab={setCurrentTab} showConvList={showConvList} setShowConvList={setShowConvList} />
 
       {currentTab === 'chat' && (
-        <div className="flex flex-1 overflow-hidden h-full flex-row">
+        <div className="flex flex-1 min-w-0 h-full flex-row relative">
           <ConversationList
               activeSessionId={activeSessionId}
-              setActiveSessionId={setActiveSessionId}
+              setActiveSessionId={(id) => { setActiveSessionId(id); setShowConvList(false); }}
               projects={projects} refreshKey={refreshKey}
               openDestructor={openDestructor}
               openNewSession={openNewSession}
               activeFileProjectId={activeFileProjectId}
               setActiveFileProjectId={setActiveFileProjectId}
+              showConvList={showConvList}
+              onClose={() => setShowConvList(false)}
           />
           {activeFileProjectId ? (
             <ProjectFilesArea projectId={activeFileProjectId} projects={projects} openDestructor={openDestructor} />
-          ) : (
+          ) : activeSessionId ? (
             <ChatArea activeSessionId={activeSessionId} />
+          ) : (
+            <div className="flex-1 min-w-0 flex flex-col items-center justify-center bg-exo-bg gap-4 text-center p-8">
+              <Hexagon size={44} className="text-exo-gold/20" />
+              <p className="text-exo-muted text-sm">从列表中选择或新建一个会话</p>
+              <button onClick={() => setShowConvList(true)} className="md:hidden mt-1 px-4 py-2 text-xs text-exo-gold border border-exo-gold/30 rounded-lg hover:bg-exo-gold/10 flex items-center gap-2">
+                <MessageSquare size={14} /> 打开会话列表
+              </button>
+            </div>
           )}
         </div>
       )}
