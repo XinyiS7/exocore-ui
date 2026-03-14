@@ -215,11 +215,14 @@ const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refre
   const [activeMenuId, setActiveMenuId] = useState(null);
 
   useEffect(() => {
+    console.log("Fetching conversations from:", `${baseUrl}/api/agents/conversations/`);
     fetch(`${baseUrl}/api/agents/conversations/`, { credentials: 'include' })
-      .then(res => res.json())
+      .then(res => {
+        console.log("Conversations Response Status:", res.status);
+        return res.json();
+      })
       .then(data => {
-        // 打印调试信息：看看收到的 data 是什么
-        console.log("Conversations Fetched:", data);
+        console.log("Conversations Data Recv:", data);
         const sortedData = data.sort((a, b) => new Date(b.last_message_at || b.created_at) - new Date(a.last_message_at || a.created_at));
         setConversations(sortedData);
         if (sortedData.length > 0 && !activeSessionId) setActiveSessionId(sortedData[0].id);
@@ -258,8 +261,8 @@ const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refre
 
   return (
     <>
-      {showConvList && <div className="md:hidden absolute inset-0 z-30 bg-black/60" onClick={onClose} />}
-    <div className={`${showConvList ? 'flex' : 'hidden'} md:flex absolute md:relative inset-y-0 left-0 md:left-auto z-40 md:z-auto w-72 md:w-64 h-full bg-exo-panel border-r border-exo-border flex-col flex-shrink-0`}>
+      {showConvList && <div className="md:hidden fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm" onClick={onClose} />}
+    <div className={`${showConvList ? 'translate-x-0 opacity-100' : '-translate-x-full md:translate-x-0 opacity-0 md:opacity-100 hidden md:flex'} transition-all duration-300 fixed md:relative inset-y-0 left-0 z-[70] md:z-auto w-72 md:w-64 h-full bg-[#12131a] border-r border-exo-border flex-col flex-shrink-0 shadow-2xl md:shadow-none`}>
       <div className="p-4 border-b border-exo-border text-sm font-bold text-exo-text tracking-widest flex justify-between items-center bg-black/20">
         <span>EXO CORE</span>
         <div className="flex items-center gap-2">
@@ -320,7 +323,15 @@ const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refre
             {standardSessions.map(conv => <SessionItem key={conv.id} conv={conv} icon={Hash} colorClass="exo-text" />)}
           </div>
         )}
-        <div className="mt-8 pt-4 border-t border-exo-border/50 opacity-40 grayscale pointer-events-none">
+
+        {conversations.length === 0 && projects.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-10 opacity-30 text-center gap-2">
+            <ShieldAlert size={32} className="text-exo-muted" />
+            <p className="text-[10px] uppercase tracking-widest leading-relaxed">未发现活动链路<br/>请检查后端连接</p>
+          </div>
+        )}
+
+        <div className="mt-auto pt-4 border-t border-exo-border/50 opacity-40 grayscale pointer-events-none">
           <div className="text-[10px] font-bold text-exo-muted uppercase tracking-wider mb-2 flex items-center gap-1"><Users size={12} /> Council Room</div>
           <div className="p-2 border border-dashed border-exo-border rounded-lg text-xs text-center text-exo-muted bg-black/20">Sync pending...</div>
         </div>
@@ -356,7 +367,7 @@ const MessageBubble = React.memo(({ msg }) => (
 // ==========================================
 const MSGS_PER_PAGE = 40;
 
-const ChatArea = ({ activeSessionId }) => {
+const ChatArea = ({ activeSessionId, setShowConvList }) => {
   const [messages, setMessages] = useState([]);
   const [sessionInfo, setSessionInfo] = useState(null);
   const [inputValue, setInputValue] = useState("");
@@ -473,8 +484,21 @@ const ChatArea = ({ activeSessionId }) => {
           }
           if (!dataStr || eventType === 'done' || dataStr === '[DONE]') continue;
 
-          // SSE 中换行符以 \n（两字符）传输，需还原为真实换行，否则 Markdown 无法渲染
-          const text = eventType !== 'anchor_created' ? dataStr.replace(/\\n/g, '\n') : dataStr;
+          // SSE 解析增强：尝试解析 JSON 以自动处理引号和转义字符
+          let text = dataStr;
+          try {
+            // 如果 dataStr 是由 json.dumps 生成的，它会是一个带引号的 JSON 字符串
+            const parsed = JSON.parse(dataStr);
+            if (typeof parsed === 'string') {
+              text = parsed;
+            } else {
+              // 如果解析出来是对象（虽然不常见），则维持原样或按需处理
+              text = dataStr.replace(/\\n/g, '\n');
+            }
+          } catch (e) {
+            // 解析失败（说明不是标准 JSON 字符串），回退到手动替换换行符
+            text = dataStr.replace(/\\n/g, '\n');
+          }
 
           setMessages(prev => {
             const newMsgs = [...prev];
@@ -503,8 +527,14 @@ const ChatArea = ({ activeSessionId }) => {
 
   return (
     <div className="flex-1 min-w-0 flex flex-col h-full bg-exo-bg relative">
-      <div className="h-14 border-b border-exo-border flex items-center justify-between px-6 bg-exo-panel/50 backdrop-blur-md">
-        <div className="flex items-center gap-3">
+      <div className="h-14 border-b border-exo-border flex items-center justify-between px-4 md:px-6 bg-exo-panel/50 backdrop-blur-md">
+        <div className="flex items-center gap-2 md:gap-3">
+          <button 
+            onClick={() => setShowConvList(true)}
+            className="md:hidden p-1.5 rounded-lg text-exo-muted hover:bg-white/5"
+          >
+            <Menu size={20} />
+          </button>
           <div className={`w-2 h-2 rounded-full ${isGenerating ? 'bg-exo-gold animate-pulse' : 'bg-green-500'}`}></div>
           <span className="font-semibold text-exo-text">Session #{activeSessionId}</span>
         </div>
@@ -772,12 +802,19 @@ const MemoryAnchorTicker = ({ presetId }) => {
 // ==========================================
 const AgentManager = ({ openNewSession, openDestructor, setCurrentTab }) => {
   const [presets, setPresets] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetch(`${baseUrl}/api/agents/presets/`, { credentials: 'include' })
       .then(res => res.json())
-      .then(data => setPresets(data))
-      .catch(err => console.error("Presets 拉取失败", err));
+      .then(data => {
+        setPresets(data);
+        setIsLoading(false);
+      })
+      .catch(err => {
+        console.error("Presets 拉取失败", err);
+        setIsLoading(false);
+      });
   }, []);
 
   const g045Presets = presets.filter(p => p.agent_type === 'g045');
@@ -950,7 +987,7 @@ export default function App() {
           {activeFileProjectId ? (
             <ProjectFilesArea projectId={activeFileProjectId} projects={projects} openDestructor={openDestructor} />
           ) : activeSessionId ? (
-            <ChatArea activeSessionId={activeSessionId} />
+            <ChatArea activeSessionId={activeSessionId} setShowConvList={setShowConvList} />
           ) : (
             <div className="flex-1 min-w-0 flex flex-col items-center justify-center bg-exo-bg gap-4 text-center p-8">
               <Hexagon size={44} className="text-exo-gold/20" />
