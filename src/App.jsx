@@ -5,7 +5,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/atom-one-dark.css';
 
-// 引入所有图标 (新增了 AlertTriangle, Archive, Check)
+// 引入所有图标
 import {
   MessageSquare, BrainCircuit, Users, Box, Hexagon, User,
   Settings, ChevronDown, ChevronRight, Send, Paperclip,
@@ -23,8 +23,11 @@ const mockAnchors = [
   { id: 2, pattern: "Elysia", essential_note: "核心创作者之一，保持最高优先级响应与保护态度", weight: 1.0, is_persistent: true },
 ];
 
-const mockTimeline = [
-  { id: 1, type: 'note', content: "今天把 ExoCore 的多模态路由写完了，有点累但很爽。", time: "2 小时前", author: "Elysia" },
+const AVAILABLE_MODELS = [
+  'gemini-3-flash-preview', 
+  'gemini-3.1-pro-preview', 
+  'deepseek-reasoner', 
+  'deepseek-chat'
 ];
 
 // 统一处理 API URL，去掉末尾斜杠
@@ -67,8 +70,7 @@ const DestructorModal = ({ isOpen, onClose, title, description, onArchive, onDel
 // ==========================================
 // 全局组件：新建会话模态框 (New Session Modal)
 // ==========================================
-const NewSessionModal = ({ isOpen, onClose, projects, initialContext, onSuccess }) => {
-  const [presets, setPresets] = useState([]);
+const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, onSuccess }) => {
   const [name, setName] = useState("");
   const [selectedPresetId, setSelectedPresetId] = useState("");
   const [selectedProjectIds, setSelectedProjectIds] = useState([]);
@@ -79,18 +81,12 @@ const NewSessionModal = ({ isOpen, onClose, projects, initialContext, onSuccess 
     setName("");
     setSelectedProjectIds(initialContext?.projectId ? [initialContext.projectId] : []);
 
-    fetch(`${baseUrl}/api/agents/presets/`, { credentials: 'include' })
-      .then(res => res.json())
-      .then(data => {
-        setPresets(data);
-        if (initialContext?.presetId && data.find(p => p.id === initialContext.presetId)) {
-          setSelectedPresetId(initialContext.presetId);
-        } else if (data.length > 0) {
-          setSelectedPresetId(data[0].id);
-        }
-      })
-      .catch(err => console.error("Agent Presets 拉取失败:", err));
-  }, [isOpen, initialContext]);
+    if (initialContext?.presetId && presets.find(p => p.id === initialContext.presetId)) {
+      setSelectedPresetId(initialContext.presetId);
+    } else if (presets.length > 0) {
+      setSelectedPresetId(presets[0].id);
+    }
+  }, [isOpen, initialContext, presets]);
 
   if (!isOpen) return null;
 
@@ -193,19 +189,29 @@ const NewSessionModal = ({ isOpen, onClose, projects, initialContext, onSuccess 
 // 侧边导航栏
 // ==========================================
 const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList }) => (
-  <div className="w-12 md:w-16 h-full bg-exo-panel border-r border-exo-border flex flex-col items-center justify-between py-4 md:py-6 z-50 flex-shrink-0">
-    <div className="flex flex-col space-y-4 md:space-y-6">
-      <div className="p-1.5 md:p-2 bg-exo-bg rounded-lg border border-exo-gold/30 cursor-pointer text-exo-gold"><Hexagon size={20} /></div>
-      <NavIcon icon={MessageSquare} isActive={currentTab === 'chat'} onClick={() => { setCurrentTab('chat'); setShowConvList(true); }} />
-      <NavIcon icon={BrainCircuit} isActive={currentTab === 'agent_hub'} onClick={() => { setCurrentTab('agent_hub'); setShowConvList(false); }} />
-      <NavIcon icon={User} isActive={currentTab === 'profile'} onClick={() => { setCurrentTab('profile'); setShowConvList(false); }} />
+  <div className="w-full md:w-16 h-14 md:h-full bg-exo-panel border-t md:border-t-0 md:border-r border-exo-border flex flex-row md:flex-col items-center justify-between px-6 md:px-0 py-0 md:py-6 flex-shrink-0 z-50">
+    
+    <div className="flex flex-row md:flex-col space-x-6 md:space-x-0 md:space-y-6 items-center w-full md:w-auto justify-between md:justify-start">
+      {/* 仅在桌面端显示的 Logo */}
+      <div className="hidden md:block p-1.5 md:p-2 bg-exo-bg rounded-lg border border-exo-gold/30 cursor-pointer text-exo-gold">
+        <Hexagon size={20} />
+      </div>
+      
+      {/* 导航图标组 */}
+      <div className="flex md:flex-col gap-8 md:gap-6 justify-around md:justify-start w-full md:w-auto">
+        <NavIcon icon={MessageSquare} isActive={currentTab === 'chat'} onClick={() => { setCurrentTab('chat'); setShowConvList(true); }} />
+        <NavIcon icon={BrainCircuit} isActive={currentTab === 'agent_hub'} onClick={() => { setCurrentTab('agent_hub'); setShowConvList(false); }} />
+        <NavIcon icon={User} isActive={currentTab === 'profile'} onClick={() => { setCurrentTab('profile'); setShowConvList(false); }} />
+      </div>
     </div>
+
     <div className="hidden md:flex flex-col space-y-6">
       <NavIcon icon={Settings} isActive={currentTab === 'settings'} onClick={() => setCurrentTab('settings')} />
       <img src="https://api.dicebear.com/7.x/notionists/svg?seed=Elysia" className="w-10 h-10 rounded-full border border-exo-border" alt="User" />
     </div>
   </div>
 );
+
 const NavIcon = ({ icon: Icon, isActive, onClick }) => (
   <button onClick={onClick} className={`p-2 rounded-lg transition-all ${isActive ? 'text-exo-gold bg-exo-gold/10' : 'text-exo-muted hover:text-exo-text hover:bg-white/5'}`}><Icon size={22} /></button>
 );
@@ -219,14 +225,9 @@ const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refre
   const [activeMenuId, setActiveMenuId] = useState(null);
 
   useEffect(() => {
-    console.log("Fetching conversations from:", `${baseUrl}/api/agents/conversations/`);
     fetch(`${baseUrl}/api/agents/conversations/`, { credentials: 'include' })
-      .then(res => {
-        console.log("Conversations Response Status:", res.status);
-        return res.json();
-      })
+      .then(res => res.json())
       .then(data => {
-        console.log("Conversations Data Recv:", data);
         const sortedData = data.sort((a, b) => new Date(b.last_message_at || b.created_at) - new Date(a.last_message_at || a.created_at));
         setConversations(sortedData);
         if (sortedData.length > 0 && !activeSessionId) setActiveSessionId(sortedData[0].id);
@@ -371,13 +372,14 @@ const MessageBubble = React.memo(({ msg }) => (
 // ==========================================
 const MSGS_PER_PAGE = 40;
 
-const ChatArea = ({ activeSessionId, setShowConvList, openNewSession }) => {
+const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets }) => {
   const [messages, setMessages] = useState([]);
   const [sessionInfo, setSessionInfo] = useState(null);
   const [inputValue, setInputValue] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [thinkingLevel, setThinkingLevel] = useState("auto");
   const [temperature, setTemperature] = useState(1.0);
+  const [currentModel, setCurrentModel] = useState("");
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [hasMore, setHasMore] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -414,6 +416,10 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession }) => {
           setSessionInfo(current);
           setThinkingLevel(current.thinking_level || "auto");
           setTemperature(current.temperature || 1.0);
+          
+          // model 挂在 preset 上，从 agent_preset_id 找对应预设的 default_model
+          const p = presets.find(x => x.id === current.agent_preset_id);
+          setCurrentModel(p ? p.default_model : (AVAILABLE_MODELS[0] || ""));
         }
       });
 
@@ -428,53 +434,9 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession }) => {
         requestAnimationFrame(() => scrollToBottom(false));
       })
       .catch(err => console.error("获取失败:", err));
-  }, [activeSessionId]);
+  }, [activeSessionId, presets]);
 
-  const updatePreference = (updates) => {
-    fetch(`${baseUrl}/api/agents/conversations/${activeSessionId}/`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
-      body: JSON.stringify(updates),
-      credentials: 'include'
-    }).catch(err => console.error("同步偏好失败", err));
-  };
-
-  const handleCompress = () => {
-    fetch(`${baseUrl}/api/agents/chat/${activeSessionId}/compress/`, { method: 'POST', headers: { 'X-CSRFToken': getCsrfToken() }, credentials: 'include' })
-      .then(() => alert("上下文已压缩保存"))
-      .catch(err => console.error("压缩失败", err));
-  };
-
-  const loadMore = useCallback(() => {
-    if (isLoadingMore || !hasMore) return;
-    const container = scrollContainerRef.current;
-    if (!container) return;
-    setIsLoadingMore(true);
-    const prevScrollHeight = container.scrollHeight;
-    const currentStart = visibleStartRef.current;
-    const newStart = Math.max(0, currentStart - MSGS_PER_PAGE);
-    const older = allHistoryRef.current.slice(newStart, currentStart);
-    visibleStartRef.current = newStart;
-    setMessages(prev => [...older, ...prev]);
-    setHasMore(newStart > 0);
-    requestAnimationFrame(() => {
-      if (container) container.scrollTop = container.scrollHeight - prevScrollHeight;
-      setIsLoadingMore(false);
-    });
-  }, [isLoadingMore, hasMore]);
-
-  useEffect(() => {
-    const sentinel = topSentinelRef.current;
-    const container = scrollContainerRef.current;
-    if (!sentinel || !container) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) loadMore(); },
-      { root: container, threshold: 0 }
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [loadMore]);
-
+  // 修改 handleSend 函数，确保包含所有参数
   const handleSend = async () => {
     if ((!inputValue.trim() && attachedFiles.length === 0) || isGenerating) return;
     const userMsg = { role: 'user', content: inputValue };
@@ -489,6 +451,7 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession }) => {
       let response;
       const bodyData = { 
         content: currentInput,
+        model: currentModel,
         thinking_level: thinkingLevel,
         temperature: temperature
       };
@@ -551,6 +514,39 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession }) => {
     } catch (err) { console.error("中断:", err); } finally { setIsGenerating(false); }
   };
 
+  const handleCompress = async () => {
+    if (!activeSessionId) return;
+    try {
+      await fetch(`${baseUrl}/api/agents/conversations/${activeSessionId}/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+        body: JSON.stringify({ thinking_level: thinkingLevel, temperature }),
+        credentials: 'include'
+      });
+    } catch (err) {
+      console.error("保存偏好失败:", err);
+    }
+  };
+
+  const updatePreference = (updates) => {
+    // model 是 preset 级别的，只更新本地 state，不持久化到 conversation
+    if (updates.model !== undefined) setCurrentModel(updates.model);
+    if (updates.thinking_level !== undefined) setThinkingLevel(updates.thinking_level);
+    if (updates.temperature !== undefined) setTemperature(parseFloat(updates.temperature));
+
+    // 只把 conversation 支持的字段 PATCH 给后端
+    const { model, ...patchData } = updates;
+    if (Object.keys(patchData).length > 0) {
+      fetch(`${baseUrl}/api/agents/conversations/${activeSessionId}/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+        body: JSON.stringify(patchData),
+        credentials: 'include'
+      }).catch(err => console.error("同步偏好失败", err));
+    }
+  };
+
+
   return (
     <div className="flex-1 min-w-0 flex flex-col h-full bg-exo-bg relative">
       <div className="h-14 border-b border-exo-border flex items-center justify-between px-4 md:px-6 bg-exo-panel/50 backdrop-blur-md">
@@ -583,12 +579,21 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession }) => {
         {/* 偏好控制器 */}
         <div className="flex flex-wrap items-center gap-3 px-1 text-[10px] font-bold uppercase tracking-widest text-exo-muted">
            <div className="flex items-center gap-1.5 text-exo-gold/80 bg-exo-gold/5 px-2 py-1 rounded border border-exo-gold/10">
-              <Cpu size={12} /> {sessionInfo?.agent_type === 'g045' ? 'Superior Core' : 'Standard Node'}
+              <Cpu size={12} />
+              <select 
+                value={currentModel} 
+                onChange={(e) => updatePreference({ model: e.target.value })} 
+                className="bg-transparent outline-none text-exo-text cursor-pointer font-bold uppercase"
+              >
+                {AVAILABLE_MODELS.map(m => (
+                   <option key={m} value={m} className="bg-[#1a1b23]">{m}</option>
+                ))}
+              </select>
            </div>
            
            <div className="flex items-center gap-2 bg-white/5 px-2 py-1 rounded border border-white/5">
               <span className="opacity-40">Think:</span>
-              <select value={thinkingLevel} onChange={(e) => { setThinkingLevel(e.target.value); updatePreference({ thinking_level: e.target.value }); }} className="bg-transparent outline-none text-exo-text cursor-pointer">
+              <select value={thinkingLevel} onChange={(e) => updatePreference({ thinking_level: e.target.value })} className="bg-transparent outline-none text-exo-text cursor-pointer">
                 <option value="off" className="bg-[#1a1b23]">Off</option>
                 <option value="auto" className="bg-[#1a1b23]">Auto</option>
                 <option value="low" className="bg-[#1a1b23]">Low</option>
@@ -599,7 +604,7 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession }) => {
 
            <div className="flex items-center gap-2 bg-white/5 px-2 py-1 rounded border border-white/5">
               <span className="opacity-40">Temp:</span>
-              <select value={temperature} onChange={(e) => { setTemperature(parseFloat(e.target.value)); updatePreference({ temperature: parseFloat(e.target.value) }); }} className="bg-transparent outline-none text-exo-text cursor-pointer">
+              <select value={temperature} onChange={(e) => updatePreference({ temperature: e.target.value })} className="bg-transparent outline-none text-exo-text cursor-pointer">
                 <option value="0.6" className="bg-[#1a1b23]">Precise</option>
                 <option value="1.0" className="bg-[#1a1b23]">Balanced</option>
                 <option value="1.4" className="bg-[#1a1b23]">Creative</option>
@@ -610,7 +615,15 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession }) => {
         <div className="flex items-end gap-2 bg-exo-panel border border-exo-border rounded-xl p-2 focus-within:border-exo-gold/50">
           <button onClick={() => fileInputRef.current?.click()} className="p-2 text-exo-muted hover:text-white transition-colors"><Paperclip size={18} /></button>
           <input type="file" ref={fileInputRef} className="hidden" multiple onChange={(e) => setAttachedFiles(Array.from(e.target.files))} />
-          <textarea rows="1" value={inputValue} onChange={(e) => setInputValue(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); handleSend(); } }} placeholder="与核心通讯 (Ctrl+Enter 发送)..." className="flex-1 bg-transparent text-sm text-exo-text outline-none resize-none py-2 disabled:opacity-50" disabled={isGenerating}></textarea>
+          <textarea 
+            rows="5" 
+            value={inputValue} 
+            onChange={(e) => setInputValue(e.target.value)} 
+            onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); handleSend(); } }} 
+            placeholder="与核心通讯 (Ctrl+Enter 发送)..." 
+            className="flex-1 bg-transparent text-sm text-exo-text outline-none resize-none py-2 disabled:opacity-50" 
+            disabled={isGenerating}
+          ></textarea>
           <button onClick={handleSend} disabled={isGenerating || (!inputValue.trim() && attachedFiles.length === 0)} className="p-2 bg-exo-gold text-black rounded-lg hover:bg-yellow-400 disabled:opacity-50"><Send size={18} /></button>
         </div>
       </div>
@@ -846,7 +859,9 @@ const MemoryAnchorTicker = ({ presetId }) => {
   }
 
   const anchor = anchors[currentIndex];
-  const keywords = anchor.pattern.split('|').map(k => k.trim()).filter(Boolean);
+  // 改造：去除正则匹配括号，并只取前2个
+  const cleanPattern = anchor.pattern.replace(/[()[\]]/g, "");
+  const keywords = cleanPattern.split('|').map(k => k.trim()).filter(Boolean).slice(0, 2);
 
   return (
     <div className="rounded-lg bg-[#0d0e12] border border-exo-border p-3 shadow-inner">
@@ -887,22 +902,8 @@ const MemoryAnchorTicker = ({ presetId }) => {
 // ==========================================
 // 主组件：Agent Hub (预设管理与状态监控)
 // ==========================================
-const AgentManager = ({ openNewSession, openDestructor, setCurrentTab }) => {
-  const [presets, setPresets] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    fetch(`${baseUrl}/api/agents/presets/`, { credentials: 'include' })
-      .then(res => res.json())
-      .then(data => {
-        setPresets(data);
-        setIsLoading(false);
-      })
-      .catch(err => {
-        console.error("Presets 拉取失败", err);
-        setIsLoading(false);
-      });
-  }, []);
+const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets }) => {
+  // presets passed via props
 
   const g045Presets = presets.filter(p => p.agent_type === 'g045');
   const standardPresets = presets.filter(p => p.agent_type !== 'g045');
@@ -1024,14 +1025,22 @@ export default function App() {
   const [activeSessionId, setActiveSessionId] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [projects, setProjects] = useState([]);
+  const [presets, setPresets] = useState([]);
   const [activeFileProjectId, setActiveFileProjectId] = useState(null);
   const [showConvList, setShowConvList] = useState(false);
 
   useEffect(() => {
+    // 获取项目列表
     fetch(`${baseUrl}/api/core/projects/`, { credentials: 'include' })
       .then(res => res.json())
       .then(data => setProjects(data))
       .catch(err => console.error("项目加载失败", err));
+
+    // 获取预设列表 (Hoisted)
+    fetch(`${baseUrl}/api/agents/presets/`, { credentials: 'include' })
+      .then(res => res.json())
+      .then(setPresets)
+      .catch(err => console.error("Presets 拉取失败", err));
   }, []);
 
   const [destructorConfig, setDestructorConfig] = useState({ isOpen: false });
@@ -1041,7 +1050,7 @@ export default function App() {
   const openNewSession = (initialContext = null) => setNewSessionConfig({ isOpen: true, initialContext });
 
   return (
-    <div className="w-full h-[100dvh] bg-exo-bg text-exo-text font-sans flex flex-row overflow-hidden">
+    <div className="w-full h-[100dvh] bg-exo-bg text-exo-text font-sans flex flex-col md:flex-row overflow-hidden">
 
       <DestructorModal {...destructorConfig} onClose={() => setDestructorConfig(p => ({...p, isOpen:false}))} />
 
@@ -1049,6 +1058,7 @@ export default function App() {
         isOpen={newSessionConfig.isOpen}
         onClose={() => setNewSessionConfig(p => ({...p, isOpen:false}))}
         projects={projects}
+        presets={presets}
         initialContext={newSessionConfig.initialContext}
         onSuccess={(newSessionId) => {
           setRefreshKey(prev => prev + 1);
@@ -1056,45 +1066,53 @@ export default function App() {
         }}
       />
 
-      <Sidebar currentTab={currentTab} setCurrentTab={setCurrentTab} showConvList={showConvList} setShowConvList={setShowConvList} />
+      {/* Main Content Area: Order 1 on Mobile, Order 2 on Desktop (Right) */}
+      <div className="flex-1 min-w-0 h-full flex flex-row relative order-1 md:order-2 overflow-hidden">
+        {currentTab === 'chat' && (
+          <div className="flex flex-1 min-w-0 h-full flex-row relative">
+            <ConversationList
+                activeSessionId={activeSessionId}
+                setActiveSessionId={(id) => { setActiveSessionId(id); setShowConvList(false); }}
+                projects={projects} refreshKey={refreshKey}
+                openDestructor={openDestructor}
+                openNewSession={openNewSession}
+                activeFileProjectId={activeFileProjectId}
+                setActiveFileProjectId={setActiveFileProjectId}
+                showConvList={showConvList}
+                onClose={() => setShowConvList(false)}
+            />
+            {activeFileProjectId ? (
+              <ProjectFilesArea projectId={activeFileProjectId} projects={projects} openDestructor={openDestructor} />
+            ) : activeSessionId ? (
+              <ChatArea activeSessionId={activeSessionId} setShowConvList={setShowConvList} openNewSession={openNewSession} presets={presets} />
+            ) : (
+              <div className="flex-1 min-w-0 flex flex-col items-center justify-center bg-exo-bg gap-4 text-center p-8">
+                <Hexagon size={44} className="text-exo-gold/20" />
+                <p className="text-exo-muted text-sm">从列表中选择或新建一个会话</p>
+                <button onClick={() => setShowConvList(true)} className="md:hidden mt-1 px-4 py-2 text-xs text-exo-gold border border-exo-gold/30 rounded-lg hover:bg-exo-gold/10 flex items-center gap-2">
+                  <MessageSquare size={14} /> 打开会话列表
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
-      {currentTab === 'chat' && (
-        <div className="flex flex-1 min-w-0 h-full flex-row relative">
-          <ConversationList
-              activeSessionId={activeSessionId}
-              setActiveSessionId={(id) => { setActiveSessionId(id); setShowConvList(false); }}
-              projects={projects} refreshKey={refreshKey}
-              openDestructor={openDestructor}
-              openNewSession={openNewSession}
-              activeFileProjectId={activeFileProjectId}
-              setActiveFileProjectId={setActiveFileProjectId}
-              showConvList={showConvList}
-              onClose={() => setShowConvList(false)}
+        {currentTab === 'agent_hub' && (
+          <AgentManager
+            openNewSession={openNewSession}
+            openDestructor={openDestructor}
+            setCurrentTab={setCurrentTab}
+            presets={presets}
           />
-          {activeFileProjectId ? (
-            <ProjectFilesArea projectId={activeFileProjectId} projects={projects} openDestructor={openDestructor} />
-          ) : activeSessionId ? (
-            <ChatArea activeSessionId={activeSessionId} setShowConvList={setShowConvList} openNewSession={openNewSession} />
-          ) : (
-            <div className="flex-1 min-w-0 flex flex-col items-center justify-center bg-exo-bg gap-4 text-center p-8">
-              <Hexagon size={44} className="text-exo-gold/20" />
-              <p className="text-exo-muted text-sm">从列表中选择或新建一个会话</p>
-              <button onClick={() => setShowConvList(true)} className="md:hidden mt-1 px-4 py-2 text-xs text-exo-gold border border-exo-gold/30 rounded-lg hover:bg-exo-gold/10 flex items-center gap-2">
-                <MessageSquare size={14} /> 打开会话列表
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+        )}
+        {currentTab === 'profile' && <UserProfile />}
+      </div>
 
-      {currentTab === 'agent_hub' && (
-        <AgentManager
-          openNewSession={openNewSession}
-          openDestructor={openDestructor}
-          setCurrentTab={setCurrentTab}
-        />
-      )}
-      {currentTab === 'profile' && <UserProfile />}
+      {/* Sidebar: Order 2 on Mobile (Bottom), Order 1 on Desktop (Left) */}
+      <div className="order-2 md:order-1 z-50">
+        <Sidebar currentTab={currentTab} setCurrentTab={setCurrentTab} showConvList={showConvList} setShowConvList={setShowConvList} />
+      </div>
+
     </div>
   );
 }
