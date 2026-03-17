@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  body {
+    font-weight: 300;
+  }
+  strong, b, th {
+    font-weight: 500;
+  }
+}
+
 /* 隐藏滚动条但保留滚动功能，让界面更像客户端 */
 .scrollbar-hide::-webkit-scrollbar {
     display: none;

@@ -12,7 +12,7 @@ import {
   TerminalSquare, Activity, Edit3, Save, FileText, X, Sparkles, Clock,
   Folder, MoreVertical, Plus, Hash, Cpu, FolderOpen, Trash2, Edit2,
   AlertTriangle, Archive, Check, Play, GripVertical, ShieldAlert,
-  UploadCloud, FileBox, HardDrive, RefreshCw, Menu
+  UploadCloud, FileBox, HardDrive, RefreshCw, Menu, FileImage, FileType2
 } from 'lucide-react';
 
 // ==========================================
@@ -60,6 +60,123 @@ const DestructorModal = ({ isOpen, onClose, title, description, onArchive, onDel
           </button>
           <button onClick={() => { onDelete(); onClose(); }} className="px-4 py-2 rounded-lg text-xs font-medium flex items-center gap-2 bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500 hover:text-white transition-all shadow-[0_0_15px_rgba(239,68,68,0.2)]">
             <Trash2 size={14} /> PURGE
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// 全局组件：编辑 Agent 预设 (Edit Preset Modal)
+// ==========================================
+const EditPresetModal = ({ isOpen, onClose, preset, onSaved }) => {
+  const [form, setForm] = useState({ name: '', description: '', default_model: '', system_prompt: '' });
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (preset) {
+      setForm({
+        name: preset.name || '',
+        description: preset.description || '',
+        default_model: preset.default_model || '',
+        system_prompt: preset.system_prompt || '',
+      });
+    }
+  }, [preset]);
+
+  if (!isOpen) return null;
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const res = await fetch(`${baseUrl}/api/agents/presets/${preset.id}/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+        credentials: 'include',
+        body: JSON.stringify(form),
+      });
+      if (res.ok) {
+        onSaved();
+        onClose();
+      } else {
+        alert('保存失败，请检查后端接口。');
+      }
+    } catch (err) {
+      console.error('Preset 保存失败', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="bg-exo-panel border border-exo-border rounded-xl w-full max-w-2xl flex flex-col max-h-[90vh]">
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 border-b border-exo-border">
+          <div className="flex items-center gap-3">
+            <Edit3 size={18} className="text-exo-gold" />
+            <h2 className="text-base font-bold text-exo-text">
+              Edit Core: <span className="text-exo-gold">{preset?.name}</span>
+            </h2>
+          </div>
+          <button onClick={onClose} className="p-1.5 text-exo-muted hover:text-white transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="overflow-y-auto p-5 space-y-5 flex-1">
+          <div>
+            <label className="block text-[10px] font-bold text-exo-muted uppercase tracking-widest mb-1.5">Name</label>
+            <input
+              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-gold/50 transition-colors"
+              value={form.name}
+              onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-exo-muted uppercase tracking-widest mb-1.5">Description</label>
+            <textarea
+              rows={2}
+              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-gold/50 transition-colors resize-none"
+              value={form.description}
+              onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-exo-muted uppercase tracking-widest mb-1.5">Default Model</label>
+            <select
+              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-gold/50 transition-colors"
+              value={form.default_model}
+              onChange={e => setForm(p => ({ ...p, default_model: e.target.value }))}
+            >
+              {AVAILABLE_MODELS.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-exo-muted uppercase tracking-widest mb-1.5">System Prompt</label>
+            <textarea
+              rows={12}
+              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-gold/50 transition-colors resize-y font-mono leading-relaxed"
+              value={form.system_prompt}
+              onChange={e => setForm(p => ({ ...p, system_prompt: e.target.value }))}
+            />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 p-5 border-t border-exo-border">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-exo-muted hover:text-white transition-colors">
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="px-5 py-2 bg-exo-gold/10 text-exo-gold hover:bg-exo-gold hover:text-black border border-exo-gold/30 rounded-lg text-sm font-bold flex items-center gap-2 transition-all disabled:opacity-50"
+          >
+            {isSaving ? <Activity size={14} className="animate-spin" /> : <Save size={14} />}
+            {isSaving ? 'SAVING...' : 'SAVE CORE'}
           </button>
         </div>
       </div>
@@ -350,15 +467,32 @@ const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refre
 // 消息气泡 — memo 隔离，避免历史消息随流式输出重渲染
 // ==========================================
 const MessageBubble = React.memo(({ msg }) => (
-  <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start gap-4'}`}>
-    {msg.role !== 'user' && <img src="https://api.dicebear.com/7.x/bottts/svg?seed=G045" className="w-8 h-8 rounded-md border border-exo-gold/50 bg-black mt-1" alt="AI" />}
-    <div className={`max-w-[85%] ${msg.role === 'user' ? 'bg-exo-panel border border-exo-border rounded-2xl rounded-tr-sm p-4 text-sm text-exo-text' : 'space-y-2'}`}>
+  <div className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+    {msg.role !== 'user' && (
+      <div className="flex items-center gap-2 mb-2 ml-0.5">
+        <img src="https://api.dicebear.com/7.x/bottts/svg?seed=G045" className="w-6 h-6 rounded-md border border-exo-gold/50 bg-black" alt="AI" />
+        <span className="text-[10px] font-semibold text-exo-gold/60 uppercase tracking-widest">Core</span>
+      </div>
+    )}
+    <div className={`${msg.role === 'user' ? 'max-w-[78%] bg-exo-panel border border-exo-border rounded-2xl rounded-tr-sm p-4 text-sm text-exo-text' : 'w-full space-y-2'}`}>
       {msg.role !== 'user' && msg.reasoning_steps && msg.reasoning_steps.map((step, sIdx) => <div key={sIdx} className="text-[11px] text-exo-gold/70 bg-exo-gold/5 px-2 py-1 rounded">{step}</div>)}
       {msg.role !== 'user' && msg.reasoning_content && (
         <details className="bg-[#121215] border border-exo-border rounded-lg text-xs text-exo-muted cursor-pointer mb-2">
           <summary className="p-2 flex items-center gap-2">Thinking Process</summary>
           <div className="p-3 border-t border-exo-border bg-black/50 whitespace-pre-wrap font-mono">{msg.reasoning_content}</div>
         </details>
+      )}
+      {msg.role === 'user' && msg.attachments && msg.attachments.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-3">
+          {msg.attachments.map((att, i) => (
+            att.preview
+              ? <img key={i} src={att.preview} alt={att.name} title={att.name} className="max-h-40 max-w-full rounded-lg object-cover border border-exo-border" />
+              : <div key={i} className="flex items-center gap-1.5 text-[11px] bg-black/50 border border-exo-border rounded-lg px-2 py-1.5 text-exo-muted">
+                  <FileText size={11} className="text-blue-400 shrink-0" />
+                  <span className="truncate max-w-[160px]">{att.name}</span>
+                </div>
+          ))}
+        </div>
       )}
       <div className={msg.role === 'user' ? 'whitespace-pre-wrap' : 'prose prose-invert prose-sm max-w-none'}>
         {msg.role === 'user' ? msg.content : <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{msg.content}</ReactMarkdown>}
@@ -381,8 +515,10 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
   const [temperature, setTemperature] = useState(1.0);
   const [currentModel, setCurrentModel] = useState("");
   const [attachedFiles, setAttachedFiles] = useState([]);
+  const [attachedFilePreviews, setAttachedFilePreviews] = useState([]);
   const [hasMore, setHasMore] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [lastTelemetry, setLastTelemetry] = useState(null);
 
   const allHistoryRef = useRef([]);   // 完整历史，不参与渲染
   const visibleStartRef = useRef(0);  // 当前可见窗口在 allHistory 中的起始索引
@@ -390,6 +526,17 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
   const fileInputRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const topSentinelRef = useRef(null);
+
+  // 管理附件预览 URL 的生命周期，防止内存泄漏
+  useEffect(() => {
+    const previews = attachedFiles.map(f => ({
+      name: f.name,
+      type: f.type,
+      preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : null
+    }));
+    setAttachedFilePreviews(previews);
+    return () => previews.forEach(p => { if (p.preview) URL.revokeObjectURL(p.preview); });
+  }, [attachedFiles]);
 
   const scrollToBottom = (smooth = true) =>
     messagesEndRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "instant" });
@@ -406,6 +553,11 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
     visibleStartRef.current = 0;
     setMessages([]);
     setHasMore(false);
+    setLastTelemetry(null);
+
+    // 还原该会话的未发送草稿
+    const savedDraft = localStorage.getItem(`exo_draft_${activeSessionId}`);
+    setInputValue(savedDraft ?? '');
 
     // 获取会话详情以同步 UI 状态
     fetch(`${baseUrl}/api/agents/conversations/`, { credentials: 'include' })
@@ -439,13 +591,23 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
   // 修改 handleSend 函数，确保包含所有参数
   const handleSend = async () => {
     if ((!inputValue.trim() && attachedFiles.length === 0) || isGenerating) return;
-    const userMsg = { role: 'user', content: inputValue };
+    const userMsg = {
+      role: 'user',
+      content: inputValue,
+      attachments: attachedFiles.map(f => ({
+        name: f.name,
+        type: f.type,
+        size: f.size,
+        preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : null
+      }))
+    };
     const aiMsg = { id: Date.now(), role: 'assistant', content: '', reasoning_content: '', reasoning_steps: [], new_anchors: [] };
     allHistoryRef.current = [...allHistoryRef.current, userMsg, aiMsg];
     setMessages(prev => [...prev, userMsg, aiMsg]);
 
     const currentInput = inputValue; const currentFiles = [...attachedFiles];
     setInputValue(""); setAttachedFiles([]); setIsGenerating(true); scrollToBottom(true);
+    localStorage.removeItem(`exo_draft_${activeSessionId}`);
 
     try {
       let response;
@@ -483,6 +645,11 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
             else if (line.startsWith('data:')) dataStr += line.substring(5).trim();
           }
           if (!dataStr || eventType === 'done' || dataStr === '[DONE]') continue;
+
+          if (eventType === 'telemetry') {
+            try { setLastTelemetry(JSON.parse(dataStr)); } catch(e) {}
+            continue;
+          }
 
           let text = dataStr;
           try {
@@ -605,26 +772,64 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
            <div className="flex items-center gap-2 bg-white/5 px-2 py-1 rounded border border-white/5">
               <span className="opacity-40">Temp:</span>
               <select value={temperature} onChange={(e) => updatePreference({ temperature: e.target.value })} className="bg-transparent outline-none text-exo-text cursor-pointer">
-                <option value="0.6" className="bg-[#1a1b23]">Precise</option>
-                <option value="1.0" className="bg-[#1a1b23]">Balanced</option>
-                <option value="1.4" className="bg-[#1a1b23]">Creative</option>
+                <option value="1.0" className="bg-[#1a1b23]">Precise</option>
+                <option value="1.3" className="bg-[#1a1b23]">Balanced</option>
+                <option value="1.8" className="bg-[#1a1b23]">Creative</option>
               </select>
            </div>
+           {lastTelemetry && (
+             <div className="ml-auto font-mono text-[10px] text-exo-muted/50 tabular-nums tracking-tight">
+               ↑{lastTelemetry.input_chars?.toLocaleString()} | ↓{lastTelemetry.output_chars?.toLocaleString()}
+             </div>
+           )}
         </div>
 
-        <div className="flex items-end gap-2 bg-exo-panel border border-exo-border rounded-xl p-2 focus-within:border-exo-gold/50">
-          <button onClick={() => fileInputRef.current?.click()} className="p-2 text-exo-muted hover:text-white transition-colors"><Paperclip size={18} /></button>
-          <input type="file" ref={fileInputRef} className="hidden" multiple onChange={(e) => setAttachedFiles(Array.from(e.target.files))} />
-          <textarea 
-            rows="5" 
-            value={inputValue} 
-            onChange={(e) => setInputValue(e.target.value)} 
-            onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); handleSend(); } }} 
-            placeholder="与核心通讯 (Ctrl+Enter 发送)..." 
-            className="flex-1 bg-transparent text-sm text-exo-text outline-none resize-none py-2 disabled:opacity-50" 
+        <div className="flex flex-col bg-exo-panel border border-exo-border rounded-xl focus-within:border-exo-gold/50 overflow-hidden">
+          {attachedFilePreviews.length > 0 && (
+            <div className="flex flex-wrap gap-2 px-3 pt-3 pb-2 border-b border-exo-border/50">
+              {attachedFilePreviews.map((fp, i) => (
+                fp.preview
+                  ? <div key={i} className="relative group h-16 w-16 shrink-0">
+                      <img src={fp.preview} alt={fp.name} title={fp.name} className="h-full w-full object-cover rounded-lg border border-exo-border" />
+                      <button
+                        onClick={() => setAttachedFiles(p => p.filter((_, j) => j !== i))}
+                        className="absolute -top-1.5 -right-1.5 bg-black border border-exo-border/50 rounded-full p-0.5 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                      ><X size={10} /></button>
+                    </div>
+                  : <div key={i} className="relative group flex items-center gap-1.5 text-[11px] bg-black/50 border border-exo-border rounded-lg pl-2 pr-1.5 py-1.5 text-exo-muted max-w-[180px]">
+                      <FileText size={11} className="text-blue-400 shrink-0" />
+                      <span className="truncate">{fp.name}</span>
+                      <button
+                        onClick={() => setAttachedFiles(p => p.filter((_, j) => j !== i))}
+                        className="ml-1 text-exo-muted hover:text-red-400 transition-colors shrink-0"
+                      ><X size={10} /></button>
+                    </div>
+              ))}
+            </div>
+          )}
+          <textarea
+            rows="4"
+            value={inputValue}
+            onChange={(e) => {
+              const v = e.target.value;
+              setInputValue(v);
+              if (activeSessionId) {
+                v ? localStorage.setItem(`exo_draft_${activeSessionId}`, v)
+                  : localStorage.removeItem(`exo_draft_${activeSessionId}`);
+              }
+            }}
+            onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); handleSend(); } }}
+            placeholder="与核心通讯 (Ctrl+Enter 发送)..."
+            className="w-full bg-transparent text-sm text-exo-text outline-none resize-none px-3 pt-3 pb-1 disabled:opacity-50"
             disabled={isGenerating}
-          ></textarea>
-          <button onClick={handleSend} disabled={isGenerating || (!inputValue.trim() && attachedFiles.length === 0)} className="p-2 bg-exo-gold text-black rounded-lg hover:bg-yellow-400 disabled:opacity-50"><Send size={18} /></button>
+          />
+          <div className="flex items-center justify-between px-2 pb-2">
+            <div className="flex items-center">
+              <button onClick={() => fileInputRef.current?.click()} className="p-1.5 text-exo-muted hover:text-white transition-colors"><Paperclip size={16} /></button>
+              <input type="file" ref={fileInputRef} className="hidden" multiple onChange={(e) => setAttachedFiles(prev => [...prev, ...Array.from(e.target.files)])} />
+            </div>
+            <button onClick={handleSend} disabled={isGenerating || (!inputValue.trim() && attachedFiles.length === 0)} className="p-2 bg-exo-gold text-black rounded-lg hover:bg-yellow-400 disabled:opacity-50"><Send size={16} /></button>
+          </div>
         </div>
       </div>
     </div>
@@ -734,12 +939,17 @@ const ProjectFilesArea = ({ projectId, projects, openDestructor }) => {
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {files.map(file => (
+              {files.map(file => {
+                const mime = file.type || file.file_type || '';
+                const isImage = mime.startsWith('image/');
+                const isPdf = mime === 'application/pdf';
+                const FileIcon = isImage ? FileImage : isPdf ? FileType2 : FileText;
+                return (
                 <div key={file.id} className="bg-[#121318] border border-exo-border rounded-lg p-4 flex flex-col justify-between group hover:border-exo-gold/30 transition-all">
                   <div className="flex items-start gap-3 mb-4">
                     {/* 根据来源不同显示不同颜色的图标 */}
-                    <div className={`p-2 rounded bg-opacity-10 mt-1 ${file.source === 'obsidian_sync' ? 'bg-purple-500 text-purple-400' : 'bg-blue-500 text-blue-400'}`}>
-                      <FileText size={18} />
+                    <div className={`p-2 rounded bg-opacity-10 mt-1 ${file.source === 'obsidian_sync' ? 'bg-purple-500 text-purple-400' : isImage ? 'bg-emerald-500 text-emerald-400' : isPdf ? 'bg-red-500 text-red-400' : 'bg-blue-500 text-blue-400'}`}>
+                      <FileIcon size={18} />
                     </div>
                     <div className="flex-1 overflow-hidden">
                       <p className="text-sm font-bold text-exo-text truncate" title={file.name}>{file.name}</p>
@@ -781,7 +991,8 @@ const ProjectFilesArea = ({ projectId, projects, openDestructor }) => {
                     </button>
                   </div>
                 </div>
-              ))}
+              );
+              })}
 
               {files.length === 0 && (
                 <div className="col-span-full py-10 text-center text-exo-muted text-sm font-mono border border-dashed border-exo-border rounded-lg">
@@ -804,19 +1015,11 @@ const UserProfile = () => <div className="flex-1 text-center text-white p-10">Pr
 // ==========================================
 // 子组件：G045 动态记忆锚点滚动指示器 (Memory Anchor Ticker)
 // ==========================================
-const MemoryAnchorTicker = ({ presetId }) => {
-  const [anchors, setAnchors] = useState([]);
+const MemoryAnchorTicker = ({ anchors = [] }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFading, setIsFading] = useState(true);
   const noteRef = useRef(null);
   const scrollRafRef = useRef(null);
-
-  useEffect(() => {
-    fetch(`${baseUrl}/api/agents/presets/${presetId}/anchors/snapshot/`, { credentials: 'include' })
-      .then(res => res.json())
-      .then(data => { if (data && data.length > 0) setAnchors(data); })
-      .catch(err => console.error("锚点拉取失败", err));
-  }, [presetId]);
 
   useEffect(() => {
     if (anchors.length <= 1) return;
@@ -902,18 +1105,62 @@ const MemoryAnchorTicker = ({ presetId }) => {
 // ==========================================
 // 主组件：Agent Hub (预设管理与状态监控)
 // ==========================================
-const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets }) => {
-  // presets passed via props
+const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, refreshPresets }) => {
+  const [editTarget, setEditTarget] = useState(null);
+  // anchorCache: { [presetId]: AnchorArray } — 进入 hub 时拉取一次，之后本地轮播
+  const [anchorCache, setAnchorCache] = useState({});
+  // 拖拽排序：{ [presetId]: sortIndex }，持久化到 localStorage
+  const [cardOrder, setCardOrder] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('agentHubOrder') || '{}'); } catch { return {}; }
+  });
+  const [dragging, setDragging] = useState(null);
+  const [dragOver, setDragOver] = useState(null);
 
-  const g045Presets = presets.filter(p => p.agent_type === 'g045');
-  const standardPresets = presets.filter(p => p.agent_type !== 'g045');
+  const applyOrder = (list) =>
+    [...list].sort((a, b) => (cardOrder[a.id] ?? a.id) - (cardOrder[b.id] ?? b.id));
 
-  const AgentCard = ({ preset, isG045 }) => (
-    <div className={`relative flex flex-col p-5 rounded-xl border transition-all hover:bg-white/[0.02] ${
-      isG045 
-        ? 'bg-gradient-to-br from-exo-gold/5 to-transparent border-exo-gold/30 shadow-[0_4px_20px_rgba(255,215,0,0.03)]' 
-        : 'bg-exo-panel border-exo-border'
-    }`}>
+  const g045Presets = applyOrder(presets.filter(p => p.agent_type === 'g045'));
+  const standardPresets = applyOrder(presets.filter(p => p.agent_type !== 'g045'));
+
+  const handleDrop = (srcId, dstId, list) => {
+    if (srcId === dstId) return;
+    const ids = list.map(p => p.id);
+    const newIds = [...ids];
+    newIds.splice(newIds.indexOf(srcId), 1);
+    newIds.splice(newIds.indexOf(dstId), 0, srcId);
+    const newOrder = { ...cardOrder };
+    newIds.forEach((id, idx) => { newOrder[id] = idx; });
+    setCardOrder(newOrder);
+    localStorage.setItem('agentHubOrder', JSON.stringify(newOrder));
+  };
+
+  // 仅在 g045 预设列表确定后拉取一次，已缓存的跳过
+  useEffect(() => {
+    g045Presets.forEach(p => {
+      if (anchorCache[p.id] !== undefined) return;
+      fetch(`${baseUrl}/api/agents/presets/${p.id}/anchors/snapshot/`, { credentials: 'include' })
+        .then(res => res.json())
+        .then(data => setAnchorCache(prev => ({ ...prev, [p.id]: Array.isArray(data) ? data : [] })))
+        .catch(() => setAnchorCache(prev => ({ ...prev, [p.id]: [] })));
+    });
+  }, [g045Presets.map(p => p.id).join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const AgentCard = ({ preset, isG045, list }) => {
+    const isDraggingThis = dragging === preset.id;
+    const isDragOver = dragOver === preset.id && !isDraggingThis;
+    return (
+    <div
+      className={`relative flex flex-col p-5 rounded-xl border transition-all hover:bg-white/[0.02] ${
+        isG045
+          ? 'bg-gradient-to-br from-exo-gold/5 to-transparent border-exo-gold/30 shadow-[0_4px_20px_rgba(255,215,0,0.03)]'
+          : 'bg-exo-panel border-exo-border'
+      } ${isDraggingThis ? 'opacity-40 scale-95' : ''} ${isDragOver ? (isG045 ? 'border-exo-gold/80 shadow-[0_0_20px_rgba(255,215,0,0.12)]' : 'border-exo-muted/60') : ''}`}
+      draggable
+      onDragStart={() => setDragging(preset.id)}
+      onDragEnd={() => { setDragging(null); setDragOver(null); }}
+      onDragOver={(e) => { e.preventDefault(); setDragOver(preset.id); }}
+      onDrop={() => { handleDrop(dragging, preset.id, list); setDragging(null); setDragOver(null); }}
+    >
       {/* 头部信息 */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-4">
@@ -931,7 +1178,7 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets }
         {/* 操作区 */}
         <div className="flex items-center gap-2">
           <button
-            onClick={() => alert(`将打开 ${preset.name} 的配置表单 (待后续迭代)`)}
+            onClick={() => setEditTarget(preset)}
             className="p-1.5 text-exo-muted hover:text-white bg-black/30 rounded border border-transparent hover:border-exo-border transition-all" title="Edit Core"
           >
             <Edit3 size={14} />
@@ -970,14 +1217,21 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets }
           <div className="text-[10px] font-bold text-exo-gold/70 uppercase tracking-wider mb-2 flex items-center gap-1">
             <Clock size={12} /> Active Memory Stream
           </div>
-          <MemoryAnchorTicker presetId={preset.id} />
+          <MemoryAnchorTicker anchors={anchorCache[preset.id] || []} />
         </div>
       )}
     </div>
   );
+  };
 
   return (
     <div className="flex-1 h-full overflow-y-auto bg-exo-bg p-8 scrollbar-hide">
+      <EditPresetModal
+        isOpen={!!editTarget}
+        preset={editTarget}
+        onClose={() => setEditTarget(null)}
+        onSaved={refreshPresets}
+      />
       <div className="max-w-5xl mx-auto space-y-10">
         <div>
           <h2 className="text-3xl font-black text-exo-text mb-2 flex items-center gap-3">
@@ -994,7 +1248,7 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets }
               <h3 className="text-sm font-bold text-exo-gold uppercase tracking-widest">Superior Cores (G045)</h3>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {g045Presets.map(p => <AgentCard key={p.id} preset={p} isG045={true} />)}
+              {g045Presets.map(p => <AgentCard key={p.id} preset={p} isG045={true} list={g045Presets} />)}
             </div>
           </div>
         )}
@@ -1007,7 +1261,7 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets }
               <h3 className="text-sm font-bold text-exo-muted uppercase tracking-widest">Standard Modules</h3>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-              {standardPresets.map(p => <AgentCard key={p.id} preset={p} isG045={false} />)}
+              {standardPresets.map(p => <AgentCard key={p.id} preset={p} isG045={false} list={standardPresets} />)}
             </div>
           </div>
         )}
@@ -1043,6 +1297,13 @@ export default function App() {
       .catch(err => console.error("Presets 拉取失败", err));
   }, []);
 
+  const refreshPresets = () => {
+    fetch(`${baseUrl}/api/agents/presets/`, { credentials: 'include' })
+      .then(res => res.json())
+      .then(setPresets)
+      .catch(err => console.error("Presets 刷新失败", err));
+  };
+
   const [destructorConfig, setDestructorConfig] = useState({ isOpen: false });
   const openDestructor = (config) => setDestructorConfig({ ...config, isOpen: true });
 
@@ -1072,7 +1333,7 @@ export default function App() {
           <div className="flex flex-1 min-w-0 h-full flex-row relative">
             <ConversationList
                 activeSessionId={activeSessionId}
-                setActiveSessionId={(id) => { setActiveSessionId(id); setShowConvList(false); }}
+                setActiveSessionId={(id) => { setActiveSessionId(id); setActiveFileProjectId(null); setShowConvList(false); }}
                 projects={projects} refreshKey={refreshKey}
                 openDestructor={openDestructor}
                 openNewSession={openNewSession}
@@ -1103,6 +1364,7 @@ export default function App() {
             openDestructor={openDestructor}
             setCurrentTab={setCurrentTab}
             presets={presets}
+            refreshPresets={refreshPresets}
           />
         )}
         {currentTab === 'profile' && <UserProfile />}

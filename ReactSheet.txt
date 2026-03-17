@@ -1,6 +1,6 @@
 ========================================================
   ExoCore — React 前端接口数据格式速查表
-  最后更新：2026-03-14（含 session_type / thinking_level / temperature）
+  最后更新：2026-03-17
 ========================================================
 
 
@@ -23,7 +23,7 @@
 
     // agent 快速筛选字段
     "agent_type": "g045",                          // "g045" | "standard"
-    "agent_preset_id": 1,                          // AgentPreset.id
+    "agent_preset_id": 2,                          // AgentPreset.id
 
     // 会话偏好（加载会话时用于回显下拉框）
     "session_type": "chat",                        // "chat" | "code" | "cli"
@@ -64,7 +64,7 @@
     "id": 102,
     "role": "assistant",
     "content": "量子纠缠是...",
-    "reasoning_content": "用户在问基础物理概念，不需要 RAG...",
+    "reasoning_content": "用户问的是基础物理概念，不需要 RAG...",
     "platform": "gemini-3.1-pro-preview",
     "created_at": "2026-03-10T14:23:08Z"
   }
@@ -98,6 +98,15 @@ data: "量子纠缠是两个粒子..."                  // string，正文回复
 event: anchor_created
 data: {"pattern": "量子纠缠"}                  // G045 function call 创建了新记忆锚点时触发
 
+event: telemetry
+data: {
+  "platform": "gemini",
+  "model_name": "gemini-1.5-pro",
+  "input_chars": 15820,
+  "output_chars": 950,
+  "tool_calls_in_turn": 2
+}
+
 event: error
 data: "LLM 传输层中断: ..."                    // string，发生错误时
 
@@ -109,6 +118,7 @@ data: "[DONE]"                                 // 流结束标志
 //   es.addEventListener('content', e => fullText += e.data)
 //   es.addEventListener('thinking', e => thinkingText += e.data)
 //   es.addEventListener('reasoning', e => reasoningSteps.push(e.data))
+//   es.addEventListener('telemetry', e => displayUsage(JSON.parse(e.data)))
 //   es.addEventListener('done', () => es.close())
 
 
@@ -225,7 +235,7 @@ data: "[DONE]"                                 // 流结束标志
 {
   "name": "新名称",
   "thinking_level": "high",
-  "temperature": 0.6
+  "temperature": 1.0
 }
 
 // Response (200): 返回完整的 Conversation 对象（同 GET /conversations/ 的单条格式）
@@ -238,13 +248,13 @@ data: "[DONE]"                                 // 流结束标志
 9. GET /api/agents/presets/<preset_id>/anchors/snapshot/
    返回：Array<MemoryAnchor>
    用途：G045 个人主页只读展示，高分活跃锚点快照
-   筛选：is_active=true AND current_weight >= 0.5，随机排序取前 3
+   筛选：is_active=true AND current_weight >= 0.5，随机排序取前 15
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 [
   {
     "trigger_id": "a3f2c1d0-...",               // UUID，唯一标识
-    "pattern": "量子纠缠",                        // 触发关键词
+    "pattern": "(温度|temperature|高熵)",         // 触发关键词，正则表达式，需要你只取前二
     "essential_note": "用户对量子力学有浓厚兴趣，提及时可深入展开...",
     "current_weight": 0.92,                      // 0.0 ~ 1.0，越高越活跃
     "is_persistent": false                       // true = 恒定锚点（永不衰减），给前端加特殊视效
@@ -261,3 +271,41 @@ data: "[DONE]"                                 // 流结束标志
 // is_persistent 视效建议：
 //   false → 普通卡片样式
 //   true  → 金色边框 / 发光效果 / 特殊徽章
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. GET /api/telemetry/daily/
+    返回：Object（按日期 → 平台 → 模型聚合）
+    用途：Rechnung 账单页，展示历史用量统计
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{
+  "2026-03-16": {
+    "gemini": {
+      "gemini-3-flash-preview": {
+        "input_chars": 128400,
+        "output_chars": 21300,
+        "tool_calls": 15,
+        "turns": 8           // 本日该模型被调用的完整轮次数
+      },
+      "gemini-3.1-pro-preview": {
+        "input_chars": 45200,
+        "output_chars": 8900,
+        "tool_calls": 3,
+        "turns": 2
+      }
+    },
+    "deepseek": {
+      "deepseek-chat": {
+        "input_chars": 9800,
+        "output_chars": 3100,
+        "tool_calls": 0,
+        "turns": 1
+      }
+    }
+  },
+  "2026-03-15": { ... }
+}
+
+// 日期键为 ISO 8601 格式 "YYYY-MM-DD"，降序排列（最新在前）
+// 无数据时返回 {}
