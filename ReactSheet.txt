@@ -309,3 +309,125 @@ data: "[DONE]"                                 // 流结束标志
 
 // 日期键为 ISO 8601 格式 "YYYY-MM-DD"，降序排列（最新在前）
 // 无数据时返回 {}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. GET  /api/memory/knowledge/<pk>/
+    返回：KnowledgeFragment 详情（摘要 + 关键词，供前端编辑）
+    PATCH /api/memory/knowledge/<pk>/
+    用途：用户手动修改摘要或关键词
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// GET 返回：
+{
+  "id": 88,
+  "uid": "kf_88",
+  "title": "量子力学笔记",
+  "topic": "Physics",
+  "tags": ["量子", "波函数"],
+  "keywords": ["薛定谔方程", "叠加态"],   // 用户维护的 L2 关键词（可 PATCH 修改）
+  "abstract": "本文介绍量子力学基本原理...",
+  "status": "active",
+  "source_type": "obsidian_md",
+  "project": 3
+}
+
+// PATCH 请求体（所有字段可选）：
+{
+  "abstract": "修改后的摘要内容",    // 修改此字段 → 后台异步触发重向量化（pgvector）
+  "keywords": ["新关键词1", "新关键词2"]  // 修改此字段 → 同步入库，无需重向量化
+}
+
+// PATCH 响应 (200)：
+{ "msg": "已保存，摘要重向量化已在后台启动。", "updated": ["abstract", "keywords"] }
+// 或（仅改了 keywords）：
+{ "msg": "已保存。", "updated": ["keywords"] }
+
+// 检索行为说明（前端可在 tooltip 或帮助文本中展示）：
+//   title（文章标题）= L1 关键词：命中时必定召回，默认返回摘要，
+//                      若向量相似度同时 ≥ 0.75 则升级为全文
+//   keywords 字段    = L2 关键词：用户自定义，命中时必定召回并返回全文
+//   向量检索         = 基于 abstract 的语义召回，相似度 < 0.52 时过滤
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. GET /api/agents/conversations/<pk>/proposals/
+    返回：该会话所有 Proposal（长期记忆片段），按时间顺序排列
+    用途：记忆管理页，展示一个会话的全部压实历史
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{
+  "conversation_id": 12,
+  "session_name": "关于量子纠缠的讨论",
+  "session_type": "chat",              // "chat" | "code" | "cli"
+  "proposals": [
+    {
+      "id": 7,
+      "start_index": 0,                // 对应原始消息的 index_in_session 起始（含）
+      "end_index": 9,                  // 对应原始消息的 index_in_session 结束（含）
+      "content": "用户询问了量子纠缠的基本原理...",
+      "keywords": ["量子纠缠", "EPR"],
+      "created_at": "2026-03-10T15:00:00+00:00"
+    },
+    {
+      "id": 8,
+      "start_index": 10,
+      "end_index": 19,
+      "content": "对话转向了薛定谔方程...",
+      "keywords": ["薛定谔方程", "叠加态"],
+      "created_at": "2026-03-10T16:30:00+00:00"
+    }
+  ]
+}
+
+// 联动原始消息（只读展示）：
+//   使用 GET /api/agents/chat/<conversation_id>/ 拉取该会话全部消息，
+//   前端按 index_in_session ∈ [start_index, end_index] 过滤即可展示对应原始片段。
+//   注意：消息列表按 index_in_session 升序返回，可直接切片。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+13. GET  /api/memory/proposals/<pk>/
+    返回：Proposal 详情（含所属会话信息，供编辑页回显）
+    PATCH /api/memory/proposals/<pk>/
+    用途：用户手动修改 Proposal 内容或关键词
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// GET 返回（扁平化，含会话上下文）：
+{
+  "id": 7,
+  "conversation_id": 12,              // 所属会话 id（用于跳转或拉取原始消息）
+  "session_name": "关于量子纠缠的讨论",
+  "session_type": "chat",
+  "start_index": 0,
+  "end_index": 9,
+  "content": "用户询问了量子纠缠的基本原理...",
+  "keywords": ["量子纠缠", "EPR"],
+  "created_at": "2026-03-10T15:00:00+00:00"
+}
+
+// PATCH 请求体（所有字段可选）：
+{
+  "content": "修改后的摘要内容",   // 修改此字段 → 后台异步触发重向量化（pgvector）
+  "keywords": ["新关键词1", "新关键词2"]  // 修改此字段 → 同步入库，无需重向量化
+}
+
+// PATCH 响应 (200)：
+{ "msg": "已保存，Proposal 重向量化已在后台启动。", "updated": ["content", "keywords"] }
+// 或（仅改了 keywords）：
+{ "msg": "已保存。", "updated": ["keywords"] }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+14. POST /api/memory/compact/<session_id>/
+    用途：手动触发指定会话的记忆压实（生成新 Proposal）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// 无请求体，session_id = Conversation.id
+
+// Response (200)：
+{ "msg": "记忆压实已完成，长期记忆已更新。" }
+// 或（消息量不足）：
+{ "msg": "当前记忆量不足以生成摘要，或已是最新的。" }
+// 或 (500)：
+{ "error": "记忆压实失败: ..." }
