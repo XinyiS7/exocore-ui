@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      devOptions: { enabled: true },   // dev 模式下也激活 SW，方便调试
+      devOptions: { enabled: false },  // dev 模式禁用 SW，防止 HMR 触发 SW 更新导致手机刷新
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
         navigateFallback: '/index.html',

@@ -58,7 +58,8 @@
     "content": "量子纠缠是什么？",
     "reasoning_content": null,                    // 仅 assistant 消息可能有值（CoT 内容）
     "platform": "gemini-3.1-pro-preview",         // 生成该消息的模型
-    "created_at": "2026-03-10T14:23:01Z"
+    "created_at": "2026-03-10T14:23:01Z",
+    "index_in_session": 0                         // 会话内序号，与 Proposal.start/end_index 对应
   },
   {
     "id": 102,
@@ -66,7 +67,8 @@
     "content": "量子纠缠是...",
     "reasoning_content": "用户问的是基础物理概念，不需要 RAG...",
     "platform": "gemini-3.1-pro-preview",
-    "created_at": "2026-03-10T14:23:08Z"
+    "created_at": "2026-03-10T14:23:08Z",
+    "index_in_session": 1
   }
 ]
 
@@ -431,3 +433,99 @@ data: "[DONE]"                                 // 流结束标志
 { "msg": "当前记忆量不足以生成摘要，或已是最新的。" }
 // 或 (500)：
 { "error": "记忆压实失败: ..." }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+15. GET /api/userprofile/tweets/
+    返回：分页推文列表（根推文 + 嵌套回复，最多2层）
+    用途：时间线首屏及无限滚动加载
+    分页：游标分页（before_id），避免新帖插入导致 offset 漂移
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// 首次请求（无参数）：
+GET /api/userprofile/tweets/
+
+// 继续加载更早内容（上次响应 next_before_id 传入）：
+GET /api/userprofile/tweets/?before_id=38
+
+// Response (200)：
+{
+  "tweets": [
+    {
+      "id": 42,
+      "author": "user",                          // "user" | "g045"
+      "content": "今天写代码好累...",
+      "parent": null,
+      "created_at": "2026-03-21T14:30:00Z",
+      "replies": [
+        {
+          "id": 43,
+          "author": "g045",
+          "content": "要注意休息哦～",
+          "parent": 42,
+          "created_at": "2026-03-21T14:45:00Z",
+          "replies": [
+            {
+              "id": 44,
+              "author": "user",
+              "content": "我知道我知道",
+              "parent": 43,
+              "created_at": "2026-03-21T15:00:00Z",
+              "replies": []                      // 第2层 replies 固定为 []，不再深挖
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "has_more": true,                              // false = 已到最早记录
+  "next_before_id": 22                           // has_more=false 时为 null；下次请求传此值
+}
+
+// 前端无限滚动逻辑：
+//   初始加载：GET /tweets/，存储 next_before_id
+//   滚动到底：GET /tweets/?before_id=<next_before_id>，将新数据 append 到列表末尾
+//   has_more=false → 隐藏"加载更多"触发器
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+16. POST /api/userprofile/tweets/
+    用途：用户发新推文（根帖）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// Request body：
+{ "content": "今天天气不错" }
+
+// Response (201)：完整 Tweet 对象（replies 为 []，parent 为 null）
+{
+  "id": 50,
+  "author": "user",
+  "content": "今天天气不错",
+  "parent": null,
+  "created_at": "2026-03-21T16:00:00Z",
+  "replies": []
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+17. POST /api/userprofile/tweets/<id>/reply/
+    用途：用户回复某条推文（可以是根帖，也可以是回复的回复）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// <id> = 被回复的 Tweet.id（任意层级均可）
+
+// Request body：
+{ "content": "我也觉得！" }
+
+// Response (201)：新建的 Tweet 对象，parent 为被回复帖的 id
+{
+  "id": 51,
+  "author": "user",
+  "content": "我也觉得！",
+  "parent": 50,
+  "created_at": "2026-03-21T16:05:00Z",
+  "replies": []
+}
+
+// 注意：G045 通过后台 mimic_interact 任务自动发帖/回复，不经过此接口。
+// 前端只需处理 author 字段区分展示样式（"user" vs "g045"）。

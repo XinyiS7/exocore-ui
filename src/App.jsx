@@ -12,7 +12,8 @@ import {
   TerminalSquare, Activity, Edit3, Save, FileText, X, Sparkles, Clock,
   Folder, MoreVertical, Plus, Hash, Cpu, FolderOpen, Trash2, Edit2,
   AlertTriangle, Archive, Check, Play, GripVertical, ShieldAlert,
-  UploadCloud, FileBox, HardDrive, RefreshCw, Menu, FileImage, FileType2
+  UploadCloud, FileBox, HardDrive, RefreshCw, Menu, FileImage, FileType2,
+  BookOpen, ArrowLeft
 } from 'lucide-react';
 
 // ==========================================
@@ -320,6 +321,7 @@ const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList }) =
         <NavIcon icon={MessageSquare} isActive={currentTab === 'chat'} onClick={() => { setCurrentTab('chat'); setShowConvList(true); }} />
         <NavIcon icon={BrainCircuit} isActive={currentTab === 'agent_hub'} onClick={() => { setCurrentTab('agent_hub'); setShowConvList(false); }} />
         <NavIcon icon={User} isActive={currentTab === 'profile'} onClick={() => { setCurrentTab('profile'); setShowConvList(false); }} />
+        <span className="md:hidden"><NavIcon icon={Settings} isActive={currentTab === 'settings'} onClick={() => setCurrentTab('settings')} /></span>
       </div>
     </div>
 
@@ -467,40 +469,58 @@ const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refre
 // ==========================================
 // 消息气泡 — memo 隔离，避免历史消息随流式输出重渲染
 // ==========================================
-const MessageBubble = React.memo(({ msg }) => (
-  <div className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-    {msg.role !== 'user' && (
-      <div className="flex items-center gap-2 mb-2 ml-0.5">
-        <img src="https://api.dicebear.com/7.x/bottts/svg?seed=G045" className="w-6 h-6 rounded-md border border-exo-gold/50 bg-black" alt="AI" />
-        <span className="text-[10px] font-semibold text-exo-gold/60 uppercase tracking-widest">Core</span>
+const MessageBubble = React.memo(({ msg, agentName, agentAvatarSeed, userNick, userAvatarSeed }) => {
+  const isUser = msg.role === 'user';
+  return (
+    <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
+      {/* 头像 + 名字行 */}
+      <div className={`flex items-center gap-2 mb-1.5 ${isUser ? 'flex-row-reverse' : ''}`}>
+        <img
+          src={isUser
+            ? `https://api.dicebear.com/7.x/notionists/svg?seed=${userAvatarSeed || 'Elysia'}`
+            : `https://api.dicebear.com/7.x/bottts/svg?seed=${agentAvatarSeed || 'Core'}`}
+          className={`w-7 h-7 rounded-full border bg-black ${isUser ? 'border-white/20' : 'border-exo-gold/40'}`}
+          alt={isUser ? (userNick || 'You') : (agentName || 'Core')}
+        />
+        <span className={`text-[11px] font-semibold tracking-wide ${isUser ? 'text-white/40' : 'text-exo-gold/60'}`}>
+          {isUser ? (userNick || 'You') : (agentName || 'Core')}
+        </span>
       </div>
-    )}
-    <div className={`${msg.role === 'user' ? 'max-w-[78%] bg-exo-panel border border-exo-border rounded-2xl rounded-tr-sm p-4 text-sm text-exo-text' : 'w-full space-y-2'}`}>
-      {msg.role !== 'user' && msg.reasoning_steps && msg.reasoning_steps.map((step, sIdx) => <div key={sIdx} className="text-[11px] text-exo-gold/70 bg-exo-gold/5 px-2 py-1 rounded">{step}</div>)}
-      {msg.role !== 'user' && msg.reasoning_content && (
-        <details className="bg-[#121215] border border-exo-border rounded-lg text-xs text-exo-muted cursor-pointer mb-2">
-          <summary className="p-2 flex items-center gap-2">Thinking Process</summary>
-          <div className="p-3 border-t border-exo-border bg-black/50 whitespace-pre-wrap font-mono">{msg.reasoning_content}</div>
-        </details>
-      )}
-      {msg.role === 'user' && msg.attachments && msg.attachments.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-3">
-          {msg.attachments.map((att, i) => (
-            att.preview
-              ? <img key={i} src={att.preview} alt={att.name} title={att.name} className="max-h-40 max-w-full rounded-lg object-cover border border-exo-border" />
-              : <div key={i} className="flex items-center gap-1.5 text-[11px] bg-black/50 border border-exo-border rounded-lg px-2 py-1.5 text-exo-muted">
-                  <FileText size={11} className="text-blue-400 shrink-0" />
-                  <span className="truncate max-w-[160px]">{att.name}</span>
-                </div>
-          ))}
+
+      {/* 消息内容区 — 全宽，user 右对齐 */}
+      <div className={`w-full space-y-2 ${isUser ? 'flex flex-col items-end' : ''}`}>
+        {!isUser && msg.reasoning_steps && msg.reasoning_steps.map((step, sIdx) => (
+          <div key={sIdx} className="text-[11px] text-exo-gold/70 bg-exo-gold/5 px-2 py-1 rounded">{step}</div>
+        ))}
+        {!isUser && msg.reasoning_content && (
+          <details className="bg-[#121215] border border-exo-border rounded-lg text-xs text-exo-muted cursor-pointer w-full">
+            <summary className="p-2 flex items-center gap-2">Thinking Process</summary>
+            <div className="p-3 border-t border-exo-border bg-black/50 whitespace-pre-wrap font-mono">{msg.reasoning_content}</div>
+          </details>
+        )}
+        {isUser && msg.attachments?.length > 0 && (
+          <div className="flex flex-wrap gap-2 justify-end">
+            {msg.attachments.map((att, i) => (
+              att.preview
+                ? <img key={i} src={att.preview} alt={att.name} title={att.name} className="max-h-40 max-w-full rounded-lg object-cover border border-exo-border" />
+                : <div key={i} className="flex items-center gap-1.5 text-[11px] bg-black/50 border border-exo-border rounded-lg px-2 py-1.5 text-exo-muted">
+                    <FileText size={11} className="text-blue-400 shrink-0" />
+                    <span className="truncate max-w-[160px]">{att.name}</span>
+                  </div>
+            ))}
+          </div>
+        )}
+        <div className={isUser
+          ? 'max-w-[88%] bg-exo-panel border border-exo-border rounded-2xl rounded-tr-sm p-4 text-sm text-exo-text whitespace-pre-wrap'
+          : 'w-full prose prose-invert prose-sm max-w-none'}>
+          {isUser
+            ? msg.content
+            : <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{msg.content}</ReactMarkdown>}
         </div>
-      )}
-      <div className={msg.role === 'user' ? 'whitespace-pre-wrap' : 'prose prose-invert prose-sm max-w-none'}>
-        {msg.role === 'user' ? msg.content : <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{msg.content}</ReactMarkdown>}
       </div>
     </div>
-  </div>
-));
+  );
+});
 
 // ==========================================
 // ChatArea
@@ -520,6 +540,8 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
   const [hasMore, setHasMore] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [lastTelemetry, setLastTelemetry] = useState(null);
+  const [userNick] = useState(() => localStorage.getItem('exo_user_nick') || 'You');
+  const [userAvatarSeed] = useState(() => localStorage.getItem('exo_user_avatar_seed') || 'Elysia');
 
   const allHistoryRef = useRef([]);   // 完整历史，不参与渲染
   const visibleStartRef = useRef(0);  // 当前可见窗口在 allHistory 中的起始索引
@@ -723,7 +745,15 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
           <div className="flex items-center gap-2 overflow-hidden">
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-exo-gold uppercase tracking-tighter shrink-0">{sessionInfo?.session_type || 'CHAT'}</span>
             <div className={`w-2 h-2 rounded-full shrink-0 ${isGenerating ? 'bg-exo-gold animate-pulse' : 'bg-green-500'}`}></div>
-            <span className="font-semibold text-exo-text truncate">Session #{activeSessionId}</span>
+            <div className="flex flex-col overflow-hidden">
+              <div className="flex items-center gap-1.5">
+                <span className="font-semibold text-exo-text truncate">{sessionInfo?.name || `Session #${activeSessionId}`}</span>
+                <span className="text-[10px] text-exo-muted/60 shrink-0">#{activeSessionId}</span>
+              </div>
+              {sessionInfo?.agent_preset_id && presets.find(x => x.id === sessionInfo.agent_preset_id) && (
+                <span className="text-[10px] text-exo-muted/50 truncate leading-tight">{presets.find(x => x.id === sessionInfo.agent_preset_id)?.name}</span>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-1 md:gap-2">
@@ -739,7 +769,10 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
             <span className="text-xs text-exo-muted flex items-center gap-2 animate-pulse"><RefreshCw size={12} className="animate-spin" /> 加载历史记录...</span>
           </div>
         )}
-        {messages.map((msg, idx) => <MessageBubble key={msg.id || idx} msg={msg} />)}
+        {messages.map((msg, idx) => {
+          const agentName = presets.find(x => x.id === sessionInfo?.agent_preset_id)?.name || 'Core';
+          return <MessageBubble key={msg.id || idx} msg={msg} agentName={agentName} agentAvatarSeed={agentName} userNick={userNick} userAvatarSeed={userAvatarSeed} />;
+        })}
         <div ref={messagesEndRef} />
       </div>
 
@@ -820,6 +853,17 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
               }
             }}
             onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); handleSend(); } }}
+            onPaste={e => {
+              const items = Array.from(e.clipboardData?.items || []);
+              const imageFiles = items
+                .filter(item => item.kind === 'file' && item.type.startsWith('image/'))
+                .map(item => item.getAsFile())
+                .filter(Boolean);
+              if (imageFiles.length > 0) {
+                e.preventDefault();
+                setAttachedFiles(prev => [...prev, ...imageFiles]);
+              }
+            }}
             placeholder="与核心通讯 (Ctrl+Enter 发送)..."
             className="w-full bg-transparent text-sm text-exo-text outline-none resize-none px-3 pt-3 pb-1 disabled:opacity-50"
             disabled={isGenerating}
@@ -1273,6 +1317,480 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
 };
 
 // ==========================================
+// 记忆编辑：KnowledgeFragment 编辑 Modal
+// ==========================================
+const KnowledgeEditModal = ({ isOpen, onClose, knowledgeId }) => {
+  const [data, setData] = useState(null);
+  const [abstract, setAbstract] = useState('');
+  const [keywords, setKeywords] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen || !knowledgeId) return;
+    setIsLoading(true);
+    setSaveMsg('');
+    setData(null);
+    fetch(`${baseUrl}/api/memory/knowledge/${knowledgeId}/`, { credentials: 'include' })
+      .then(res => res.json())
+      .then(d => {
+        setData(d);
+        setAbstract(d.abstract || '');
+        setKeywords(Array.isArray(d.keywords) ? d.keywords.join(', ') : (d.keywords || ''));
+      })
+      .catch(err => console.error('KF 加载失败', err))
+      .finally(() => setIsLoading(false));
+  }, [isOpen, knowledgeId]);
+
+  if (!isOpen) return null;
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setSaveMsg('');
+    try {
+      const res = await fetch(`${baseUrl}/api/memory/knowledge/${knowledgeId}/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+        credentials: 'include',
+        body: JSON.stringify({
+          abstract,
+          keywords: keywords.split(',').map(k => k.trim()).filter(Boolean),
+        }),
+      });
+      const json = await res.json();
+      setSaveMsg(json.msg || (res.ok ? '保存成功' : '保存失败'));
+    } catch {
+      setSaveMsg('网络错误');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="bg-exo-panel border border-exo-border rounded-xl w-full max-w-xl flex flex-col max-h-[85vh]">
+        <div className="flex items-center justify-between p-5 border-b border-exo-border">
+          <div className="flex items-center gap-3">
+            <BookOpen size={16} className="text-exo-gold" />
+            <h2 className="text-sm font-bold text-exo-text">编辑知识片段</h2>
+          </div>
+          <button onClick={onClose} className="p-1.5 text-exo-muted hover:text-white transition-colors"><X size={16} /></button>
+        </div>
+        <div className="overflow-y-auto p-5 space-y-4 flex-1">
+          {isLoading ? (
+            <div className="flex justify-center py-8 text-exo-muted text-sm">加载中...</div>
+          ) : data ? (
+            <>
+              <div>
+                <label className="block text-[10px] font-bold text-exo-muted uppercase tracking-widest mb-1">标题（只读）</label>
+                <div className="px-3 py-2 bg-black/30 border border-exo-border rounded-lg text-sm text-exo-muted">{data.title}</div>
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-exo-muted uppercase tracking-widest mb-1">摘要 Abstract</label>
+                <textarea
+                  rows={5}
+                  className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-gold/50 resize-none transition-colors"
+                  value={abstract}
+                  onChange={e => setAbstract(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-exo-muted uppercase tracking-widest mb-1">关键词 Keywords（逗号分隔）</label>
+                <input
+                  className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-gold/50 transition-colors"
+                  value={keywords}
+                  onChange={e => setKeywords(e.target.value)}
+                  placeholder="eg: 量子力学, 纠缠, 波函数"
+                />
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {keywords.split(',').map(k => k.trim()).filter(Boolean).map((kw, i) => (
+                    <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-exo-gold/10 border border-exo-gold/20 text-exo-gold/80">{kw}</span>
+                  ))}
+                </div>
+              </div>
+              <div className="text-[10px] text-exo-muted/60 bg-black/20 border border-exo-border/50 rounded-lg px-3 py-2 space-y-0.5">
+                <p>· <span className="text-exo-gold/60">L1 检索</span>：系统自动匹配关键词，快速召回相关片段</p>
+                <p>· <span className="text-exo-gold/60">L2 检索</span>：基于摘要语义向量进行深度相关性排序</p>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-8 text-exo-muted text-sm">加载失败</div>
+          )}
+        </div>
+        <div className="flex items-center justify-between gap-3 p-5 border-t border-exo-border">
+          {saveMsg ? <span className="text-xs text-exo-gold/80">{saveMsg}</span> : <span />}
+          <div className="flex items-center gap-3">
+            <button onClick={onClose} className="px-4 py-2 text-sm text-exo-muted hover:text-white transition-colors">取消</button>
+            <button
+              onClick={handleSave}
+              disabled={isSaving || isLoading}
+              className="px-5 py-2 bg-exo-gold/10 text-exo-gold hover:bg-exo-gold hover:text-black border border-exo-gold/30 rounded-lg text-sm font-bold flex items-center gap-2 transition-all disabled:opacity-50"
+            >
+              {isSaving ? <Activity size={14} className="animate-spin" /> : <Save size={14} />}
+              {isSaving ? 'SAVING...' : 'SAVE'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// 记忆编辑：Proposal 编辑面板（内嵌，覆盖右侧内容区）
+// ==========================================
+const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack }) => {
+  const [content, setContent] = useState(proposal?.content || '');
+  const [keywords, setKeywords] = useState(
+    Array.isArray(proposal?.keywords) ? proposal.keywords.join(', ') : (proposal?.keywords || '')
+  );
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState('');
+  const [originalMessages, setOriginalMessages] = useState(null);
+  const [isLoadingMsgs, setIsLoadingMsgs] = useState(false);
+
+  useEffect(() => {
+    if (!proposal || conversationId == null) return;
+    setIsLoadingMsgs(true);
+    fetch(`${baseUrl}/api/agents/chat/${conversationId}/`, { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => {
+        const msgs = Array.isArray(data) ? data : (data.messages || data.data || []);
+        const start = proposal.start_index ?? 0;
+        const end = proposal.end_index ?? msgs.length - 1;
+        setOriginalMessages(msgs.slice(start, end + 1));
+      })
+      .catch(err => console.error('原始消息加载失败', err))
+      .finally(() => setIsLoadingMsgs(false));
+  }, [proposal, conversationId]);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setSaveMsg('');
+    try {
+      const res = await fetch(`${baseUrl}/api/memory/proposals/${proposal.id}/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+        credentials: 'include',
+        body: JSON.stringify({
+          content,
+          keywords: keywords.split(',').map(k => k.trim()).filter(Boolean),
+        }),
+      });
+      const json = await res.json();
+      setSaveMsg(json.msg || (res.ok ? '保存成功' : '保存失败'));
+    } catch {
+      setSaveMsg('网络错误');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex items-center gap-3 p-4 border-b border-exo-border shrink-0">
+        <button onClick={onBack} className="p-1.5 text-exo-muted hover:text-white transition-colors rounded hover:bg-white/5">
+          <ArrowLeft size={16} />
+        </button>
+        <div className="flex flex-col overflow-hidden">
+          <span className="text-sm font-semibold text-exo-text">编辑摘要</span>
+          <span className="text-[10px] text-exo-muted truncate">{conversationName}</span>
+        </div>
+      </div>
+      <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
+        {/* 左栏：编辑区 */}
+        <div className="flex-1 min-w-0 overflow-y-auto p-4 space-y-4 border-b md:border-b-0 md:border-r border-exo-border">
+          <div>
+            <label className="block text-[10px] font-bold text-exo-muted uppercase tracking-widest mb-1">摘要内容</label>
+            <textarea
+              rows={8}
+              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-gold/50 resize-none transition-colors"
+              value={content}
+              onChange={e => setContent(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-exo-muted uppercase tracking-widest mb-1">关键词（逗号分隔）</label>
+            <input
+              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-gold/50 transition-colors"
+              value={keywords}
+              onChange={e => setKeywords(e.target.value)}
+            />
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {keywords.split(',').map(k => k.trim()).filter(Boolean).map((kw, i) => (
+                <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-exo-gold/10 border border-exo-gold/20 text-exo-gold/80">{kw}</span>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center justify-between">
+            {saveMsg ? <span className="text-xs text-exo-gold/80">{saveMsg}</span> : <span />}
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="px-5 py-2 bg-exo-gold/10 text-exo-gold hover:bg-exo-gold hover:text-black border border-exo-gold/30 rounded-lg text-sm font-bold flex items-center gap-2 transition-all disabled:opacity-50"
+            >
+              {isSaving ? <Activity size={14} className="animate-spin" /> : <Save size={14} />}
+              {isSaving ? 'SAVING...' : 'SAVE'}
+            </button>
+          </div>
+        </div>
+        {/* 右栏：原始消息只读预览 */}
+        <div className="flex-1 min-w-0 overflow-y-auto p-4">
+          <div className="text-[10px] font-bold text-exo-muted uppercase tracking-widest mb-3">
+            原始消息片段 ({proposal?.start_index ?? '?'} – {proposal?.end_index ?? '?'})
+          </div>
+          {isLoadingMsgs ? (
+            <div className="text-center py-8 text-exo-muted text-sm">加载中...</div>
+          ) : originalMessages?.length ? (
+            <div className="space-y-3">
+              {originalMessages.map((msg, i) => (
+                <div key={i} className={`flex flex-col gap-0.5 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                  <span className="text-[9px] text-exo-muted/60 px-1 uppercase">{msg.role}</span>
+                  <div className={`max-w-[90%] px-3 py-2 rounded-lg text-xs leading-relaxed ${msg.role === 'user' ? 'bg-exo-gold/10 text-exo-text border border-exo-gold/20' : 'bg-white/5 text-exo-muted border border-white/10'}`}>
+                    {typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-exo-muted/50 text-xs">暂无原始消息数据</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// 设置面板 (SettingsPanel)
+// ==========================================
+const SettingsPanel = ({ projects, presets }) => {
+  const [activeSettingsTab, setActiveSettingsTab] = useState('memory');
+  const [memSubTab, setMemSubTab] = useState('files');
+
+  // 文件库状态
+  const [expandedProjects, setExpandedProjects] = useState(new Set());
+  const [projectFiles, setProjectFiles] = useState({});
+  const [loadingProjects, setLoadingProjects] = useState(new Set());
+  const [kfEditTarget, setKfEditTarget] = useState(null);
+
+  // 会话摘要状态
+  const [conversations, setConversations] = useState([]);
+  const [convLoading, setConvLoading] = useState(false);
+  const [expandedConvs, setExpandedConvs] = useState(new Set());
+  const [convProposals, setConvProposals] = useState({});
+  const [loadingConvs, setLoadingConvs] = useState(new Set());
+  const [editingProposal, setEditingProposal] = useState(null);
+
+  useEffect(() => {
+    if (memSubTab !== 'proposals' || conversations.length > 0) return;
+    setConvLoading(true);
+    fetch(`${baseUrl}/api/agents/conversations/`, { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => setConversations(Array.isArray(data) ? data : []))
+      .catch(err => console.error('会话加载失败', err))
+      .finally(() => setConvLoading(false));
+  }, [memSubTab]);
+
+  const toggleProjectExpand = (pid) => {
+    setExpandedProjects(prev => {
+      const next = new Set(prev);
+      if (next.has(pid)) { next.delete(pid); return next; }
+      next.add(pid);
+      if (!projectFiles[pid]) {
+        setLoadingProjects(lp => new Set([...lp, pid]));
+        fetch(`${baseUrl}/api/core/projects/${pid}/files/`, { credentials: 'include' })
+          .then(res => res.json())
+          .then(files => {
+            const obsidianFiles = files.filter(f => f.source === 'obsidian_sync');
+            setProjectFiles(pf => ({ ...pf, [pid]: obsidianFiles }));
+          })
+          .catch(err => console.error('文件加载失败', err))
+          .finally(() => setLoadingProjects(lp => { const n = new Set(lp); n.delete(pid); return n; }));
+      }
+      return next;
+    });
+  };
+
+  const toggleConvExpand = (cid) => {
+    setExpandedConvs(prev => {
+      const next = new Set(prev);
+      if (next.has(cid)) { next.delete(cid); return next; }
+      next.add(cid);
+      if (!convProposals[cid]) {
+        setLoadingConvs(lc => new Set([...lc, cid]));
+        fetch(`${baseUrl}/api/agents/conversations/${cid}/proposals/`, { credentials: 'include' })
+          .then(res => res.json())
+          .then(data => setConvProposals(cp => ({ ...cp, [cid]: Array.isArray(data.proposals) ? data.proposals : [] })))
+          .catch(err => console.error('Proposals 加载失败', err))
+          .finally(() => setLoadingConvs(lc => { const n = new Set(lc); n.delete(cid); return n; }));
+      }
+      return next;
+    });
+  };
+
+  const openKfEdit = (fileId) => {
+    const numId = typeof fileId === 'string' ? parseInt(fileId.replace(/\D/g, '')) : fileId;
+    setKfEditTarget(numId);
+  };
+
+  return (
+    <div className="flex-1 h-full flex overflow-hidden bg-exo-bg">
+      <KnowledgeEditModal
+        isOpen={kfEditTarget !== null}
+        onClose={() => setKfEditTarget(null)}
+        knowledgeId={kfEditTarget}
+      />
+
+      {/* 左侧 tab 栏 */}
+      <div className="w-48 shrink-0 bg-exo-panel border-r border-exo-border flex flex-col py-6 px-3 gap-1">
+        <div className="text-[10px] font-bold text-exo-muted uppercase tracking-widest px-2 mb-3">设置</div>
+        <button
+          onClick={() => setActiveSettingsTab('memory')}
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${activeSettingsTab === 'memory' ? 'bg-exo-gold/10 text-exo-gold border border-exo-gold/20' : 'text-exo-muted hover:text-exo-text hover:bg-white/5'}`}
+        >
+          <BookOpen size={16} />
+          记忆编辑
+        </button>
+      </div>
+
+      {/* 右侧内容区 */}
+      <div className="flex-1 min-w-0 h-full flex flex-col overflow-hidden">
+        {activeSettingsTab === 'memory' && (
+          <>
+            {editingProposal ? (
+              <ProposalEditPanel
+                proposal={editingProposal.proposal}
+                conversationName={editingProposal.conversationName}
+                conversationId={editingProposal.conversationId}
+                onBack={() => setEditingProposal(null)}
+              />
+            ) : (
+              <>
+                {/* 子 tab 切换 */}
+                <div className="flex items-center gap-1 p-4 border-b border-exo-border shrink-0">
+                  <button
+                    onClick={() => setMemSubTab('files')}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${memSubTab === 'files' ? 'bg-exo-gold/10 text-exo-gold border border-exo-gold/20' : 'text-exo-muted hover:text-exo-text hover:bg-white/5'}`}
+                  >文件库</button>
+                  <button
+                    onClick={() => setMemSubTab('proposals')}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${memSubTab === 'proposals' ? 'bg-exo-gold/10 text-exo-gold border border-exo-gold/20' : 'text-exo-muted hover:text-exo-text hover:bg-white/5'}`}
+                  >会话摘要</button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-2">
+                  {/* 文件库 */}
+                  {memSubTab === 'files' && (
+                    projects.length === 0 ? (
+                      <div className="text-center py-16 text-exo-muted text-sm">暂无项目</div>
+                    ) : projects.map(proj => {
+                      const isExpanded = expandedProjects.has(proj.id);
+                      const files = projectFiles[proj.id];
+                      const isLoadingFiles = loadingProjects.has(proj.id);
+                      return (
+                        <div key={proj.id} className="border border-exo-border rounded-xl overflow-hidden">
+                          <button
+                            onClick={() => toggleProjectExpand(proj.id)}
+                            className="w-full flex items-center justify-between px-4 py-3 bg-exo-panel hover:bg-white/5 transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              {isExpanded ? <FolderOpen size={15} className="text-exo-gold/70" /> : <Folder size={15} className="text-exo-muted" />}
+                              <span className="text-sm font-medium text-exo-text">{proj.name}</span>
+                              {files && <span className="text-[10px] text-exo-muted/60">({files.length})</span>}
+                            </div>
+                            {isExpanded ? <ChevronDown size={14} className="text-exo-muted" /> : <ChevronRight size={14} className="text-exo-muted" />}
+                          </button>
+                          {isExpanded && (
+                            <div className="bg-black/20 border-t border-exo-border/50">
+                              {isLoadingFiles ? (
+                                <div className="px-4 py-4 text-xs text-exo-muted text-center">加载中...</div>
+                              ) : !files || files.length === 0 ? (
+                                <div className="px-4 py-4 text-xs text-exo-muted/50 text-center">暂无 Obsidian 同步文件</div>
+                              ) : (
+                                files.map(file => (
+                                  <button
+                                    key={file.id}
+                                    onClick={() => openKfEdit(file.id)}
+                                    className="w-full flex items-center gap-3 px-6 py-2.5 hover:bg-white/5 transition-colors text-left group border-t border-exo-border/20 first:border-t-0"
+                                  >
+                                    <FileText size={13} className="text-exo-muted/60 shrink-0" />
+                                    <span className="text-xs text-exo-text/80 group-hover:text-exo-text truncate flex-1">{file.title || file.name || file.id}</span>
+                                    <Edit3 size={11} className="text-exo-muted/0 group-hover:text-exo-muted/60 transition-colors shrink-0" />
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+
+                  {/* 会话摘要 */}
+                  {memSubTab === 'proposals' && (
+                    convLoading ? (
+                      <div className="text-center py-16 text-exo-muted text-sm">加载会话列表...</div>
+                    ) : conversations.length === 0 ? (
+                      <div className="text-center py-16 text-exo-muted text-sm">暂无会话</div>
+                    ) : conversations.map(conv => {
+                      const isExpanded = expandedConvs.has(conv.id);
+                      const proposals = convProposals[conv.id];
+                      const isLoadingProposals = loadingConvs.has(conv.id);
+                      return (
+                        <div key={conv.id} className="border border-exo-border rounded-xl overflow-hidden">
+                          <button
+                            onClick={() => toggleConvExpand(conv.id)}
+                            className="w-full flex items-center justify-between px-4 py-3 bg-exo-panel hover:bg-white/5 transition-colors"
+                          >
+                            <div className="flex items-center gap-3 overflow-hidden">
+                              <MessageSquare size={14} className={isExpanded ? 'text-exo-gold/70 shrink-0' : 'text-exo-muted/50 shrink-0'} />
+                              <span className="text-sm font-medium text-exo-text truncate">{conv.name || `Session #${conv.id}`}</span>
+                              {proposals && <span className="text-[10px] text-exo-muted/60 shrink-0">({proposals.length})</span>}
+                            </div>
+                            {isExpanded ? <ChevronDown size={14} className="text-exo-muted shrink-0" /> : <ChevronRight size={14} className="text-exo-muted shrink-0" />}
+                          </button>
+                          {isExpanded && (
+                            <div className="bg-black/20 border-t border-exo-border/50">
+                              {isLoadingProposals ? (
+                                <div className="px-4 py-4 text-xs text-exo-muted text-center">加载中...</div>
+                              ) : !proposals || proposals.length === 0 ? (
+                                <div className="px-4 py-4 text-xs text-exo-muted/50 text-center">暂无摘要</div>
+                              ) : (
+                                proposals.map(proposal => (
+                                  <button
+                                    key={proposal.id}
+                                    onClick={() => setEditingProposal({ proposal, conversationName: conv.name || `Session #${conv.id}`, conversationId: conv.id })}
+                                    className="w-full flex items-start gap-3 px-6 py-3 hover:bg-white/5 transition-colors text-left group border-t border-exo-border/30 first:border-t-0"
+                                  >
+                                    <div className="flex flex-col flex-1 overflow-hidden gap-0.5">
+                                      <span className="text-[10px] text-exo-muted/50 font-mono">
+                                        {proposal.created_at ? new Date(proposal.created_at).toLocaleDateString('zh-CN') : '—'}
+                                      </span>
+                                      <span className="text-xs text-exo-text/80 group-hover:text-exo-text line-clamp-2 leading-relaxed">{proposal.content || '（无内容）'}</span>
+                                    </div>
+                                    <Edit3 size={11} className="text-exo-muted/0 group-hover:text-exo-muted/60 transition-colors shrink-0 mt-1" />
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
 // App 根组件 (完整状态与 Modals)
 // ==========================================
 export default function App() {
@@ -1369,6 +1887,7 @@ export default function App() {
           />
         )}
         {currentTab === 'profile' && <UserProfile />}
+        {currentTab === 'settings' && <SettingsPanel projects={projects} presets={presets} />}
       </div>
 
       {/* Sidebar: Order 2 on Mobile (Bottom), Order 1 on Desktop (Left) */}
