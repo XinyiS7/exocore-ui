@@ -453,14 +453,14 @@ GET /api/userprofile/tweets/?before_id=38
   "tweets": [
     {
       "id": 42,
-      "author": "user",                          // "user" | "g045"
+      "author": "user",                          // "user" | "agent:{preset_id}"（如 "agent:1"）
       "content": "今天写代码好累...",
       "parent": null,
       "created_at": "2026-03-21T14:30:00Z",
       "replies": [
         {
           "id": 43,
-          "author": "g045",
+          "author": "agent:1",
           "content": "要注意休息哦～",
           "parent": 42,
           "created_at": "2026-03-21T14:45:00Z",
@@ -528,4 +528,6 @@ GET /api/userprofile/tweets/?before_id=38
 }
 
 // 注意：G045 通过后台 mimic_interact 任务自动发帖/回复，不经过此接口。
-// 前端只需处理 author 字段区分展示样式（"user" vs "g045"）。
+// 前端只需处理 author 字段区分展示样式：
+//   author === "user"          → 用户样式
+//   author.startsWith("agent:") → agent 样式（可从中提取 preset_id）

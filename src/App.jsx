@@ -105,7 +105,7 @@ export default function App() {
             refreshPresets={refreshPresets}
           />
         )}
-        {currentTab === 'profile' && <UserProfile />}
+        {currentTab === 'profile' && <UserProfile presets={presets} />}
         {currentTab === 'settings' && <SettingsPanel projects={projects} presets={presets} />}
       </div>
 
