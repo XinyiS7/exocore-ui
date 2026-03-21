@@ -323,7 +323,7 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
                   : localStorage.removeItem(`exo_draft_${activeSessionId}`);
               }
             }}
-            onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); handleSend(); } }}
+            onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey && !e.isComposing) { e.preventDefault(); handleSend(); } }}
             onPaste={e => {
               const items = Array.from(e.clipboardData?.items || []);
               const imageFiles = items

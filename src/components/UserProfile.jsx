@@ -196,7 +196,7 @@ const UserProfile = ({ presets }) => {
                   rows={2}
                   value={replyContent}
                   onChange={e => setReplyContent(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); handleReply(tweet.id); } }}
+                  onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey && !e.isComposing) { e.preventDefault(); handleReply(tweet.id); } }}
                   placeholder={`回复 ${name}...`}
                   autoFocus
                   className="flex-1 bg-black/50 border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text outline-none focus:border-exo-gold/50 resize-none transition-colors"
@@ -241,7 +241,7 @@ const UserProfile = ({ presets }) => {
                   rows={3}
                   value={newPostContent}
                   onChange={e => setNewPostContent(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); handlePost(); } }}
+                  onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey && !e.isComposing) { e.preventDefault(); handlePost(); } }}
                   placeholder="有什么想说的？"
                   className="w-full bg-transparent text-sm text-exo-text outline-none resize-none placeholder:text-exo-muted/40"
                 />
