@@ -177,59 +177,6 @@ const UserProfile = ({ presets }) => {
     }
   };
 
-  const TweetCard = ({ tweet, depth }) => {
-    const { name, avatar, isUser } = getAuthorInfo(tweet);
-    const isReplyingHere = replyingToId === tweet.id;
-
-    return (
-      <div className={depth > 0 ? 'ml-10 pl-4 border-l-2 border-exo-border/30' : ''}>
-        <div className="flex gap-3 py-3">
-          <img
-            src={avatar}
-            className={`w-9 h-9 rounded-full border shrink-0 bg-black object-cover ${isUser ? 'border-white/20' : 'border-exo-gold/50'}`}
-            alt={name}
-          />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-baseline gap-2 mb-1">
-              <span className={`text-sm font-bold ${isUser ? 'text-exo-text' : 'text-exo-gold'}`}>{name}</span>
-              <span className="text-[10px] text-exo-muted/50 font-mono">{formatTime(tweet.created_at)}</span>
-            </div>
-            <p className="text-sm text-exo-text/90 leading-relaxed whitespace-pre-wrap break-words">{tweet.content}</p>
-            <button
-              onClick={() => { setReplyingToId(isReplyingHere ? null : tweet.id); setReplyContent(''); }}
-              className="mt-2 text-[11px] text-exo-muted/50 hover:text-exo-gold transition-colors flex items-center gap-1"
-            >
-              <CornerDownLeft size={11} /> 回复
-            </button>
-            {isReplyingHere && (
-              <div className="mt-3 flex gap-2 items-end">
-                <textarea
-                  rows={2}
-                  value={replyContent}
-                  onChange={e => setReplyContent(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey && !e.isComposing) { e.preventDefault(); handleReply(tweet.id); } }}
-                  placeholder={`回复 ${name}...`}
-                  autoFocus
-                  className="flex-1 bg-black/50 border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text outline-none focus:border-exo-gold/50 resize-none transition-colors"
-                />
-                <button
-                  onClick={() => handleReply(tweet.id)}
-                  disabled={!replyContent.trim() || isSubmittingReply}
-                  className="px-3 py-2 bg-exo-gold text-black text-xs font-bold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition-colors flex items-center gap-1 shrink-0"
-                >
-                  <Send size={12} />
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-        {tweet.replies?.map(reply => (
-          <TweetCard key={reply.id} tweet={reply} depth={depth + 1} />
-        ))}
-      </div>
-    );
-  };
-
   return (
     <div className="flex-1 flex flex-col h-full bg-exo-bg overflow-hidden">
       {cropFile && (
@@ -301,7 +248,18 @@ const UserProfile = ({ presets }) => {
           ) : (
             <div className="divide-y divide-exo-border/20">
               {tweets.map(tweet => (
-                <TweetCard key={tweet.id} tweet={tweet} depth={0} />
+                <TweetCard
+                  key={tweet.id}
+                  tweet={tweet}
+                  depth={0}
+                  replyingToId={replyingToId}
+                  replyContent={replyContent}
+                  setReplyContent={setReplyContent}
+                  setReplyingToId={setReplyingToId}
+                  isSubmittingReply={isSubmittingReply}
+                  handleReply={handleReply}
+                  getAuthorInfo={getAuthorInfo}
+                />
               ))}
             </div>
           )}
@@ -320,6 +278,80 @@ const UserProfile = ({ presets }) => {
           )}
         </div>
       </div>
+    </div>
+  );
+};
+
+const TweetCard = ({
+  tweet,
+  depth,
+  replyingToId,
+  replyContent,
+  setReplyContent,
+  setReplyingToId,
+  isSubmittingReply,
+  handleReply,
+  getAuthorInfo
+}) => {
+  const { name, avatar, isUser } = getAuthorInfo(tweet);
+  const isReplyingHere = replyingToId === tweet.id;
+
+  return (
+    <div className={depth > 0 ? 'ml-10 pl-4 border-l-2 border-exo-border/30' : ''}>
+      <div className="flex gap-3 py-3">
+        <img
+          src={avatar}
+          className={`w-9 h-9 rounded-full border shrink-0 bg-black object-cover ${isUser ? 'border-white/20' : 'border-exo-gold/50'}`}
+          alt={name}
+        />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-baseline gap-2 mb-1">
+            <span className={`text-sm font-bold ${isUser ? 'text-exo-text' : 'text-exo-gold'}`}>{name}</span>
+            <span className="text-[10px] text-exo-muted/50 font-mono">{formatTime(tweet.created_at)}</span>
+          </div>
+          <p className="text-sm text-exo-text/90 leading-relaxed whitespace-pre-wrap break-words">{tweet.content}</p>
+          <button
+            onClick={() => { setReplyingToId(isReplyingHere ? null : tweet.id); setReplyContent(''); }}
+            className="mt-2 text-[11px] text-exo-muted/50 hover:text-exo-gold transition-colors flex items-center gap-1"
+          >
+            <CornerDownLeft size={11} /> 回复
+          </button>
+          {isReplyingHere && (
+            <div className="mt-3 flex gap-2 items-end">
+              <textarea
+                rows={2}
+                value={replyContent}
+                onChange={e => setReplyContent(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey && !e.isComposing) { e.preventDefault(); handleReply(tweet.id); } }}
+                placeholder={`回复 ${name}...`}
+                autoFocus
+                className="flex-1 bg-black/50 border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text outline-none focus:border-exo-gold/50 resize-none transition-colors"
+              />
+              <button
+                onClick={() => handleReply(tweet.id)}
+                disabled={!replyContent.trim() || isSubmittingReply}
+                className="px-3 py-2 bg-exo-gold text-black text-xs font-bold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition-colors flex items-center gap-1 shrink-0"
+              >
+                <Send size={12} />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+      {tweet.replies?.map(reply => (
+        <TweetCard
+          key={reply.id}
+          tweet={reply}
+          depth={depth + 1}
+          replyingToId={replyingToId}
+          replyContent={replyContent}
+          setReplyContent={setReplyContent}
+          setReplyingToId={setReplyingToId}
+          isSubmittingReply={isSubmittingReply}
+          handleReply={handleReply}
+          getAuthorInfo={getAuthorInfo}
+        />
+      ))}
     </div>
   );
 };

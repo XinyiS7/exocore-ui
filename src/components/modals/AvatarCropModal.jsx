@@ -24,46 +24,36 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }) => {
     setReady(true);
   };
 
-  // Pointer Events + setPointerCapture：原生捕获拖拽，不需要 window 监听器
-  const onPointerDown = (e) => {
-    e.currentTarget.setPointerCapture(e.pointerId);
-    dragRef.current = { x: e.clientX, y: e.clientY };
-  };
-  const onPointerMove = (e) => {
-    if (!dragRef.current) return;
-    setPos(p => ({ x: p.x + e.clientX - dragRef.current.x, y: p.y + e.clientY - dragRef.current.y }));
-    dragRef.current = { x: e.clientX, y: e.clientY };
-  };
-  const onPointerUp = () => { dragRef.current = null; };
-
-  const onTouchStart = (e) => {
-    if (e.touches.length === 1) {
-      dragRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      pinchRef.current = null;
-    } else if (e.touches.length === 2) {
-      dragRef.current = null;
-      pinchRef.current = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
-    }
-  };
-  const onTouchEnd = () => { dragRef.current = null; pinchRef.current = null; };
-
-  // Non-passive handlers to allow preventDefault
+  // 所有交互事件统一用 native addEventListener，绕开 React 合成事件与 setPointerCapture 的兼容问题
   useEffect(() => {
     const el = cropContainerRef.current;
     if (!el) return;
 
-    const handleTouchMove = (e) => {
+    // 拖拽：Pointer Events（覆盖鼠标和单指触摸）
+    const onDown = (e) => {
+      el.setPointerCapture(e.pointerId);
+      dragRef.current = { x: e.clientX, y: e.clientY };
+    };
+    const onMove = (e) => {
+      if (!dragRef.current) return;
+      setPos(p => ({ x: p.x + e.clientX - dragRef.current.x, y: p.y + e.clientY - dragRef.current.y }));
+      dragRef.current = { x: e.clientX, y: e.clientY };
+    };
+    const onUp = () => { dragRef.current = null; };
+
+    // 双指缩放：Touch Events（pinchRef 仅在双指时设置）
+    const onTouchStart = (e) => {
+      if (e.touches.length === 2) {
+        pinchRef.current = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+      }
+    };
+    const onTouchEnd = () => { pinchRef.current = null; };
+    const onTouchMove = (e) => {
       e.preventDefault();
-      if (e.touches.length === 1 && dragRef.current) {
-        setPos(p => ({
-          x: p.x + e.touches[0].clientX - dragRef.current.x,
-          y: p.y + e.touches[0].clientY - dragRef.current.y,
-        }));
-        dragRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      } else if (e.touches.length === 2 && pinchRef.current !== null) {
+      if (e.touches.length === 2 && pinchRef.current !== null) {
         const dist = Math.hypot(
           e.touches[0].clientX - e.touches[1].clientX,
           e.touches[0].clientY - e.touches[1].clientY
@@ -73,16 +63,29 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }) => {
       }
     };
 
-    const handleWheel = (e) => {
+    // 滚轮缩放
+    const onWheel = (e) => {
       e.preventDefault();
       setScale(s => Math.min(10, Math.max(0.1, s * (e.deltaY > 0 ? 0.9 : 1.1))));
     };
 
-    el.addEventListener('touchmove', handleTouchMove, { passive: false });
-    el.addEventListener('wheel', handleWheel, { passive: false });
+    el.addEventListener('pointerdown', onDown);
+    el.addEventListener('pointermove', onMove);
+    el.addEventListener('pointerup', onUp);
+    el.addEventListener('pointercancel', onUp);
+    el.addEventListener('touchstart', onTouchStart);
+    el.addEventListener('touchend', onTouchEnd);
+    el.addEventListener('touchmove', onTouchMove, { passive: false });
+    el.addEventListener('wheel', onWheel, { passive: false });
     return () => {
-      el.removeEventListener('touchmove', handleTouchMove);
-      el.removeEventListener('wheel', handleWheel);
+      el.removeEventListener('pointerdown', onDown);
+      el.removeEventListener('pointermove', onMove);
+      el.removeEventListener('pointerup', onUp);
+      el.removeEventListener('pointercancel', onUp);
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchend', onTouchEnd);
+      el.removeEventListener('touchmove', onTouchMove);
+      el.removeEventListener('wheel', onWheel);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -118,7 +121,7 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }) => {
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm"
-      onClick={onCancel}
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onCancel(); }}
     >
       <div
         className="bg-exo-panel border border-exo-border rounded-2xl p-6 flex flex-col items-center gap-4"
@@ -133,16 +136,10 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }) => {
         <div
           ref={cropContainerRef}
           className="relative rounded-full border-2 border-exo-gold/60 overflow-hidden cursor-move select-none bg-black"
-          style={{ width: CROP_SIZE, height: CROP_SIZE, flexShrink: 0 }}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
-          onTouchStart={onTouchStart}
-          onTouchEnd={onTouchEnd}
+          style={{ width: CROP_SIZE, height: CROP_SIZE, flexShrink: 0, touchAction: 'none' }}
         >
           {/* Flex wrapper centers the image so transform: translate+scale works cleanly */}
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
             <img
               ref={imgRef}
               src={blobUrl || undefined}
