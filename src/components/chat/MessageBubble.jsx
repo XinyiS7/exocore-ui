@@ -4,16 +4,14 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 
-const MessageBubble = React.memo(({ msg, agentName, agentAvatarSeed, userNick, userAvatarSeed }) => {
+const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, userAvatarUrl }) => {
   const isUser = msg.role === 'user';
   return (
     <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
       <div className={`flex items-center gap-2 mb-1.5 ${isUser ? 'flex-row-reverse' : ''}`}>
         <img
-          src={isUser
-            ? `https://api.dicebear.com/7.x/notionists/svg?seed=${userAvatarSeed || 'Elysia'}`
-            : `https://api.dicebear.com/7.x/bottts/svg?seed=${agentAvatarSeed || 'Core'}`}
-          className={`w-7 h-7 rounded-full border bg-black ${isUser ? 'border-white/20' : 'border-exo-gold/40'}`}
+          src={isUser ? userAvatarUrl : agentAvatarUrl}
+          className={`w-7 h-7 rounded-full border bg-black object-cover ${isUser ? 'border-white/20' : 'border-exo-gold/40'}`}
           alt={isUser ? (userNick || 'You') : (agentName || 'Core')}
         />
         <span className={`text-[11px] font-semibold tracking-wide ${isUser ? 'text-white/40' : 'text-exo-gold/60'}`}>

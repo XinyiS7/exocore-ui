@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Activity, CornerDownLeft } from 'lucide-react';
+import { Send, Activity, CornerDownLeft, Camera } from 'lucide-react';
 import { baseUrl, getCsrfToken } from '../utils/api';
+import { getUserAvatarUrl, getAgentAvatarUrl } from '../utils/avatar';
+import AvatarCropModal from './modals/AvatarCropModal';
 
 const formatTime = (dateStr) => {
   const date = new Date(dateStr);
@@ -27,15 +29,24 @@ const UserProfile = ({ presets }) => {
   const [replyContent, setReplyContent] = useState('');
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
   const bottomRef = useRef(null);
+  const avatarInputRef = useRef(null);
+  const [userAvatarUrl, setUserAvatarUrl] = useState(() => getUserAvatarUrl());
+  const [cropFile, setCropFile] = useState(null);
 
   const userNick = localStorage.getItem('exo_user_nick') || 'You';
-  const userAvatarSeed = localStorage.getItem('exo_user_avatar_seed') || 'Elysia';
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCropFile(file);
+    e.target.value = '';
+  };
 
   const getAuthorInfo = (tweet) => {
     if (tweet.author === 'user') {
       return {
         name: userNick,
-        avatar: `https://api.dicebear.com/7.x/notionists/svg?seed=${userAvatarSeed}`,
+        avatar: userAvatarUrl,
         isUser: true,
       };
     }
@@ -45,7 +56,7 @@ const UserProfile = ({ presets }) => {
     const name = preset?.name || 'G045';
     return {
       name,
-      avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${name}`,
+      avatar: getAgentAvatarUrl(presetId, name),
       isUser: false,
     };
   };
@@ -175,7 +186,7 @@ const UserProfile = ({ presets }) => {
         <div className="flex gap-3 py-3">
           <img
             src={avatar}
-            className={`w-9 h-9 rounded-full border shrink-0 bg-black ${isUser ? 'border-white/20' : 'border-exo-gold/50'}`}
+            className={`w-9 h-9 rounded-full border shrink-0 bg-black object-cover ${isUser ? 'border-white/20' : 'border-exo-gold/50'}`}
             alt={name}
           />
           <div className="flex-1 min-w-0">
@@ -221,6 +232,17 @@ const UserProfile = ({ presets }) => {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-exo-bg overflow-hidden">
+      {cropFile && (
+        <AvatarCropModal
+          file={cropFile}
+          onConfirm={(dataUrl) => {
+            localStorage.setItem('exo_user_avatar_url', dataUrl);
+            setUserAvatarUrl(dataUrl);
+            setCropFile(null);
+          }}
+          onCancel={() => setCropFile(null)}
+        />
+      )}
       <div className="h-14 border-b border-exo-border flex items-center px-6 bg-exo-panel/50 backdrop-blur-md shrink-0">
         <span className="font-bold text-sm text-exo-text tracking-widest uppercase">Timeline</span>
       </div>
@@ -231,11 +253,21 @@ const UserProfile = ({ presets }) => {
           {/* 发帖框 */}
           <div className="bg-exo-panel border border-exo-border rounded-xl p-4 mb-4">
             <div className="flex gap-3">
-              <img
-                src={`https://api.dicebear.com/7.x/notionists/svg?seed=${userAvatarSeed}`}
-                className="w-10 h-10 rounded-full border border-white/20 shrink-0 bg-black"
-                alt={userNick}
-              />
+              <div
+                className="relative shrink-0 cursor-pointer group"
+                onClick={() => avatarInputRef.current?.click()}
+                title="点击更换头像"
+              >
+                <img
+                  src={userAvatarUrl}
+                  className="w-10 h-10 rounded-full border border-white/20 bg-black object-cover"
+                  alt={userNick}
+                />
+                <div className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                  <Camera size={12} className="text-white" />
+                </div>
+                <input type="file" ref={avatarInputRef} accept="image/*" className="hidden" onChange={handleAvatarChange} />
+              </div>
               <div className="flex-1">
                 <textarea
                   rows={3}

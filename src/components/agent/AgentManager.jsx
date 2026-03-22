@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   BrainCircuit, Cpu, Hash, Edit3, Trash2,
-  GripVertical, Play, Sparkles, Clock
+  GripVertical, Play, Sparkles, Clock, Camera
 } from 'lucide-react';
 import { baseUrl } from '../../utils/api';
+import { getAgentAvatarUrl } from '../../utils/avatar';
 import EditPresetModal from '../modals/EditPresetModal';
+import AvatarCropModal from '../modals/AvatarCropModal';
 import MemoryAnchorTicker from './MemoryAnchorTicker';
 
 const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, refreshPresets }) => {
@@ -47,7 +49,30 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
   const AgentCard = ({ preset, isG045, list }) => {
     const isDraggingThis = dragging === preset.id;
     const isDragOver = dragOver === preset.id && !isDraggingThis;
+    const avatarInputRef = useRef(null);
+    const [avatarUrl, setAvatarUrl] = useState(() => getAgentAvatarUrl(preset.id, preset.name));
+    const [cropFile, setCropFile] = useState(null);
+
+    const handleAvatarChange = (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      setCropFile(file);
+      e.target.value = '';
+    };
+
     return (
+      <>
+      {cropFile && (
+        <AvatarCropModal
+          file={cropFile}
+          onConfirm={(dataUrl) => {
+            localStorage.setItem(`exo_agent_avatar_${preset.id}`, dataUrl);
+            setAvatarUrl(dataUrl);
+            setCropFile(null);
+          }}
+          onCancel={() => setCropFile(null)}
+        />
+      )}
       <div
         className={`relative flex flex-col p-5 rounded-xl border transition-all hover:bg-white/[0.02] ${
           isG045
@@ -60,20 +85,34 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
         onDragOver={(e) => { e.preventDefault(); setDragOver(preset.id); }}
         onDrop={() => { handleDrop(dragging, preset.id, list); setDragging(null); setDragOver(null); }}
       >
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-4">
-            <div className="cursor-grab text-exo-muted hover:text-white"><GripVertical size={16} /></div>
-            <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${preset.name}`} className={`w-12 h-12 rounded-lg border bg-black ${isG045 ? 'border-exo-gold/50' : 'border-exo-border'}`} alt="Avatar" />
-            <div>
+        {/* 头部：flex-wrap 保证窄卡片上按钮会换行而不溢出 */}
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="cursor-grab text-exo-muted hover:text-white shrink-0"><GripVertical size={16} /></div>
+
+            {/* 头像 + 上传 */}
+            <div
+              className="relative shrink-0 cursor-pointer group"
+              onClick={() => avatarInputRef.current?.click()}
+              title="点击更换头像"
+            >
+              <img src={avatarUrl} className={`w-12 h-12 rounded-lg border bg-black object-cover ${isG045 ? 'border-exo-gold/50' : 'border-exo-border'}`} alt="Avatar" />
+              <div className="absolute inset-0 rounded-lg bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                <Camera size={14} className="text-white" />
+              </div>
+              <input type="file" ref={avatarInputRef} accept="image/*" className="hidden" onChange={handleAvatarChange} />
+            </div>
+
+            <div className="min-w-0">
               <h3 className={`text-base font-bold flex items-center gap-2 ${isG045 ? 'text-exo-gold' : 'text-exo-text'}`}>
-                {preset.name}
-                {isG045 && <Sparkles size={14} className="text-exo-gold animate-pulse" />}
+                <span className="truncate">{preset.name}</span>
+                {isG045 && <Sparkles size={14} className="text-exo-gold animate-pulse shrink-0" />}
               </h3>
-              <p className="text-xs text-exo-muted font-mono mt-0.5">{preset.default_model}</p>
+              <p className="text-xs text-exo-muted font-mono mt-0.5 truncate">{preset.default_model}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setEditTarget(preset)}
               className="p-1.5 text-exo-muted hover:text-white bg-black/30 rounded border border-transparent hover:border-exo-border transition-all" title="Edit Core"
@@ -117,6 +156,7 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
           </div>
         )}
       </div>
+      </>
     );
   };
 

@@ -4,6 +4,7 @@ import {
   Paperclip, Send, Cpu, Activity
 } from 'lucide-react';
 import { baseUrl, getCsrfToken, AVAILABLE_MODELS } from '../../utils/api';
+import { getUserAvatarUrl, getAgentAvatarUrl } from '../../utils/avatar';
 import MessageBubble from './MessageBubble';
 
 const MSGS_PER_PAGE = 40;
@@ -22,7 +23,7 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [lastTelemetry, setLastTelemetry] = useState(null);
   const [userNick] = useState(() => localStorage.getItem('exo_user_nick') || 'You');
-  const [userAvatarSeed] = useState(() => localStorage.getItem('exo_user_avatar_seed') || 'Elysia');
+  const [userAvatarUrl] = useState(() => getUserAvatarUrl());
 
   const allHistoryRef = useRef([]);
   const visibleStartRef = useRef(0);
@@ -242,8 +243,9 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
           </div>
         )}
         {messages.map((msg, idx) => {
-          const agentName = presets.find(x => x.id === sessionInfo?.agent_preset_id)?.name || 'Core';
-          return <MessageBubble key={msg.id || idx} msg={msg} agentName={agentName} agentAvatarSeed={agentName} userNick={userNick} userAvatarSeed={userAvatarSeed} />;
+          const agentPreset = presets.find(x => x.id === sessionInfo?.agent_preset_id);
+          const agentName = agentPreset?.name || 'Core';
+          return <MessageBubble key={msg.id || idx} msg={msg} agentName={agentName} agentAvatarUrl={getAgentAvatarUrl(sessionInfo?.agent_preset_id, agentName)} userNick={userNick} userAvatarUrl={userAvatarUrl} />;
         })}
         <div ref={messagesEndRef} />
       </div>
