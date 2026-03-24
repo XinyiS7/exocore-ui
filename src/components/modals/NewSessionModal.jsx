@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Activity, Folder, Check } from 'lucide-react';
+import { Plus, X, Activity, Folder, Check, MessageSquare, Code2 } from 'lucide-react';
 import { baseUrl, getCsrfToken } from '../../utils/api';
 
 const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, onSuccess }) => {
   const [name, setName] = useState("");
   const [selectedPresetId, setSelectedPresetId] = useState("");
   const [selectedProjectIds, setSelectedProjectIds] = useState([]);
+  const [sessionType, setSessionType] = useState("chat");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
     setName("");
+    setSessionType("chat");
     setSelectedProjectIds(initialContext?.projectId ? [initialContext.projectId] : []);
 
     if (initialContext?.presetId && presets.find(p => p.id === initialContext.presetId)) {
@@ -36,7 +38,8 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
     const payload = {
       preset_id: parseInt(selectedPresetId),
       name: name.trim() || undefined,
-      project_ids: selectedProjectIds
+      project_ids: selectedProjectIds,
+      session_type: sessionType,
     };
 
     try {
@@ -85,6 +88,24 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
                     <span className="text-[10px] opacity-70 font-mono">{preset.default_model}</span>
                   </div>
                   {parseInt(selectedPresetId) === preset.id && <Check size={16} className={preset.agent_type === 'g045' ? 'text-exo-gold' : 'text-white'} />}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-exo-muted uppercase">Session Type</label>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { value: 'chat', label: 'Chat', icon: MessageSquare, desc: 'Conversation mode' },
+                { value: 'code', label: 'Code', icon: Code2,         desc: 'Analytic tools on' },
+              ].map(({ value, label, icon: Icon, desc }) => (
+                <div key={value} onClick={() => setSessionType(value)}
+                  className={`p-3 rounded-lg border cursor-pointer flex items-center gap-2 transition-all ${sessionType === value ? 'bg-exo-gold/10 border-exo-gold text-exo-gold' : 'bg-black/30 border-exo-border text-exo-muted hover:border-exo-border/80'}`}>
+                  <Icon size={14} />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold">{label}</span>
+                    <span className="text-[10px] opacity-60">{desc}</span>
+                  </div>
                 </div>
               ))}
             </div>

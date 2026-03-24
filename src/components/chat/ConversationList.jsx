@@ -4,7 +4,7 @@ import {
   Folder, FolderOpen, Hash, MoreVertical, Edit2, Trash2,
   ShieldAlert, Users, Check
 } from 'lucide-react';
-import { baseUrl } from '../../utils/api';
+import { baseUrl, getCsrfToken } from '../../utils/api';
 
 const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refreshKey, openDestructor, openNewSession, activeFileProjectId, setActiveFileProjectId, showConvList, onClose }) => {
   const [conversations, setConversations] = useState([]);
@@ -43,8 +43,33 @@ const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refre
         <button onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === conv.id ? null : conv.id); }} className={`p-1 rounded hover:bg-white/10 ${activeMenuId === conv.id ? 'opacity-100 text-exo-gold' : 'opacity-0 group-hover:opacity-100'}`}><MoreVertical size={14} /></button>
         {activeMenuId === conv.id && (
           <div className="absolute right-0 top-6 w-28 bg-[#1a1b23] border border-exo-border rounded-md shadow-xl z-50 overflow-hidden text-xs">
-            <div className="px-3 py-2 hover:bg-white/5 flex items-center gap-2 text-exo-text" onClick={(e) => { e.stopPropagation(); setActiveMenuId(null); const newName = prompt("Rename:", conv.name); if(newName) setConversations(p => p.map(c => c.id === conv.id ? {...c, name: newName} : c)); }}><Edit2 size={12} /> Rename</div>
-            <div className="px-3 py-2 hover:bg-red-500/10 flex items-center gap-2 text-red-400" onClick={(e) => { e.stopPropagation(); setActiveMenuId(null); openDestructor({ title: conv.name, description: "归档或彻底删除？", onArchive: () => setConversations(p => p.filter(c=>c.id!==conv.id)), onDelete: () => setConversations(p => p.filter(c=>c.id!==conv.id)) }); }}><Trash2 size={12} /> Delete</div>
+            <div className="px-3 py-2 hover:bg-white/5 flex items-center gap-2 text-exo-text" onClick={(e) => {
+              e.stopPropagation(); setActiveMenuId(null);
+              const newName = prompt("Rename:", conv.name);
+              if (newName && newName !== conv.name) {
+                fetch(`${baseUrl}/api/agents/conversations/${conv.id}/`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                  credentials: 'include',
+                  body: JSON.stringify({ name: newName }),
+                }).then(r => { if (r.ok) setConversations(p => p.map(c => c.id === conv.id ? {...c, name: newName} : c)); });
+              }
+            }}><Edit2 size={12} /> Rename</div>
+            <div className="px-3 py-2 hover:bg-red-500/10 flex items-center gap-2 text-red-400" onClick={(e) => {
+              e.stopPropagation(); setActiveMenuId(null);
+              openDestructor({
+                title: conv.name,
+                description: "归档或彻底删除？",
+                onArchive: () => setConversations(p => p.filter(c => c.id !== conv.id)),
+                onDelete: () => {
+                  fetch(`${baseUrl}/api/agents/conversations/${conv.id}/`, {
+                    method: 'DELETE',
+                    headers: { 'X-CSRFToken': getCsrfToken() },
+                    credentials: 'include',
+                  }).then(r => { if (r.ok) setConversations(p => p.filter(c => c.id !== conv.id)); });
+                },
+              });
+            }}><Trash2 size={12} /> Delete</div>
           </div>
         )}
       </div>
@@ -88,7 +113,7 @@ const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refre
                     {isExpanded && (
                       <div className="pl-6 pr-1 space-y-1 border-l-2 border-exo-border/50 ml-3 py-1">
                         <div
-                          onClick={() => { setActiveFileProjectId(proj.id); setActiveSessionId(null); }}
+                          onClick={() => { setActiveFileProjectId(proj.id); onClose(); }}
                           className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer text-xs font-bold transition-all ${
                             activeFileProjectId === proj.id
                               ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'

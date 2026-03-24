@@ -145,7 +145,7 @@ const SettingsPanel = ({ projects, presets }) => {
                               ) : !files || files.length === 0 ? (
                                 <div className="px-4 py-4 text-xs text-exo-muted/50 text-center">暂无 Obsidian 同步文件</div>
                               ) : (
-                                files.map(file => (
+                                files.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).map(file => (
                                   <button
                                     key={file.id}
                                     onClick={() => openKfEdit(file.id)}
@@ -193,7 +193,7 @@ const SettingsPanel = ({ projects, presets }) => {
                               ) : !proposals || proposals.length === 0 ? (
                                 <div className="px-4 py-4 text-xs text-exo-muted/50 text-center">暂无摘要</div>
                               ) : (
-                                proposals.map(proposal => (
+                                proposals.slice().reverse().map(proposal => (
                                   <button
                                     key={proposal.id}
                                     onClick={() => setEditingProposal({ proposal, conversationName: conv.name || `Session #${conv.id}`, conversationId: conv.id })}

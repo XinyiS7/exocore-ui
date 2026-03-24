@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Menu, Save, Plus, RefreshCw, X, FileText,
-  Paperclip, Send, Cpu, Activity
+  Paperclip, Send, Cpu, Activity, Files
 } from 'lucide-react';
 import { baseUrl, getCsrfToken, AVAILABLE_MODELS } from '../../utils/api';
 import { getUserAvatarUrl, getAgentAvatarUrl } from '../../utils/avatar';
@@ -24,6 +24,13 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
   const [lastTelemetry, setLastTelemetry] = useState(null);
   const [userNick] = useState(() => localStorage.getItem('exo_user_nick') || 'You');
   const [userAvatarUrl] = useState(() => getUserAvatarUrl());
+
+  const [showAttachPanel, setShowAttachPanel] = useState(false);
+  const [sessionAttachments, setSessionAttachments] = useState([]);
+  const [pendingAttachments, setPendingAttachments] = useState([]);
+  const [newAttachPath, setNewAttachPath] = useState('');
+  const [newAttachName, setNewAttachName] = useState('');
+  const [isAddingAttach, setIsAddingAttach] = useState(false);
 
   const allHistoryRef = useRef([]);
   const visibleStartRef = useRef(0);
@@ -58,6 +65,11 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
     setMessages([]);
     setHasMore(false);
     setLastTelemetry(null);
+    setSessionAttachments([]);
+    setPendingAttachments([]);
+    setIsAddingAttach(false);
+    setNewAttachPath('');
+    setNewAttachName('');
 
     const savedDraft = localStorage.getItem(`exo_draft_${activeSessionId}`);
     setInputValue(savedDraft ?? '');
@@ -86,6 +98,11 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
         requestAnimationFrame(() => scrollToBottom(false));
       })
       .catch(err => console.error("获取失败:", err));
+
+    fetch(`${baseUrl}/api/agents/conversations/${activeSessionId}/attachments/`, { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => setSessionAttachments(Array.isArray(data) ? data : []))
+      .catch(() => {});
   }, [activeSessionId, presets]);
 
   const handleSend = async () => {
@@ -105,6 +122,7 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
     setMessages(prev => [...prev, userMsg, aiMsg]);
 
     const currentInput = inputValue; const currentFiles = [...attachedFiles];
+    const currentPending = [...pendingAttachments];
     setInputValue(""); setAttachedFiles([]); setIsGenerating(true); scrollToBottom(true);
     localStorage.removeItem(`exo_draft_${activeSessionId}`);
 
@@ -114,12 +132,16 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
         content: currentInput,
         model: currentModel,
         thinking_level: thinkingLevel,
-        temperature: temperature
+        temperature: temperature,
+        ...(currentPending.length > 0 && { pending_attachments: currentPending }),
       };
 
       if (currentFiles.length > 0) {
         const formData = new FormData();
-        Object.keys(bodyData).forEach(k => formData.append(k, bodyData[k]));
+        Object.keys(bodyData).forEach(k => {
+          const v = bodyData[k];
+          formData.append(k, typeof v === 'object' ? JSON.stringify(v) : v);
+        });
         currentFiles.forEach(f => formData.append('files', f));
         response = await fetch(`${baseUrl}/api/agents/chat/${activeSessionId}/`, { method: 'POST', headers: { 'X-CSRFToken': getCsrfToken() }, body: formData, credentials: 'include' });
       } else {
@@ -177,7 +199,16 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
         }
         if (isNearBottom()) scrollToBottom(false);
       }
-    } catch (err) { console.error("中断:", err); } finally { setIsGenerating(false); }
+    } catch (err) { console.error("中断:", err); } finally {
+      setIsGenerating(false);
+      if (currentPending.length > 0) {
+        setPendingAttachments([]);
+        fetch(`${baseUrl}/api/agents/conversations/${activeSessionId}/attachments/`, { credentials: 'include' })
+          .then(res => res.json())
+          .then(data => setSessionAttachments(Array.isArray(data) ? data : []))
+          .catch(() => {});
+      }
+    }
   };
 
   const handleCompress = async () => {
@@ -210,6 +241,43 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
     }
   };
 
+  const handleAddAttachment = async () => {
+    const path = newAttachPath.trim();
+    if (!path) return;
+    try {
+      const res = await fetch(`${baseUrl}/api/agents/conversations/${activeSessionId}/attachments/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+        credentials: 'include',
+        body: JSON.stringify({ storage_path: path, display_name: newAttachName.trim() || undefined }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setPendingAttachments(prev => [...prev, data]);
+        setNewAttachPath('');
+        setNewAttachName('');
+        setIsAddingAttach(false);
+      } else {
+        alert(data.error || '挂载失败');
+      }
+    } catch (err) {
+      console.error('挂载附件失败:', err);
+    }
+  };
+
+  const handleRemoveAttachment = async (attId) => {
+    try {
+      await fetch(`${baseUrl}/api/agents/conversations/${activeSessionId}/attachments/${attId}/`, {
+        method: 'DELETE',
+        headers: { 'X-CSRFToken': getCsrfToken() },
+        credentials: 'include',
+      });
+      setSessionAttachments(prev => prev.filter(a => a.id !== attId));
+    } catch (err) {
+      console.error('移除附件失败:', err);
+    }
+  };
+
   return (
     <div className="flex-1 min-w-0 flex flex-col h-full bg-exo-bg relative">
       <div className="h-14 border-b border-exo-border flex items-center justify-between px-4 md:px-6 bg-exo-panel/50 backdrop-blur-md">
@@ -230,10 +298,70 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
           </div>
         </div>
         <div className="flex items-center gap-1 md:gap-2">
+          <button
+            onClick={() => setShowAttachPanel(p => !p)}
+            className={`p-2 transition-colors relative ${showAttachPanel ? 'text-exo-gold' : 'text-exo-muted hover:text-exo-gold'}`}
+            title="Session Docs"
+          >
+            <Files size={18} />
+            {(sessionAttachments.length + pendingAttachments.length) > 0 && (
+              <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-exo-gold" />
+            )}
+          </button>
           <button onClick={handleCompress} className="p-2 text-exo-muted hover:text-exo-gold transition-colors" title="Save & Compress"><Save size={18} /></button>
           <button onClick={() => openNewSession()} className="p-2 text-exo-muted hover:text-exo-gold transition-colors" title="New Session"><Plus size={18} /></button>
         </div>
       </div>
+
+      {showAttachPanel && (
+        <div className="border-b border-exo-border bg-exo-panel/30 px-4 py-3 flex flex-col gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
+            {sessionAttachments.map(att => (
+              <span key={att.id} className="flex items-center gap-1.5 text-[11px] bg-black/50 border border-exo-border rounded-lg px-2 py-1 text-exo-muted">
+                <FileText size={10} className="text-blue-400 shrink-0" />
+                <span className="max-w-[140px] truncate">{att.display_name || att.original_filename}</span>
+                <button onClick={() => handleRemoveAttachment(att.id)} className="ml-0.5 hover:text-red-400 transition-colors"><X size={10} /></button>
+              </span>
+            ))}
+            {pendingAttachments.map((att, i) => (
+              <span key={i} className="flex items-center gap-1.5 text-[11px] bg-exo-gold/5 border border-exo-gold/20 rounded-lg px-2 py-1 text-exo-gold/70">
+                <FileText size={10} className="text-exo-gold/50 shrink-0" />
+                <span className="max-w-[120px] truncate">{att.display_name || att.original_filename}</span>
+                <span className="text-[9px] opacity-50">pending</span>
+                <button onClick={() => setPendingAttachments(p => p.filter((_, j) => j !== i))} className="ml-0.5 hover:text-red-400 transition-colors"><X size={10} /></button>
+              </span>
+            ))}
+            {sessionAttachments.length === 0 && pendingAttachments.length === 0 && !isAddingAttach && (
+              <span className="text-[11px] text-exo-muted/40 font-mono">[ 无挂载文档 ]</span>
+            )}
+            {!isAddingAttach && (
+              <button onClick={() => setIsAddingAttach(true)} className="text-[11px] text-exo-muted hover:text-white flex items-center gap-1 px-2 py-1 rounded border border-dashed border-exo-border hover:border-exo-muted transition-colors">
+                <Plus size={10} /> 挂载
+              </button>
+            )}
+          </div>
+          {isAddingAttach && (
+            <div className="flex gap-2 items-center flex-wrap">
+              <input
+                value={newAttachPath}
+                onChange={e => setNewAttachPath(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleAddAttachment(); if (e.key === 'Escape') { setIsAddingAttach(false); setNewAttachPath(''); setNewAttachName(''); } }}
+                placeholder="文件绝对路径..."
+                autoFocus
+                className="flex-1 min-w-0 bg-black border border-exo-border rounded px-2 py-1 text-xs text-exo-text outline-none focus:border-exo-gold/50 transition-colors font-mono"
+              />
+              <input
+                value={newAttachName}
+                onChange={e => setNewAttachName(e.target.value)}
+                placeholder="显示名（可选）"
+                className="w-28 bg-black border border-exo-border rounded px-2 py-1 text-xs text-exo-text outline-none focus:border-exo-gold/50 transition-colors"
+              />
+              <button onClick={handleAddAttachment} className="px-2 py-1 bg-exo-gold/10 text-exo-gold border border-exo-gold/20 rounded text-xs hover:bg-exo-gold hover:text-black transition-all">确认</button>
+              <button onClick={() => { setIsAddingAttach(false); setNewAttachPath(''); setNewAttachName(''); }} className="px-2 py-1 text-exo-muted hover:text-white text-xs transition-colors">取消</button>
+            </div>
+          )}
+        </div>
+      )}
 
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 space-y-6">
         <div ref={topSentinelRef} className="h-px" />
