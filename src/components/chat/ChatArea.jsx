@@ -265,14 +265,15 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
     }
   };
 
-  const handleRemoveAttachment = async (attId) => {
+  const handleRemoveAttachment = async (att) => {
     try {
-      await fetch(`${baseUrl}/api/agents/conversations/${activeSessionId}/attachments/${attId}/`, {
+      await fetch(`${baseUrl}/api/agents/conversations/${activeSessionId}/attachments/delete/`, {
         method: 'DELETE',
-        headers: { 'X-CSRFToken': getCsrfToken() },
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
         credentials: 'include',
+        body: JSON.stringify({ source: att.source, id: att.id }),
       });
-      setSessionAttachments(prev => prev.filter(a => a.id !== attId));
+      setSessionAttachments(prev => prev.filter(a => a.id !== att.id));
     } catch (err) {
       console.error('移除附件失败:', err);
     }
@@ -320,7 +321,7 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
               <span key={att.id} className="flex items-center gap-1.5 text-[11px] bg-black/50 border border-exo-border rounded-lg px-2 py-1 text-exo-muted">
                 <FileText size={10} className="text-blue-400 shrink-0" />
                 <span className="max-w-[140px] truncate">{att.display_name || att.original_filename}</span>
-                <button onClick={() => handleRemoveAttachment(att.id)} className="ml-0.5 hover:text-red-400 transition-colors"><X size={10} /></button>
+                <button onClick={() => handleRemoveAttachment(att)} className="ml-0.5 hover:text-red-400 transition-colors"><X size={10} /></button>
               </span>
             ))}
             {pendingAttachments.map((att, i) => (
