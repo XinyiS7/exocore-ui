@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
   BookOpen, FolderOpen, Folder, ChevronDown, ChevronRight,
-  FileText, Edit3, MessageSquare
+  FileText, Edit3, MessageSquare, Brain
 } from 'lucide-react';
 import { baseUrl } from '../../utils/api';
 import KnowledgeEditModal from '../modals/KnowledgeEditModal';
 import ProposalEditPanel from '../memory/ProposalEditPanel';
+import MemoryManager from './MemoryManager';
 
 const SettingsPanel = ({ projects, presets }) => {
   const [activeSettingsTab, setActiveSettingsTab] = useState('memory');
@@ -75,6 +76,20 @@ const SettingsPanel = ({ projects, presets }) => {
     setKfEditTarget(numId);
   };
 
+  const navBtn = (tab, icon, label) => (
+    <button
+      onClick={() => setActiveSettingsTab(tab)}
+      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+        activeSettingsTab === tab
+          ? 'bg-exo-gold/10 text-exo-gold border border-exo-gold/20'
+          : 'text-exo-muted hover:text-exo-text hover:bg-white/5'
+      }`}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+
   return (
     <div className="flex-1 h-full flex overflow-hidden bg-exo-bg">
       <KnowledgeEditModal
@@ -85,13 +100,8 @@ const SettingsPanel = ({ projects, presets }) => {
 
       <div className="w-48 shrink-0 bg-exo-panel border-r border-exo-border flex flex-col py-6 px-3 gap-1">
         <div className="text-[10px] font-bold text-exo-muted uppercase tracking-widest px-2 mb-3">设置</div>
-        <button
-          onClick={() => setActiveSettingsTab('memory')}
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${activeSettingsTab === 'memory' ? 'bg-exo-gold/10 text-exo-gold border border-exo-gold/20' : 'text-exo-muted hover:text-exo-text hover:bg-white/5'}`}
-        >
-          <BookOpen size={16} />
-          记忆编辑
-        </button>
+        {navBtn('memory', <BookOpen size={16} />, '历史管理')}
+        {navBtn('memory_mgmt', <Brain size={16} />, '记忆管理')}
       </div>
 
       <div className="flex-1 min-w-0 h-full flex flex-col overflow-hidden">
@@ -219,6 +229,10 @@ const SettingsPanel = ({ projects, presets }) => {
               </>
             )}
           </>
+        )}
+
+        {activeSettingsTab === 'memory_mgmt' && (
+          <MemoryManager presets={presets} />
         )}
       </div>
     </div>

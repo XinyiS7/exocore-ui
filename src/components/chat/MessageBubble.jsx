@@ -1,11 +1,51 @@
-import React from 'react';
-import { FileText } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { FileText, Copy, Bookmark, Check, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
+import { baseUrl, getCsrfToken } from '../../utils/api';
 
 const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, userAvatarUrl }) => {
   const isUser = msg.role === 'user';
+  const [copied, setCopied] = useState(false);
+  const [showBookmark, setShowBookmark] = useState(false);
+  const [bookmarkText, setBookmarkText] = useState('');
+  const [bookmarkStatus, setBookmarkStatus] = useState(null); // null | 'saving' | 'done' | 'error'
+
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(msg.content || '').then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {});
+  }, [msg.content]);
+
+  const openBookmark = useCallback(() => {
+    setBookmarkText(msg.content || '');
+    setBookmarkStatus(null);
+    setShowBookmark(true);
+  }, [msg.content]);
+
+  const handleBookmarkSubmit = useCallback(async () => {
+    if (!bookmarkText.trim()) return;
+    setBookmarkStatus('saving');
+    try {
+      const res = await fetch(`${baseUrl}/api/memory/entries/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+        credentials: 'include',
+        body: JSON.stringify({ message_id: msg.id, raw_text: bookmarkText.trim() }),
+      });
+      if (res.ok) {
+        setBookmarkStatus('done');
+        setTimeout(() => { setShowBookmark(false); setBookmarkStatus(null); }, 1500);
+      } else {
+        setBookmarkStatus('error');
+      }
+    } catch {
+      setBookmarkStatus('error');
+    }
+  }, [msg.id, bookmarkText]);
+
   return (
     <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
       <div className={`flex items-center gap-2 mb-1.5 ${isUser ? 'flex-row-reverse' : ''}`}>
@@ -49,6 +89,65 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
             : <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{msg.content}</ReactMarkdown>}
         </div>
       </div>
+
+      {/* Action toolbar */}
+      <div className={`flex items-center gap-0.5 mt-1 ${isUser ? 'flex-row-reverse' : ''}`}>
+        <button
+          onClick={handleCopy}
+          className="p-1.5 text-exo-muted/25 hover:text-exo-muted transition-colors rounded-lg hover:bg-white/5"
+          title="复制"
+        >
+          {copied ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
+        </button>
+        {!isUser && (
+          <button
+            onClick={openBookmark}
+            className={`p-1.5 transition-colors rounded-lg hover:bg-exo-gold/10 ${showBookmark ? 'text-exo-gold' : 'text-exo-muted/25 hover:text-exo-gold'}`}
+            title="标记到长期记忆"
+          >
+            <Bookmark size={12} />
+          </button>
+        )}
+      </div>
+
+      {/* Bookmark panel */}
+      {showBookmark && (
+        <div className="w-full mt-2 border border-exo-gold/20 rounded-xl bg-exo-gold/5 overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-exo-gold/10">
+            <span className="text-xs font-medium text-exo-gold/70">划线标记到长期记忆</span>
+            <button onClick={() => setShowBookmark(false)} className="text-exo-muted/50 hover:text-white transition-colors rounded p-0.5">
+              <X size={12} />
+            </button>
+          </div>
+          <div className="p-3 space-y-2">
+            <textarea
+              value={bookmarkText}
+              onChange={e => setBookmarkText(e.target.value)}
+              rows={4}
+              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-xs text-exo-text outline-none focus:border-exo-gold/50 resize-y font-mono leading-relaxed"
+              placeholder="选取要标记的内容..."
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowBookmark(false)}
+                className="px-3 py-1 text-exo-muted hover:text-white text-xs transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleBookmarkSubmit}
+                disabled={bookmarkStatus === 'saving' || bookmarkStatus === 'done'}
+                className="px-3 py-1 bg-exo-gold/10 text-exo-gold border border-exo-gold/20 rounded-lg text-xs hover:bg-exo-gold hover:text-black transition-all disabled:opacity-50"
+              >
+                {bookmarkStatus === 'saving' ? '提交中...'
+                  : bookmarkStatus === 'done' ? '✓ 已提交'
+                  : bookmarkStatus === 'error' ? '失败，重试'
+                  : '发送到记忆'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 });

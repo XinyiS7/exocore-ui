@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Menu, Save, Plus, RefreshCw, X, FileText,
   Paperclip, Send, Cpu, Activity, Files
@@ -57,6 +57,34 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
     if (!c) return true;
     return c.scrollHeight - c.scrollTop - c.clientHeight < 120;
   };
+
+  const loadMoreMessages = useCallback(() => {
+    if (!hasMore || isLoadingMore) return;
+    const container = scrollContainerRef.current;
+    const prevScrollHeight = container?.scrollHeight || 0;
+    setIsLoadingMore(true);
+    const newStart = Math.max(0, visibleStartRef.current - MSGS_PER_PAGE);
+    const newSlice = allHistoryRef.current.slice(newStart, visibleStartRef.current);
+    visibleStartRef.current = newStart;
+    setMessages(prev => [...newSlice, ...prev]);
+    setHasMore(newStart > 0);
+    setIsLoadingMore(false);
+    requestAnimationFrame(() => {
+      if (container) container.scrollTop = container.scrollHeight - prevScrollHeight;
+    });
+  }, [hasMore, isLoadingMore]);
+
+  useEffect(() => {
+    const sentinel = topSentinelRef.current;
+    const container = scrollContainerRef.current;
+    if (!sentinel || !container) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadMoreMessages(); },
+      { root: container, threshold: 0 }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadMoreMessages]);
 
   useEffect(() => {
     if (!activeSessionId) return;
@@ -201,6 +229,22 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
       }
     } catch (err) { console.error("中断:", err); } finally {
       setIsGenerating(false);
+      // 刷新消息列表以获取真实 DB id（供书签功能使用）
+      fetch(`${baseUrl}/api/agents/chat/${activeSessionId}/`, { credentials: 'include' })
+        .then(res => res.json())
+        .then(data => {
+          if (!Array.isArray(data) || data.length < 2) return;
+          allHistoryRef.current = data;
+          setMessages(prev => {
+            if (prev.length < 2) return prev;
+            const copy = [...prev];
+            const n = data.length;
+            copy[copy.length - 2] = { ...copy[copy.length - 2], id: data[n - 2]?.id };
+            copy[copy.length - 1] = { ...copy[copy.length - 1], id: data[n - 1]?.id };
+            return copy;
+          });
+        })
+        .catch(() => {});
       if (currentPending.length > 0) {
         setPendingAttachments([]);
         fetch(`${baseUrl}/api/agents/conversations/${activeSessionId}/attachments/`, { credentials: 'include' })
