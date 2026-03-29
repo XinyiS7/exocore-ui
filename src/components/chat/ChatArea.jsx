@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Menu, Save, Plus, RefreshCw, X, FileText,
-  Paperclip, Send, Cpu, Activity, Files
+  Paperclip, Send, Cpu, Activity, Files, ImageIcon
 } from 'lucide-react';
 import { baseUrl, getCsrfToken, AVAILABLE_MODELS } from '../../utils/api';
 import { getUserAvatarUrl, getAgentAvatarUrl } from '../../utils/avatar';
@@ -37,6 +37,7 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
   const visibleStartRef = useRef(0);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const imageInputRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const topSentinelRef = useRef(null);
   // 保存当前正在发送消息的附件转换 Promise（用于 SSE 结束后持久化到 localStorage）
@@ -545,9 +546,13 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
             disabled={isGenerating}
           />
           <div className="flex items-center justify-between px-2 pb-2">
-            <div className="flex items-center">
-              <button onClick={() => fileInputRef.current?.click()} className="p-1.5 text-exo-muted hover:text-white transition-colors"><Paperclip size={16} /></button>
-              <input type="file" ref={fileInputRef} className="hidden" multiple onChange={(e) => setAttachedFiles(prev => [...prev, ...Array.from(e.target.files)])} />
+            <div className="flex items-center gap-0.5">
+              <button onClick={() => imageInputRef.current?.click()} title="上传图片" className="p-1.5 text-exo-muted hover:text-white transition-colors"><ImageIcon size={16} /></button>
+              <button onClick={() => fileInputRef.current?.click()} title="上传文件" className="p-1.5 text-exo-muted hover:text-white transition-colors"><Paperclip size={16} /></button>
+              {/* 图片 input：accept="image/*" → 移动端唤起相册/相机 */}
+              <input type="file" ref={imageInputRef} className="hidden" multiple accept="image/*" onChange={(e) => setAttachedFiles(prev => [...prev, ...Array.from(e.target.files)])} />
+              {/* 文件 input：明确文档类型 → 移动端唤起文件管理器 */}
+              <input type="file" ref={fileInputRef} className="hidden" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md,.csv,.json,.zip,.py,.js,.ts,.jsx,.tsx,.html,.css,.xml,.yaml,.yml,.toml,.sh,.log" onChange={(e) => setAttachedFiles(prev => [...prev, ...Array.from(e.target.files)])} />
             </div>
             <button onClick={handleSend} disabled={isGenerating || (!inputValue.trim() && attachedFiles.length === 0)} className="p-2 bg-exo-gold text-black rounded-lg hover:bg-yellow-400 disabled:opacity-50"><Send size={16} /></button>
           </div>
