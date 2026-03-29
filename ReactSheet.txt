@@ -1,6 +1,6 @@
 ========================================================
   ExoCore — React 前端接口数据格式速查表
-  最后更新：2026-03-17
+  最后更新：2026-03-29
 ========================================================
 
 
@@ -659,3 +659,192 @@ DELETE /api/agents/conversations/<pk>/attachments/<att_id>/
 //   DeepSeek → Files API（OpenAI compatible），file_id，72h TTL（后端统一按 48h 保守值管理）
 // 切换模型平台时后端自动重新上传，前端无需感知。
 // 上传失败的附件本轮静默跳过，不影响对话流程。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+19. LLM Council 议会系统
+    路由前缀：/api/council/
+    状态机：pre_alignment → dispatched → cross_exam → synthesizing → finished
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// ── 核心数据类型 ─────────────────────────────────────────────
+
+// CouncilParticipant
+{
+  "id":              1,
+  "preset_id":       5,
+  "preset_name":     "写作助手",
+  "conversation_id": 38,           // 该参与者专属对话 ID
+  "phase_status":    "idle"        // "idle" | "generating" | "done"
+}
+
+// CouncilSession（详情）
+{
+  "id":                        1,
+  "topic":                     "AI监管：政府主导还是行业自律？",
+  "status":                    "finished",   // 状态机见上方
+  "round_number":              1,
+  "arbitrator_preset_id":      1,
+  "arbitrator_preset_name":    "Alessandro",
+  "phase0_conversation_id":    37,           // 仲裁者的主对话（对接现有 chat 接口）
+  "synthesis_conversation_id": 40,           // 综合结论专属对话（首次 dispatch 后创建）
+  "participants": [                          // CouncilParticipant 数组
+    { "id": 1, "preset_id": 5, "preset_name": "写作助手", "conversation_id": 38, "phase_status": "done" },
+    { "id": 2, "preset_id": 6, "preset_name": "骆白萧",   "conversation_id": 39, "phase_status": "done" }
+  ],
+  "created_at": "2026-03-29T10:00:00Z"
+}
+
+
+// ── 19a. 创建议会会话 ────────────────────────────────────────
+POST /api/council/sessions/
+
+// Request body：
+{
+  "name":                    "AI监管讨论",     // 可选，phase0 对话名称
+  "arbitrator_preset_id":    1,               // 仲裁者 AgentPreset ID（通常为 G045）
+  "participant_preset_ids":  [5, 6]           // 参与者 AgentPreset ID 列表（≥2）
+}
+
+// Response (201)：CouncilSession（详情格式，synthesis_conversation_id 此时为 null）
+{
+  "id": 1,
+  "topic": "",
+  "status": "pre_alignment",
+  "round_number": 0,
+  "arbitrator_preset_id": 1,
+  "arbitrator_preset_name": "Alessandro",
+  "phase0_conversation_id": 37,
+  "synthesis_conversation_id": null,
+  "participants": [ ... ],
+  "created_at": "2026-03-29T10:00:00Z"
+}
+
+
+// ── 19b. 获取议会会话详情 ─────────────────────────────────────
+GET /api/council/sessions/<pk>/
+
+// Response (200)：CouncilSession（详情格式）
+// 前端通过 3s 轮询此接口，监控 participants[*].phase_status 和 session.status
+
+
+// ── 19c. 分发议题（Dispatch）──────────────────────────────────
+POST /api/council/sessions/<pk>/dispatch/
+
+// Request body：
+{
+  "topic": "AI监管：政府主导还是行业自律？"  // 可选；缺省则用 session 现有 topic
+}
+
+// Response (200)：
+{
+  "stream_urls": [
+    { "participant_id": 1, "url": "/api/council/sessions/1/stream/participant/1/" },
+    { "participant_id": 2, "url": "/api/council/sessions/1/stream/participant/2/" }
+  ]
+}
+
+// 副作用：
+//   - session.status → "dispatched"，round_number += 1
+//   - 首次 dispatch：自动创建 synthesis_conversation
+//   - 每个 participant.conversation 写入 user 消息（内容=topic）
+//   - participant.phase_status 全部重置为 "idle"
+// 允许状态：pre_alignment 或 finished（继续分发，round+1）
+
+
+// ── 19d. 参与者 SSE 流 ───────────────────────────────────────
+GET /api/council/sessions/<pk>/stream/participant/<pa_id>/
+
+// SSE 事件格式（与主 chat 接口一致）：
+event: thinking
+data: "推理过程..."
+
+event: content
+data: "正文内容片段..."
+
+event: done
+data: "[DONE]"
+
+event: error
+data: "错误信息"
+
+// 防重入：participant.phase_status 为 "generating" 时返回 409
+// HTTP 409 Response: { "error": "该参与者正在生成中，请勿重复请求" }
+// 流结束后：participant.phase_status → "done"，消息持久化到 participant.conversation
+
+
+// ── 19e. 开始互审（Cross-Exam）───────────────────────────────
+POST /api/council/sessions/<pk>/cross_exam/
+
+// Request body：无（空 {} 或不传）
+
+// Response (200)：
+{
+  "stream_urls": [
+    { "participant_id": 1, "url": "/api/council/sessions/1/stream/participant/1/" },
+    { "participant_id": 2, "url": "/api/council/sessions/1/stream/participant/2/" }
+  ]
+}
+
+// 副作用：
+//   - session.status → "cross_exam"
+//   - 轮换配对：participant[i] 审阅 participant[(i+1)%n] 的最新回复
+//   - 每个 reviewer.conversation 写入 reviewee 最新 assistant 消息（作为新的 user 消息）
+//   - 创建 CouncilCrossExam 记录
+// 前置条件：session.status == "dispatched" 且所有 participant.phase_status == "done"
+
+
+// ── 19f. 触发综合（Synthesize）──────────────────────────────
+POST /api/council/sessions/<pk>/synthesize/
+
+// Request body：
+{
+  "user_opinion": "我认为两种方式应该并行"  // 可选，用户追加意见
+}
+
+// Response (200)：
+{
+  "stream_url": "/api/council/sessions/1/stream/synthesis/"
+}
+
+// 副作用：
+//   - session.status → "synthesizing"
+//   - 自动组装各参与者初稿+修正案+用户意见 → 写入 synthesis_conversation 作为 user 消息
+// 前置条件：session.status == "dispatched" 或 "cross_exam"
+
+
+// ── 19g. 综合 SSE 流 ─────────────────────────────────────────
+GET /api/council/sessions/<pk>/stream/synthesis/
+
+// SSE 事件格式同参与者流（thinking / content / done / error）
+// 流结束后：结论持久化到 synthesis_conversation，可通过主 chat GET 接口读取：
+//   GET /api/agents/chat/<synthesis_conversation_id>/
+// 前置条件：session.status == "synthesizing"
+
+
+// ── 19h. 结束议会 ────────────────────────────────────────────
+POST /api/council/sessions/<pk>/finish/
+
+// Request body：无
+// Response (204)：无 body
+// 副作用：session.status → "finished"
+// finished 状态下可再次调用 dispatch 开启下一轮
+
+
+// ── 前端状态机按钮逻辑 ───────────────────────────────────────
+// status=pre_alignment                → 显示"分发议题"按钮
+// status=dispatched, 未全部 done      → 等待（禁用所有操作按钮）
+// status=dispatched, 全部 done        → 显示"开始互审"和"直接综合"两个按钮
+// status=cross_exam, 未全部 done      → 等待
+// status=cross_exam, 全部 done        → 显示"进入综合"按钮
+// status=synthesizing, 流进行中       → 等待
+// status=synthesizing, 流结束         → 显示"结束议会"和"继续分发"两个按钮
+// status=finished                     → 显示"继续分发"按钮
+
+// allParticipantsDone = participants.every(p => p.phase_status === "done")
+
+// ── 注意事项 ─────────────────────────────────────────────────
+// 1. phase0_conversation 有 AgentSession，走现有 /api/agents/chat/ 接口（议题预对齐阶段）
+// 2. participant.conversation 和 synthesis_conversation 不出现在主会话列表（已在后端过滤）
+// 3. 综合结论历史：GET /api/agents/chat/<synthesis_conversation_id>/（与普通消息格式相同）
+// 4. SSE 并行订阅：dispatch/cross_exam 返回的 stream_urls 应同时 fetch，不要串行
