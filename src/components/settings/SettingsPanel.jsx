@@ -98,13 +98,17 @@ const SettingsPanel = ({ projects, presets }) => {
         knowledgeId={kfEditTarget}
       />
 
-      <div className="w-48 shrink-0 bg-exo-panel border-r border-exo-border flex flex-col py-6 px-3 gap-1">
+      <div className="hidden md:flex w-48 shrink-0 bg-exo-panel border-r border-exo-border flex-col py-6 px-3 gap-1">
         <div className="text-[10px] font-bold text-exo-muted uppercase tracking-widest px-2 mb-3">设置</div>
         {navBtn('memory', <BookOpen size={16} />, '历史管理')}
         {navBtn('memory_mgmt', <Brain size={16} />, '记忆管理')}
       </div>
 
       <div className="flex-1 min-w-0 h-full flex flex-col overflow-hidden">
+        <div className="flex md:hidden items-center gap-1 px-4 pt-4 pb-2 border-b border-exo-border shrink-0">
+          {navBtn('memory', <BookOpen size={14} />, '历史管理')}
+          {navBtn('memory_mgmt', <Brain size={14} />, '记忆管理')}
+        </div>
         {activeSettingsTab === 'memory' && (
           <>
             {editingProposal ? (

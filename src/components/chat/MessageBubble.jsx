@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { FileText, Copy, Bookmark, Check, X } from 'lucide-react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { FileText, Copy, Bookmark, Check, X, ZoomIn } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
@@ -11,6 +11,15 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
   const [showBookmark, setShowBookmark] = useState(false);
   const [bookmarkText, setBookmarkText] = useState('');
   const [bookmarkStatus, setBookmarkStatus] = useState(null); // null | 'saving' | 'done' | 'error'
+  const [lightboxSrc, setLightboxSrc] = useState(null);
+
+  // Escape 键关闭 lightbox
+  useEffect(() => {
+    if (!lightboxSrc) return;
+    const handler = e => { if (e.key === 'Escape') setLightboxSrc(null); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [lightboxSrc]);
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(msg.content || '').then(() => {
@@ -73,12 +82,43 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
           <div className="flex flex-wrap gap-2 justify-end">
             {msg.attachments.map((att, i) => (
               att.preview
-                ? <img key={i} src={att.preview} alt={att.name} title={att.name} className="max-h-40 max-w-full rounded-lg object-cover border border-exo-border" />
+                ? <button
+                    key={i}
+                    onClick={() => setLightboxSrc(att.preview)}
+                    className="relative group block h-32 max-w-[200px] rounded-lg overflow-hidden border border-exo-border hover:border-exo-gold/40 transition-colors cursor-zoom-in"
+                    title={att.name}
+                  >
+                    <img src={att.preview} alt={att.name} className="h-full w-full object-cover" />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                      <ZoomIn size={20} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </button>
                 : <div key={i} className="flex items-center gap-1.5 text-[11px] bg-black/50 border border-exo-border rounded-lg px-2 py-1.5 text-exo-muted">
                     <FileText size={11} className="text-blue-400 shrink-0" />
                     <span className="truncate max-w-[160px]">{att.name}</span>
                   </div>
             ))}
+          </div>
+        )}
+
+        {/* 图片 Lightbox */}
+        {lightboxSrc && (
+          <div
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+            onClick={() => setLightboxSrc(null)}
+          >
+            <button
+              className="absolute top-4 right-4 p-2 text-white/60 hover:text-white bg-white/10 rounded-full transition-colors"
+              onClick={() => setLightboxSrc(null)}
+            >
+              <X size={20} />
+            </button>
+            <img
+              src={lightboxSrc}
+              className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl"
+              onClick={e => e.stopPropagation()}
+              alt="preview"
+            />
           </div>
         )}
         <div className={isUser

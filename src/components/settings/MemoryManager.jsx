@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Tag, Edit3, Trash2, RefreshCw } from 'lucide-react';
+import { Tag, Edit3, Trash2, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import { baseUrl, getCsrfToken } from '../../utils/api';
 
 const MemoryManager = ({ presets }) => {
@@ -11,6 +11,7 @@ const MemoryManager = ({ presets }) => {
   const [editText, setEditText] = useState('');
   const [editTags, setEditTags] = useState('');
   const [savingId, setSavingId] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
 
   const fetchEntries = useCallback(() => {
     if (!selectedPresetId) return;
@@ -213,7 +214,17 @@ const MemoryManager = ({ presets }) => {
                 </div>
               ) : (
                 <>
-                  <p className="text-xs text-exo-text/80 leading-relaxed line-clamp-4 mb-2 font-mono whitespace-pre-wrap">{entry.raw_text}</p>
+                  <p className={`text-xs text-exo-text/80 leading-relaxed mb-1 font-mono whitespace-pre-wrap ${expandedId === entry.id ? '' : 'line-clamp-4'}`}>{entry.raw_text}</p>
+                  {entry.raw_text?.length > 200 && (
+                    <button
+                      onClick={() => setExpandedId(id => id === entry.id ? null : entry.id)}
+                      className="flex items-center gap-1 text-[10px] text-exo-muted/50 hover:text-exo-gold transition-colors mb-2"
+                    >
+                      {expandedId === entry.id
+                        ? <><ChevronUp size={10} />收起</>
+                        : <><ChevronDown size={10} />展开全文</>}
+                    </button>
+                  )}
                   {tagsArray(entry).length > 0 && (
                     <div className="flex flex-wrap gap-1">
                       {tagsArray(entry).map((tag, i) => (

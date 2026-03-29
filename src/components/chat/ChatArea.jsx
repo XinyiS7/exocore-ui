@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { baseUrl, getCsrfToken, AVAILABLE_MODELS } from '../../utils/api';
 import { getUserAvatarUrl, getAgentAvatarUrl } from '../../utils/avatar';
+import { filesToAttachmentData, saveAttachments, enrichMessages } from '../../utils/attachmentStorage';
 import MessageBubble from './MessageBubble';
 
 const MSGS_PER_PAGE = 40;
@@ -38,6 +39,18 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
   const fileInputRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const topSentinelRef = useRef(null);
+  // 保存当前正在发送消息的附件转换 Promise（用于 SSE 结束后持久化到 localStorage）
+  const pendingAttachConversionRef = useRef(null);
+  const textareaRef = useRef(null);
+
+  const autoResize = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  };
+
+  useEffect(() => { autoResize(); }, [inputValue]);
 
   useEffect(() => {
     const previews = attachedFiles.map(f => ({
@@ -118,10 +131,11 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
     fetch(`${baseUrl}/api/agents/chat/${activeSessionId}/`, { credentials: 'include' })
       .then(res => res.json())
       .then(data => {
-        allHistoryRef.current = data;
-        const startIdx = Math.max(0, data.length - MSGS_PER_PAGE);
+        const enriched = enrichMessages(data);
+        allHistoryRef.current = enriched;
+        const startIdx = Math.max(0, enriched.length - MSGS_PER_PAGE);
         visibleStartRef.current = startIdx;
-        setMessages(data.slice(startIdx));
+        setMessages(enriched.slice(startIdx));
         setHasMore(startIdx > 0);
         requestAnimationFrame(() => scrollToBottom(false));
       })
@@ -151,6 +165,10 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
 
     const currentInput = inputValue; const currentFiles = [...attachedFiles];
     const currentPending = [...pendingAttachments];
+    // 提前启动附件转 base64 的异步操作，与网络请求并行
+    pendingAttachConversionRef.current = currentFiles.length > 0
+      ? filesToAttachmentData(currentFiles)
+      : null;
     setInputValue(""); setAttachedFiles([]); setIsGenerating(true); scrollToBottom(true);
     localStorage.removeItem(`exo_draft_${activeSessionId}`);
 
@@ -229,16 +247,27 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
       }
     } catch (err) { console.error("中断:", err); } finally {
       setIsGenerating(false);
-      // 刷新消息列表以获取真实 DB id（供书签功能使用）
+      // 刷新消息列表以获取真实 DB id（供书签功能及附件持久化使用）
       fetch(`${baseUrl}/api/agents/chat/${activeSessionId}/`, { credentials: 'include' })
         .then(res => res.json())
-        .then(data => {
+        .then(async data => {
           if (!Array.isArray(data) || data.length < 2) return;
-          allHistoryRef.current = data;
+          const n = data.length;
+          const userId = data[n - 2]?.id;
+          // 等待附件转换完成并持久化到 localStorage
+          if (userId && pendingAttachConversionRef.current) {
+            try {
+              const attachData = await pendingAttachConversionRef.current;
+              if (attachData.length > 0) saveAttachments(userId, attachData);
+            } catch (e) {
+              console.warn('附件持久化失败:', e);
+            }
+            pendingAttachConversionRef.current = null;
+          }
+          allHistoryRef.current = enrichMessages(data);
           setMessages(prev => {
             if (prev.length < 2) return prev;
             const copy = [...prev];
-            const n = data.length;
             copy[copy.length - 2] = { ...copy[copy.length - 2], id: data[n - 2]?.id };
             copy[copy.length - 1] = { ...copy[copy.length - 1], id: data[n - 1]?.id };
             return copy;
@@ -488,11 +517,12 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
             </div>
           )}
           <textarea
-            rows="4"
+            ref={textareaRef}
             value={inputValue}
             onChange={(e) => {
               const v = e.target.value;
               setInputValue(v);
+              autoResize();
               if (activeSessionId) {
                 v ? localStorage.setItem(`exo_draft_${activeSessionId}`, v)
                   : localStorage.removeItem(`exo_draft_${activeSessionId}`);
@@ -511,7 +541,7 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
               }
             }}
             placeholder="与核心通讯 (Ctrl+Enter 发送)..."
-            className="w-full bg-transparent text-sm text-exo-text outline-none resize-none px-3 pt-3 pb-1 disabled:opacity-50"
+            className="w-full bg-transparent text-sm text-exo-text outline-none resize-none px-3 pt-3 pb-1 disabled:opacity-50 overflow-y-auto min-h-[2.5rem] md:min-h-[5rem] max-h-[40vh]"
             disabled={isGenerating}
           />
           <div className="flex items-center justify-between px-2 pb-2">
