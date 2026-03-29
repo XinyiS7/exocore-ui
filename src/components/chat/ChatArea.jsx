@@ -10,7 +10,7 @@ import MessageBubble from './MessageBubble';
 
 const MSGS_PER_PAGE = 40;
 
-const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets }) => {
+const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets, headerTitleOverride }) => {
   const [messages, setMessages] = useState([]);
   const [sessionInfo, setSessionInfo] = useState(null);
   const [inputValue, setInputValue] = useState("");
@@ -363,7 +363,7 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets })
             <div className={`w-2 h-2 rounded-full shrink-0 ${isGenerating ? 'bg-exo-gold animate-pulse' : 'bg-green-500'}`}></div>
             <div className="flex flex-col overflow-hidden">
               <div className="flex items-center gap-1.5">
-                <span className="font-semibold text-exo-text truncate">{sessionInfo?.name || `Session #${activeSessionId}`}</span>
+                <span className="font-semibold text-exo-text truncate">{headerTitleOverride || sessionInfo?.name || `Session #${activeSessionId}`}</span>
                 <span className="text-[10px] text-exo-muted/60 shrink-0">#{activeSessionId}</span>
               </div>
               {sessionInfo?.agent_preset_id && presets.find(x => x.id === sessionInfo.agent_preset_id) && (

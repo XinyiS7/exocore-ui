@@ -12,6 +12,9 @@ import ProjectFilesArea from './components/project/ProjectFilesArea';
 import AgentManager from './components/agent/AgentManager';
 import UserProfile from './components/UserProfile';
 import SettingsPanel from './components/settings/SettingsPanel';
+import CouncilArea from './components/council/CouncilArea';
+import CouncilCreateModal from './components/council/CouncilCreateModal';
+import { listCouncilSessions } from './utils/councilApi';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState('chat');
@@ -41,6 +44,18 @@ export default function App() {
       .catch(err => console.error("Presets 刷新失败", err));
   };
 
+  const [activeCouncilId, setActiveCouncilId] = useState(null);
+  const [councilSessions, setCouncilSessions] = useState([]);
+  const [showCouncilCreate, setShowCouncilCreate] = useState(false);
+
+  const refreshCouncilSessions = () => {
+    listCouncilSessions()
+      .then(setCouncilSessions)
+      .catch(err => console.error('Council 列表拉取失败:', err));
+  };
+
+  useEffect(() => { refreshCouncilSessions(); }, [refreshKey]);
+
   const [destructorConfig, setDestructorConfig] = useState({ isOpen: false });
   const openDestructor = (config) => setDestructorConfig({ ...config, isOpen: true });
 
@@ -51,6 +66,18 @@ export default function App() {
     <div className="w-full h-[100dvh] bg-exo-bg text-exo-text font-sans flex flex-col md:flex-row overflow-hidden">
 
       <DestructorModal {...destructorConfig} onClose={() => setDestructorConfig(p => ({...p, isOpen: false}))} />
+
+      <CouncilCreateModal
+        isOpen={showCouncilCreate}
+        onClose={() => setShowCouncilCreate(false)}
+        presets={presets}
+        onSuccess={(newId) => {
+          refreshCouncilSessions();
+          setActiveCouncilId(newId);
+          setActiveSessionId(null);
+          setActiveFileProjectId(null);
+        }}
+      />
 
       <NewSessionModal
         isOpen={newSessionConfig.isOpen}
@@ -70,7 +97,7 @@ export default function App() {
           <div className="flex flex-1 min-w-0 h-full flex-row relative">
             <ConversationList
               activeSessionId={activeSessionId}
-              setActiveSessionId={(id) => { setActiveSessionId(id); setActiveFileProjectId(null); setShowConvList(false); }}
+              setActiveSessionId={(id) => { setActiveSessionId(id); setActiveFileProjectId(null); setActiveCouncilId(null); setShowConvList(false); }}
               projects={projects}
               refreshKey={refreshKey}
               openDestructor={openDestructor}
@@ -79,8 +106,20 @@ export default function App() {
               setActiveFileProjectId={setActiveFileProjectId}
               showConvList={showConvList}
               onClose={() => setShowConvList(false)}
+              councilSessions={councilSessions}
+              activeCouncilId={activeCouncilId}
+              setActiveCouncilId={(id) => { setActiveCouncilId(id); setActiveSessionId(null); setActiveFileProjectId(null); }}
+              onCreateCouncil={() => setShowCouncilCreate(true)}
             />
-            {activeFileProjectId ? (
+            {activeCouncilId ? (
+              <CouncilArea
+                councilId={activeCouncilId}
+                presets={presets}
+                onBack={() => setActiveCouncilId(null)}
+                setShowConvList={setShowConvList}
+                openNewSession={openNewSession}
+              />
+            ) : activeFileProjectId ? (
               <ProjectFilesArea projectId={activeFileProjectId} projects={projects} openDestructor={openDestructor} />
             ) : activeSessionId ? (
               <ChatArea activeSessionId={activeSessionId} setShowConvList={setShowConvList} openNewSession={openNewSession} presets={presets} />

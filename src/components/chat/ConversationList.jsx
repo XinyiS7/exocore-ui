@@ -6,7 +6,19 @@ import {
 } from 'lucide-react';
 import { baseUrl, getCsrfToken } from '../../utils/api';
 
-const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refreshKey, openDestructor, openNewSession, activeFileProjectId, setActiveFileProjectId, showConvList, onClose }) => {
+const CouncilStatusBadge = ({ status }) => {
+  const map = {
+    pre_alignment: { label: '待对齐', cls: 'bg-exo-muted/20 text-exo-muted' },
+    dispatched:    { label: '分发中', cls: 'bg-blue-400/20 text-blue-400' },
+    cross_exam:    { label: '互审中', cls: 'bg-purple-400/20 text-purple-400' },
+    synthesizing:  { label: '综合中', cls: 'bg-exo-gold/20 text-exo-gold' },
+    finished:      { label: '已完成', cls: 'bg-green-400/20 text-green-400' },
+  };
+  const { label, cls } = map[status] || { label: status, cls: 'bg-exo-muted/20 text-exo-muted' };
+  return <span className={`text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full shrink-0 ${cls}`}>{label}</span>;
+};
+
+const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refreshKey, openDestructor, openNewSession, activeFileProjectId, setActiveFileProjectId, showConvList, onClose, councilSessions, activeCouncilId, setActiveCouncilId, onCreateCouncil }) => {
   const [conversations, setConversations] = useState([]);
   const [expandedProjects, setExpandedProjects] = useState(new Set());
   const [activeMenuId, setActiveMenuId] = useState(null);
@@ -145,9 +157,39 @@ const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refre
             </div>
           )}
 
-          <div className="mt-auto pt-4 border-t border-exo-border/50 opacity-40 grayscale pointer-events-none">
-            <div className="text-[10px] font-bold text-exo-muted uppercase tracking-wider mb-2 flex items-center gap-1"><Users size={12} /> Council Room</div>
-            <div className="p-2 border border-dashed border-exo-border rounded-lg text-xs text-center text-exo-muted bg-black/20">Sync pending...</div>
+          <div className="mt-auto pt-4 border-t border-exo-border/50">
+            <div className="text-[10px] font-bold text-exo-muted uppercase tracking-wider mb-2 flex items-center justify-between">
+              <span className="flex items-center gap-1"><Users size={12} /> Council Room</span>
+              <button
+                onClick={e => { e.stopPropagation(); onCreateCouncil && onCreateCouncil(); }}
+                className="p-0.5 rounded text-exo-muted hover:text-exo-gold hover:bg-exo-gold/10 transition-colors"
+                title="召集新议会"
+              >
+                <Plus size={12} />
+              </button>
+            </div>
+            {(!councilSessions || councilSessions.length === 0) ? (
+              <div className="p-2 border border-dashed border-exo-border rounded-lg text-[11px] text-center text-exo-muted/50 bg-black/20">暂无议会</div>
+            ) : (
+              <div className="space-y-1">
+                {councilSessions.map(cs => (
+                  <div
+                    key={cs.id}
+                    onClick={() => {
+                      setActiveCouncilId && setActiveCouncilId(cs.id);
+                      setActiveSessionId(null);
+                      setActiveFileProjectId && setActiveFileProjectId(null);
+                      onClose && onClose();
+                    }}
+                    className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all border ${activeCouncilId === cs.id ? 'bg-exo-gold/10 border-exo-gold/30 text-exo-gold' : 'border-transparent hover:bg-white/5 text-exo-muted hover:text-exo-text'}`}
+                  >
+                    <Users size={13} className="shrink-0 opacity-70" />
+                    <span className="text-xs font-medium truncate flex-1">{cs.topic || cs.arbitrator_preset_name || `议会 #${cs.id}`}</span>
+                    <CouncilStatusBadge status={cs.status} />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
