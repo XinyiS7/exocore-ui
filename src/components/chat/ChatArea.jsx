@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Menu, Save, Plus, RefreshCw, X, FileText,
-  Paperclip, Send, Cpu, Activity, Files, ImageIcon
+  Paperclip, Send, Cpu, Activity, Files, ImageIcon, ArrowLeft
 } from 'lucide-react';
 import { baseUrl, getCsrfToken, AVAILABLE_MODELS } from '../../utils/api';
 import { getUserAvatarUrl, getAgentAvatarUrl } from '../../utils/avatar';
@@ -10,7 +10,7 @@ import MessageBubble from './MessageBubble';
 
 const MSGS_PER_PAGE = 40;
 
-const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets, headerTitleOverride }) => {
+const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets, headerTitleOverride, rightExtraButton, onBack }) => {
   const [messages, setMessages] = useState([]);
   const [sessionInfo, setSessionInfo] = useState(null);
   const [inputValue, setInputValue] = useState("");
@@ -357,7 +357,10 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets, h
     <div className="flex-1 min-w-0 flex flex-col h-full bg-exo-bg relative">
       <div className="h-14 border-b border-exo-border flex items-center justify-between px-4 md:px-6 bg-exo-panel/50 backdrop-blur-md">
         <div className="flex items-center gap-2 md:gap-3">
-          <button onClick={() => setShowConvList(true)} className="md:hidden p-1.5 rounded-lg text-exo-muted hover:bg-white/5"><Menu size={20} /></button>
+          {onBack
+            ? <button onClick={onBack} className="p-1.5 rounded-lg text-exo-muted hover:text-exo-text hover:bg-white/5"><ArrowLeft size={18} /></button>
+            : <button onClick={() => setShowConvList(true)} className="md:hidden p-1.5 rounded-lg text-exo-muted hover:bg-white/5"><Menu size={20} /></button>
+          }
           <div className="flex items-center gap-2 overflow-hidden">
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-exo-gold uppercase tracking-tighter shrink-0">{sessionInfo?.session_type || 'CHAT'}</span>
             <div className={`w-2 h-2 rounded-full shrink-0 ${isGenerating ? 'bg-exo-gold animate-pulse' : 'bg-green-500'}`}></div>
@@ -554,7 +557,10 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets, h
               {/* 文件 input：明确文档类型 → 移动端唤起文件管理器 */}
               <input type="file" ref={fileInputRef} className="hidden" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md,.csv,.json,.zip,.py,.js,.ts,.jsx,.tsx,.html,.css,.xml,.yaml,.yml,.toml,.sh,.log" onChange={(e) => setAttachedFiles(prev => [...prev, ...Array.from(e.target.files)])} />
             </div>
-            <button onClick={handleSend} disabled={isGenerating || (!inputValue.trim() && attachedFiles.length === 0)} className="p-2 bg-exo-gold text-black rounded-lg hover:bg-yellow-400 disabled:opacity-50"><Send size={16} /></button>
+            <div className="flex items-center gap-2">
+              {rightExtraButton}
+              <button onClick={handleSend} disabled={isGenerating || (!inputValue.trim() && attachedFiles.length === 0)} className="p-2 bg-exo-gold text-black rounded-lg hover:bg-yellow-400 disabled:opacity-50"><Send size={16} /></button>
+            </div>
           </div>
         </div>
       </div>

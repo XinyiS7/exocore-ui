@@ -14,7 +14,9 @@ import MessageBubble from '../chat/MessageBubble';
 //   isStreaming     — boolean, whether a stream is currently active
 //   refetchTrigger  — increment to force re-fetch after stream completes
 
-const CouncilStreamView = ({ conversationId, streamBuffer, agentName, agentAvatarUrl, userNick, userAvatarUrl, isStreaming, refetchTrigger }) => {
+// assistantOnly — when true, hide user/human messages (used in group chat to avoid repeating the topic)
+// noScroll     — when true, render as a plain block (no overflow-y-auto); parent handles scrolling
+const CouncilStreamView = ({ conversationId, streamBuffer, agentName, agentAvatarUrl, userNick, userAvatarUrl, isStreaming, refetchTrigger, assistantOnly, noScroll }) => {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef(null);
@@ -42,7 +44,7 @@ const CouncilStreamView = ({ conversationId, streamBuffer, agentName, agentAvata
   }, [streamBuffer?.content, isStreaming]);
 
   // Build displayed messages: persisted history + live stream overlay
-  const displayMessages = [...messages];
+  const displayMessages = [...(assistantOnly ? messages.filter(m => m.role === 'assistant') : messages)];
   if (streamBuffer && !streamBuffer.done && (streamBuffer.content || streamBuffer.reasoning)) {
     displayMessages.push({
       id: '__streaming__',
@@ -63,7 +65,7 @@ const CouncilStreamView = ({ conversationId, streamBuffer, agentName, agentAvata
   }
 
   return (
-    <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4 scrollbar-hide">
+    <div ref={noScroll ? undefined : scrollRef} className={noScroll ? 'space-y-4' : 'flex-1 overflow-y-auto px-4 py-4 space-y-4 scrollbar-hide'}>
       {displayMessages.length === 0 && !isStreaming && (
         <div className="flex items-center justify-center h-full text-exo-muted/40 text-sm">暂无消息</div>
       )}

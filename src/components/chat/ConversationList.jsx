@@ -42,8 +42,16 @@ const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refre
     });
   };
 
-  const g045Sessions = conversations.filter(c => c.agent_type === 'g045');
-  const standardSessions = conversations.filter(c => c.agent_type !== 'g045' && c.project === null);
+  const councilInternalIds = new Set(
+    (councilSessions || []).flatMap(cs => [
+      cs.phase0_conversation_id,
+      cs.synthesis_conversation_id,
+      ...(cs.participants || []).map(p => p.conversation_id),
+    ].filter(Boolean))
+  );
+
+  const g045Sessions = conversations.filter(c => c.agent_type === 'g045' && !councilInternalIds.has(c.id));
+  const standardSessions = conversations.filter(c => c.agent_type !== 'g045' && c.project === null && !councilInternalIds.has(c.id));
 
   const SessionItem = ({ conv, icon: Icon, colorClass }) => (
     <div onClick={() => setActiveSessionId(conv.id)} className={`group relative flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${activeSessionId === conv.id ? `bg-${colorClass}/10 text-${colorClass} border border-${colorClass}/30 shadow-[0_0_10px_rgba(var(--color-${colorClass}),0.1)]` : 'text-exo-muted hover:bg-white/5 border border-transparent'}`}>
