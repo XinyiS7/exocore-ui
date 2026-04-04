@@ -664,7 +664,9 @@ DELETE /api/agents/conversations/<pk>/attachments/<att_id>/
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 19. LLM Council 议会系统
     路由前缀：/api/council/
-    状态机：pre_alignment → dispatched → cross_exam → synthesizing → finished
+    状态机：pre_alignment → dispatched → cross_exam → synthesizing → synthesis_done → finished
+                ↑                                                          |
+                └──────────────────── 继续分发（round+1）──────────────────┘
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 // ── 核心数据类型 ─────────────────────────────────────────────
@@ -749,7 +751,7 @@ POST /api/council/sessions/<pk>/dispatch/
 //   - 首次 dispatch：自动创建 synthesis_conversation
 //   - 每个 participant.conversation 写入 user 消息（内容=topic）
 //   - participant.phase_status 全部重置为 "idle"
-// 允许状态：pre_alignment 或 finished（继续分发，round+1）
+// 允许状态：pre_alignment、finished 或 synthesis_done（继续分发，round+1）
 
 
 // ── 19d. 参与者 SSE 流 ───────────────────────────────────────
@@ -810,6 +812,7 @@ POST /api/council/sessions/<pk>/synthesize/
 // 副作用：
 //   - session.status → "synthesizing"
 //   - 自动组装各参与者初稿+修正案+用户意见 → 写入 synthesis_conversation 作为 user 消息
+//   - 同时向 phase0_conversation 注入 user 消息（"开始综合讨论" [+ 用户追加意见]，platform="council-synthesize"）
 // 前置条件：session.status == "dispatched" 或 "cross_exam"
 
 
@@ -817,8 +820,11 @@ POST /api/council/sessions/<pk>/synthesize/
 GET /api/council/sessions/<pk>/stream/synthesis/
 
 // SSE 事件格式同参与者流（thinking / content / done / error）
-// 流结束后：结论持久化到 synthesis_conversation，可通过主 chat GET 接口读取：
-//   GET /api/agents/chat/<synthesis_conversation_id>/
+// 流结束后：
+//   - 结论持久化到 synthesis_conversation（可通过 GET /api/agents/chat/<synthesis_conversation_id>/ 读取）
+//   - 结论同步注入 phase0_conversation（作为 assistant 消息，model 与 arbitrator 一致）
+//   - session.status → "synthesis_done"
+//   - 前端应打开 sub rosa 面板（phase0_conversation 末尾即为综合结论，可正常继续对话）
 // 前置条件：session.status == "synthesizing"
 
 
@@ -838,7 +844,7 @@ POST /api/council/sessions/<pk>/finish/
 // status=cross_exam, 未全部 done      → 等待
 // status=cross_exam, 全部 done        → 显示"进入综合"按钮
 // status=synthesizing, 流进行中       → 等待
-// status=synthesizing, 流结束         → 显示"结束议会"和"继续分发"两个按钮
+// status=synthesis_done               → 打开 sub rosa 面板；显示"结束议会"和"继续分发"两个按钮
 // status=finished                     → 显示"继续分发"按钮
 
 // allParticipantsDone = participants.every(p => p.phase_status === "done")
@@ -846,5 +852,9 @@ POST /api/council/sessions/<pk>/finish/
 // ── 注意事项 ─────────────────────────────────────────────────
 // 1. phase0_conversation 有 AgentSession，走现有 /api/agents/chat/ 接口（议题预对齐阶段）
 // 2. participant.conversation 和 synthesis_conversation 不出现在主会话列表（已在后端过滤）
-// 3. 综合结论历史：GET /api/agents/chat/<synthesis_conversation_id>/（与普通消息格式相同）
+// 3. 综合结论历史：
+//    - synthesis_conversation：GET /api/agents/chat/<synthesis_conversation_id>/
+//    - phase0_conversation 综合后：末尾含综合结论，可通过 /api/agents/chat/<phase0_conversation_id>/ 继续对话
 // 4. SSE 并行订阅：dispatch/cross_exam 返回的 stream_urls 应同时 fetch，不要串行
+// 5. 动态参与者选择：创建会话前用 GET /api/agents/presets/ 获取可用 preset 列表；
+//    arbitrator 选 1 个，participants 选 ≥2 个，不可重复
