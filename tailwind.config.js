@@ -14,10 +14,10 @@ export default {
       },
       colors: {
         exo: {
-          bg:      '#111721',
+          bg:      '#111121',
           metal:   '#1a1b27',
-          panel:   '#1a2029',
-          surface: '#1f252e',
+          panel:   '#1a1c29',
+          surface: '#1f1f2e',
           border:  '#212122',
           gold:    '#d4af37',
           goldDim: '#8b7322',
