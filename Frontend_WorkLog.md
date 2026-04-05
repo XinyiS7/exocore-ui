@@ -4,6 +4,56 @@
 
 ---
 
+## 2026-04-05
+
+### 赛博朋克设计系统改造 + Home 控制台
+
+**背景**：整体界面缺乏层次感和质感，字体无差异化，颜色对比过强伤眼。本次对全局设计系统和主要组件进行视觉翻新，并新增 Home 控制台入口。
+
+**设计原则**
+- 金色灯线克制：仅出现在关键边界（面板顶部分隔线、活跃项左侧指示条、输入框聚焦光晕）
+- 字体统一换为 **Outfit 200**（极细，瘦长，大写效果干净），代码/数值用 **JetBrains Mono**
+- 背景加入极淡蓝调（深蓝黑而非纯黑），正文色调暗，降低对比度护眼
+
+**修改文件**
+
+| 文件 | 改动 |
+|---|---|
+| `tailwind.config.js` | 字体族改为 Outfit + JetBrains Mono；颜色系扩充 `exo-metal`/`exo-surface`（深浅层次）；背景/文字色加入蓝调；新增 `animate-pulse-led`/`animate-fade-in` keyframes |
+| `src/index.css` | 引入 Google Fonts（Outfit/JetBrains Mono）；body 基础字重 200；新增工具类 `.gold-line-top`、`.gold-line-bottom`、`.gold-indicator`、`.label-caps` |
+| `src/components/layout/Sidebar.jsx` | 顶部渐变金线；活跃 tab 桌面左侧 2px 金条 / 移动端底部金线；六边形 logo 绑定 `home` tab 跳转 |
+| `src/components/chat/ConversationList.jsx` | 容器背景 `exo-surface`；标题/分组标签改用 `.label-caps`；Council 状态徽章去饱和，改为细边框+低透明度 |
+| `src/components/chat/ChatArea.jsx` | Header 边框减弱；状态指示点改用 `pulse-led`；工具栏选项（model/think/temp）改 `.label-caps`；输入框聚焦增加淡金色 shadow 光晕 |
+| `src/components/chat/MessageBubble.jsx` | 发送者名称改 `.label-caps`；用户气泡背景改 `exo-metal`；Bookmark 面板顶部加金线 |
+
+**新增文件**
+
+| 文件 | 说明 |
+|---|---|
+| `src/components/home/HomePanel.jsx` | Home 控制台主视图：页头 + 4 个快捷导航卡（跳转 chat/agent_hub/profile/settings）+ 日程区域 |
+| `src/components/home/CalendarWidget.jsx` | 日历组件：当月日历网格（今天金色高亮）+ Google Calendar 预留接口区（未连接状态）+ 本地任务（走 `/api/todos/` REST 接口） |
+
+**API 接口预留（待后端实现）**
+
+```
+GET    /api/todos/          → Array<Todo>
+POST   /api/todos/          body: { title, note?, deadline?, repeat }
+PATCH  /api/todos/{id}/     body: Partial<Todo>
+DELETE /api/todos/{id}/     → 204
+
+Todo 字段：id, title, note, deadline(YYYY-MM-DD), repeat(none/daily/weekly/monthly/yearly), completed, created_at
+
+GET    /api/gcal/events/?date=YYYY-MM-DD   → Array<GCalEvent>  （Google Calendar 预留）
+GCalEvent 字段：id, title, start, end, calendar_id, color_id, all_day
+```
+
+**关键约定**
+- Todo 数据不再存 localStorage，完全走后端 API（`credentials: 'include'` + CSRF token）
+- 头像跨设备同步问题暂搁置，待后续确认图床方案
+- 动态 Tailwind 模板字符串已有存量（ConversationList SessionItem），本次未新增
+
+---
+
 ## 2026-03-30
 
 ### Council 议会系统 UI 重构（沉浸式群聊布局）
