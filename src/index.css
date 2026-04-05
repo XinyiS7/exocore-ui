@@ -1,17 +1,51 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@200;300&family=JetBrains+Mono:wght@400&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   body {
-    font-weight: 300;
+    font-family: 'Outfit', system-ui, sans-serif;
+    font-weight: 200;
   }
   strong, b, th {
-    font-weight: 500;
+    font-weight: 300;
+  }
+  /* 代码块统一使用 JetBrains Mono */
+  code, pre, kbd, samp {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
   }
 }
 
-/* 隐藏滚动条但保留滚动功能，让界面更像客户端 */
+@layer components {
+  /* 顶部金色细线 — 用于面板/区域的顶部边界 */
+  .gold-line-top {
+    border-top: 1px solid rgba(212, 175, 55, 0.25);
+  }
+
+  /* 底部金色细线 */
+  .gold-line-bottom {
+    border-bottom: 1px solid rgba(212, 175, 55, 0.25);
+  }
+
+  /* 活跃指示条 — 左侧 2px 金条 + 极浅金色背景 */
+  .gold-indicator {
+    border-left: 2px solid #d4af37;
+    background-color: rgba(212, 175, 55, 0.05);
+  }
+
+  /* 系统标签样式 — Outfit 极细 + 宽字间距 + 全大写 */
+  .label-caps {
+    font-family: 'Outfit', system-ui, sans-serif;
+    letter-spacing: 0.14em;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    font-weight: 200;
+  }
+}
+
+/* 隐藏滚动条但保留滚动功能 */
 .scrollbar-hide::-webkit-scrollbar {
     display: none;
 }

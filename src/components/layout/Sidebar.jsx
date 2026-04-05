@@ -4,7 +4,16 @@ import { getUserAvatarUrl } from '../../utils/avatar';
 import AvatarCropModal from '../modals/AvatarCropModal';
 
 const NavIcon = ({ icon: Icon, isActive, onClick }) => (
-  <button onClick={onClick} className={`p-2 rounded-lg transition-all ${isActive ? 'text-exo-gold bg-exo-gold/10' : 'text-exo-muted hover:text-exo-text hover:bg-white/5'}`}><Icon size={22} /></button>
+  <button
+    onClick={onClick}
+    className={`p-2 transition-all ${
+      isActive
+        ? 'text-exo-gold bg-exo-gold/5 border-b-2 border-exo-gold rounded-t-lg md:border-b-0 md:border-l-2 md:rounded-t-none md:rounded-r-lg'
+        : 'text-exo-muted rounded-lg hover:text-exo-text hover:bg-white/5'
+    }`}
+  >
+    <Icon size={22} />
+  </button>
 );
 
 const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList }) => {
@@ -32,10 +41,13 @@ const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList }) =
         onCancel={() => setCropFile(null)}
       />
     )}
-    <div className="w-full md:w-16 h-14 md:h-full bg-exo-panel border-t md:border-t-0 md:border-r border-exo-border flex flex-row md:flex-col items-center justify-between px-6 md:px-0 py-0 md:py-6 flex-shrink-0 z-50">
+    <div className="w-full md:w-16 h-14 md:h-full bg-exo-panel border-t border-exo-gold/15 md:border-t-0 md:border-r md:border-exo-metal flex flex-row md:flex-col items-center justify-between px-6 md:px-0 py-0 md:py-4 flex-shrink-0 z-50">
+
+      {/* 桌面顶部金色分隔线 */}
+      <div className="hidden md:block w-full h-px bg-gradient-to-r from-transparent via-exo-gold/30 to-transparent flex-shrink-0 mb-4" />
 
       <div className="flex flex-row md:flex-col space-x-6 md:space-x-0 md:space-y-6 items-center w-full md:w-auto justify-between md:justify-start">
-        <div className="hidden md:block p-1.5 md:p-2 bg-exo-bg rounded-lg border border-exo-gold/30 cursor-pointer text-exo-gold">
+        <div className="hidden md:block p-1.5 md:p-2 bg-exo-bg rounded-lg border border-exo-gold/20 cursor-pointer text-exo-gold/70">
           <Hexagon size={20} />
         </div>
 
@@ -56,7 +68,7 @@ const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList }) =
           onClick={() => avatarInputRef.current?.click()}
           title="点击更换头像"
         >
-          <img src={userAvatarUrl} className="w-10 h-10 rounded-full border border-exo-border object-cover bg-black" alt="User" />
+          <img src={userAvatarUrl} className="w-9 h-9 rounded-full border border-exo-border/60 object-cover bg-black" alt="User" />
           <div className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
             <Camera size={12} className="text-white" />
           </div>

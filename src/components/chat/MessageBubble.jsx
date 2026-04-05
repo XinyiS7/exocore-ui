@@ -63,7 +63,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
           className={`w-7 h-7 rounded-full border bg-black object-cover ${isUser ? 'border-white/20' : 'border-exo-gold/40'}`}
           alt={isUser ? (userNick || 'You') : (agentName || 'Core')}
         />
-        <span className={`text-[11px] font-semibold tracking-wide ${isUser ? 'text-white/40' : 'text-exo-gold/60'}`}>
+        <span className={`label-caps ${isUser ? 'text-white/30' : 'text-exo-gold/50'}`}>
           {isUser ? (userNick || 'You') : (agentName || 'Core')}
         </span>
       </div>
@@ -73,8 +73,8 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
           <div key={sIdx} className="text-[11px] text-exo-gold/70 bg-exo-gold/5 px-2 py-1 rounded">{step}</div>
         ))}
         {!isUser && msg.reasoning_content && (
-          <details className="bg-[#121215] border border-exo-border rounded-lg text-xs text-exo-muted cursor-pointer w-full">
-            <summary className="p-2 flex items-center gap-2">Thinking Process</summary>
+          <details className="bg-exo-metal border border-exo-border/50 rounded-lg text-xs text-exo-muted cursor-pointer w-full">
+            <summary className="p-2 flex items-center gap-2 label-caps">Thinking Process</summary>
             <div className="p-3 border-t border-exo-border bg-black/50 whitespace-pre-wrap font-mono">{msg.reasoning_content}</div>
           </details>
         )}
@@ -122,7 +122,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
           </div>
         )}
         <div className={isUser
-          ? 'max-w-[88%] bg-exo-panel border border-exo-border rounded-2xl rounded-tr-sm p-4 text-sm text-exo-text whitespace-pre-wrap'
+          ? 'max-w-[88%] bg-exo-metal border border-exo-border/60 rounded-2xl rounded-tr-sm p-4 text-sm text-exo-text whitespace-pre-wrap'
           : 'w-full prose prose-invert prose-sm max-w-none'}>
           {isUser
             ? msg.content
@@ -152,9 +152,9 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
 
       {/* Bookmark panel */}
       {showBookmark && (
-        <div className="w-full mt-2 border border-exo-gold/20 rounded-xl bg-exo-gold/5 overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 border-b border-exo-gold/10">
-            <span className="text-xs font-medium text-exo-gold/70">划线标记到长期记忆</span>
+        <div className="w-full mt-2 border border-exo-gold/15 rounded-xl bg-exo-gold/5 overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-exo-gold/10 gold-line-top">
+            <span className="label-caps text-exo-gold/60">划线标记到长期记忆</span>
             <button onClick={() => setShowBookmark(false)} className="text-exo-muted/50 hover:text-white transition-colors rounded p-0.5">
               <X size={12} />
             </button>

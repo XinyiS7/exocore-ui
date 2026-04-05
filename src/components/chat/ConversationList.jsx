@@ -8,14 +8,14 @@ import { baseUrl, getCsrfToken } from '../../utils/api';
 
 const CouncilStatusBadge = ({ status }) => {
   const map = {
-    pre_alignment: { label: '待对齐', cls: 'bg-exo-muted/20 text-exo-muted' },
-    dispatched:    { label: '分发中', cls: 'bg-blue-400/20 text-blue-400' },
-    cross_exam:    { label: '互审中', cls: 'bg-purple-400/20 text-purple-400' },
-    synthesizing:  { label: '综合中', cls: 'bg-exo-gold/20 text-exo-gold' },
-    finished:      { label: '已完成', cls: 'bg-green-400/20 text-green-400' },
+    pre_alignment: { label: '待对齐', cls: 'border-exo-muted/30 text-exo-muted/60' },
+    dispatched:    { label: '分发中', cls: 'border-blue-400/30 text-blue-400/60' },
+    cross_exam:    { label: '互审中', cls: 'border-purple-400/30 text-purple-400/60' },
+    synthesizing:  { label: '综合中', cls: 'border-exo-gold/30 text-exo-gold/70' },
+    finished:      { label: '已完成', cls: 'border-green-400/30 text-green-400/60' },
   };
-  const { label, cls } = map[status] || { label: status, cls: 'bg-exo-muted/20 text-exo-muted' };
-  return <span className={`text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full shrink-0 ${cls}`}>{label}</span>;
+  const { label, cls } = map[status] || { label: status, cls: 'border-exo-muted/30 text-exo-muted/60' };
+  return <span className={`label-caps px-1.5 py-0.5 rounded border shrink-0 ${cls}`}>{label}</span>;
 };
 
 const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refreshKey, openDestructor, openNewSession, activeFileProjectId, setActiveFileProjectId, showConvList, onClose, councilSessions, activeCouncilId, setActiveCouncilId, onCreateCouncil }) => {
@@ -57,7 +57,7 @@ const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refre
     <div onClick={() => setActiveSessionId(conv.id)} className={`group relative flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${activeSessionId === conv.id ? `bg-${colorClass}/10 text-${colorClass} border border-${colorClass}/30 shadow-[0_0_10px_rgba(var(--color-${colorClass}),0.1)]` : 'text-exo-muted hover:bg-white/5 border border-transparent'}`}>
       <div className="flex items-center gap-2 overflow-hidden">
         <Icon size={14} className={activeSessionId === conv.id ? `text-${colorClass}` : 'opacity-50'} />
-        <span className="text-xs font-medium truncate w-32">{conv.name || `Session #${conv.id}`}</span>
+        <span className="text-xs truncate w-32 tracking-wide">{conv.name || `Session #${conv.id}`}</span>
       </div>
       <div className="relative">
         <button onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === conv.id ? null : conv.id); }} className={`p-1 rounded hover:bg-white/10 ${activeMenuId === conv.id ? 'opacity-100 text-exo-gold' : 'opacity-0 group-hover:opacity-100'}`}><MoreVertical size={14} /></button>
@@ -99,9 +99,9 @@ const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refre
   return (
     <>
       {showConvList && <div className="md:hidden fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm" onClick={onClose} />}
-      <div className={`${showConvList ? 'translate-x-0 opacity-100' : '-translate-x-full md:translate-x-0 opacity-0 md:opacity-100 hidden md:flex'} transition-all duration-300 fixed md:relative inset-y-0 left-0 z-[70] md:z-auto w-72 md:w-64 h-full bg-[#12131a] border-r border-exo-border flex-col flex-shrink-0 shadow-2xl md:shadow-none`}>
-        <div className="p-4 border-b border-exo-border text-sm font-bold text-exo-text tracking-widest flex justify-between items-center bg-black/20">
-          <span>EXO CORE</span>
+      <div className={`${showConvList ? 'translate-x-0 opacity-100' : '-translate-x-full md:translate-x-0 opacity-0 md:opacity-100 hidden md:flex'} transition-all duration-300 fixed md:relative inset-y-0 left-0 z-[70] md:z-auto w-72 md:w-64 h-full bg-exo-surface border-r border-exo-border/50 flex-col flex-shrink-0 shadow-2xl md:shadow-none`}>
+        <div className="p-4 border-b border-exo-border/50 gold-line-top flex justify-between items-center bg-black/30">
+          <span className="label-caps text-exo-text/80 tracking-[0.2em]">EXO CORE</span>
           <div className="flex items-center gap-2">
             <button onClick={() => openNewSession()} className="p-1 rounded bg-exo-gold/10 text-exo-gold hover:bg-exo-gold hover:text-black"><Plus size={16} /></button>
             <button onClick={onClose} className="md:hidden p-1 rounded text-exo-muted hover:text-exo-text hover:bg-white/5"><X size={16} /></button>
@@ -110,7 +110,7 @@ const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refre
         <div className="flex-1 overflow-y-auto p-3 scrollbar-hide space-y-6" onClick={() => setActiveMenuId(null)}>
           {g045Sessions.length > 0 && (
             <div className="space-y-1 relative">
-              <div className="text-[10px] font-bold text-exo-gold uppercase tracking-wider mb-2 flex items-center gap-1 opacity-80"><Cpu size={12} /> G045 Superior</div>
+              <div className="label-caps text-exo-gold/70 mb-2 flex items-center gap-1.5"><Cpu size={11} /> G045 Superior</div>
               <div className="p-1.5 rounded-xl border border-exo-gold/20 bg-gradient-to-b from-exo-gold/5 to-transparent space-y-1">
                 {g045Sessions.map(conv => <SessionItem key={conv.id} conv={conv} icon={Sparkles} colorClass="exo-gold" />)}
               </div>
@@ -118,7 +118,7 @@ const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refre
           )}
           {projects.length > 0 && (
             <div className="space-y-2">
-              <div className="text-[10px] font-bold text-exo-muted uppercase tracking-wider mb-2 flex items-center gap-1"><Box size={12} /> Projects</div>
+              <div className="label-caps text-exo-muted/70 mb-2 flex items-center gap-1.5"><Box size={11} /> Projects</div>
               {projects.map(proj => {
                 const isExpanded = expandedProjects.has(proj.id);
                 const projSessions = conversations.filter(c => c.project === proj.id && c.agent_type !== 'g045');
@@ -153,7 +153,7 @@ const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refre
           )}
           {standardSessions.length > 0 && (
             <div className="space-y-1">
-              <div className="text-[10px] font-bold text-exo-muted uppercase tracking-wider mb-2 mt-4 flex items-center gap-1"><Hash size={12} /> Standard Nodes</div>
+              <div className="label-caps text-exo-muted/70 mb-2 mt-4 flex items-center gap-1.5"><Hash size={11} /> Standard Nodes</div>
               {standardSessions.map(conv => <SessionItem key={conv.id} conv={conv} icon={Hash} colorClass="exo-text" />)}
             </div>
           )}
@@ -165,9 +165,9 @@ const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refre
             </div>
           )}
 
-          <div className="mt-auto pt-4 border-t border-exo-border/50">
-            <div className="text-[10px] font-bold text-exo-muted uppercase tracking-wider mb-2 flex items-center justify-between">
-              <span className="flex items-center gap-1"><Users size={12} /> Council Room</span>
+          <div className="mt-auto pt-4 border-t border-exo-border/40">
+            <div className="label-caps text-exo-muted/70 mb-2 flex items-center justify-between">
+              <span className="flex items-center gap-1.5"><Users size={11} /> Council Room</span>
               <button
                 onClick={e => { e.stopPropagation(); onCreateCouncil && onCreateCouncil(); }}
                 className="p-0.5 rounded text-exo-muted hover:text-exo-gold hover:bg-exo-gold/10 transition-colors"

@@ -355,19 +355,19 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets, h
 
   return (
     <div className="flex-1 min-w-0 flex flex-col h-full bg-exo-bg relative">
-      <div className="h-14 border-b border-exo-border flex items-center justify-between px-4 md:px-6 bg-exo-panel/50 backdrop-blur-md">
+      <div className="h-14 border-b border-exo-border/50 flex items-center justify-between px-4 md:px-6 bg-exo-panel/40 backdrop-blur-md">
         <div className="flex items-center gap-2 md:gap-3">
           {onBack
             ? <button onClick={onBack} className="p-1.5 rounded-lg text-exo-muted hover:text-exo-text hover:bg-white/5"><ArrowLeft size={18} /></button>
             : <button onClick={() => setShowConvList(true)} className="md:hidden p-1.5 rounded-lg text-exo-muted hover:bg-white/5"><Menu size={20} /></button>
           }
           <div className="flex items-center gap-2 overflow-hidden">
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-exo-gold uppercase tracking-tighter shrink-0">{sessionInfo?.session_type || 'CHAT'}</span>
-            <div className={`w-2 h-2 rounded-full shrink-0 ${isGenerating ? 'bg-exo-gold animate-pulse' : 'bg-green-500'}`}></div>
+            <span className="label-caps px-1.5 py-0.5 rounded bg-white/5 border border-exo-gold/15 text-exo-gold/70 shrink-0">{sessionInfo?.session_type || 'CHAT'}</span>
+            <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isGenerating ? 'bg-exo-gold animate-pulse-led' : 'bg-green-500/70'}`}></div>
             <div className="flex flex-col overflow-hidden">
               <div className="flex items-center gap-1.5">
-                <span className="font-semibold text-exo-text truncate">{headerTitleOverride || sessionInfo?.name || `Session #${activeSessionId}`}</span>
-                <span className="text-[10px] text-exo-muted/60 shrink-0">#{activeSessionId}</span>
+                <span className="text-sm text-exo-text tracking-wide truncate">{headerTitleOverride || sessionInfo?.name || `Session #${activeSessionId}`}</span>
+                <span className="font-mono text-[10px] text-exo-muted/40 shrink-0">#{activeSessionId}</span>
               </div>
               {sessionInfo?.agent_preset_id && presets.find(x => x.id === sessionInfo.agent_preset_id) && (
                 <span className="text-[10px] text-exo-muted/50 truncate leading-tight">{presets.find(x => x.id === sessionInfo.agent_preset_id)?.name}</span>
@@ -456,14 +456,14 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets, h
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-4 border-t border-exo-border bg-exo-bg flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-3 px-1 text-[10px] font-bold uppercase tracking-widest text-exo-muted">
-          <div className="flex items-center gap-1.5 text-exo-gold/80 bg-exo-gold/5 px-2 py-1 rounded border border-exo-gold/10">
-            <Cpu size={12} />
+      <div className="p-4 border-t border-exo-border/50 bg-exo-bg flex flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-3 px-1 text-exo-muted">
+          <div className="flex items-center gap-1.5 text-exo-gold/70 bg-exo-gold/5 px-2 py-1 rounded border border-exo-gold/10">
+            <Cpu size={11} />
             <select
               value={currentModel}
               onChange={(e) => updatePreference({ model: e.target.value })}
-              className="bg-transparent outline-none text-exo-text cursor-pointer font-bold uppercase"
+              className="bg-transparent outline-none text-exo-text cursor-pointer label-caps"
             >
               {AVAILABLE_MODELS.map(m => (
                 <option key={m} value={m} className="bg-[#1a1b23]">{m}</option>
@@ -471,9 +471,9 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets, h
             </select>
           </div>
 
-          <div className="flex items-center gap-2 bg-white/5 px-2 py-1 rounded border border-white/5">
-            <span className="opacity-40">Think:</span>
-            <select value={thinkingLevel} onChange={(e) => updatePreference({ thinking_level: e.target.value })} className="bg-transparent outline-none text-exo-text cursor-pointer">
+          <div className="flex items-center gap-2 bg-white/[0.03] px-2 py-1 rounded border border-white/[0.04]">
+            <span className="label-caps opacity-40">Think</span>
+            <select value={thinkingLevel} onChange={(e) => updatePreference({ thinking_level: e.target.value })} className="bg-transparent outline-none text-exo-text/70 cursor-pointer label-caps">
               <option value="off" className="bg-[#1a1b23]">Off</option>
               <option value="auto" className="bg-[#1a1b23]">Auto</option>
               <option value="low" className="bg-[#1a1b23]">Low</option>
@@ -482,9 +482,9 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets, h
             </select>
           </div>
 
-          <div className="flex items-center gap-2 bg-white/5 px-2 py-1 rounded border border-white/5">
-            <span className="opacity-40">Temp:</span>
-            <select value={temperature} onChange={(e) => updatePreference({ temperature: e.target.value })} className="bg-transparent outline-none text-exo-text cursor-pointer">
+          <div className="flex items-center gap-2 bg-white/[0.03] px-2 py-1 rounded border border-white/[0.04]">
+            <span className="label-caps opacity-40">Temp</span>
+            <select value={temperature} onChange={(e) => updatePreference({ temperature: e.target.value })} className="bg-transparent outline-none text-exo-text/70 cursor-pointer label-caps">
               <option value="1.0" className="bg-[#1a1b23]">Precise</option>
               <option value="1.3" className="bg-[#1a1b23]">Balanced</option>
               <option value="1.8" className="bg-[#1a1b23]">Creative</option>
@@ -497,7 +497,7 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets, h
           )}
         </div>
 
-        <div className="flex flex-col bg-exo-panel border border-exo-border rounded-xl focus-within:border-exo-gold/50 overflow-hidden">
+        <div className="flex flex-col bg-exo-panel border border-exo-border/60 rounded-xl focus-within:border-exo-gold/40 focus-within:shadow-[0_0_0_1px_rgba(212,175,55,0.1)] transition-shadow overflow-hidden">
           {attachedFilePreviews.length > 0 && (
             <div className="flex flex-wrap gap-2 px-3 pt-3 pb-2 border-b border-exo-border/50">
               {attachedFilePreviews.map((fp, i) => (
@@ -550,8 +550,8 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets, h
           />
           <div className="flex items-center justify-between px-2 pb-2">
             <div className="flex items-center gap-0.5">
-              <button onClick={() => imageInputRef.current?.click()} title="上传图片" className="p-1.5 text-exo-muted hover:text-white transition-colors"><ImageIcon size={16} /></button>
-              <button onClick={() => fileInputRef.current?.click()} title="上传文件" className="p-1.5 text-exo-muted hover:text-white transition-colors"><Paperclip size={16} /></button>
+              <button onClick={() => imageInputRef.current?.click()} title="上传图片" className="p-1.5 text-exo-muted hover:text-exo-gold transition-colors"><ImageIcon size={16} /></button>
+              <button onClick={() => fileInputRef.current?.click()} title="上传文件" className="p-1.5 text-exo-muted hover:text-exo-gold transition-colors"><Paperclip size={16} /></button>
               {/* 图片 input：accept="image/*" → 移动端唤起相册/相机 */}
               <input type="file" ref={imageInputRef} className="hidden" multiple accept="image/*" onChange={(e) => setAttachedFiles(prev => [...prev, ...Array.from(e.target.files)])} />
               {/* 文件 input：明确文档类型 → 移动端唤起文件管理器 */}
