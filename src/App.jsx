@@ -15,6 +15,7 @@ import SettingsPanel from './components/settings/SettingsPanel';
 import CouncilArea from './components/council/CouncilArea';
 import CouncilCreateModal from './components/council/CouncilCreateModal';
 import { listCouncilSessions } from './utils/councilApi';
+import HomePanel from './components/home/HomePanel';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState('chat');
@@ -146,6 +147,7 @@ export default function App() {
         )}
         {currentTab === 'profile' && <UserProfile presets={presets} />}
         {currentTab === 'settings' && <SettingsPanel projects={projects} presets={presets} />}
+        {currentTab === 'home' && <HomePanel setCurrentTab={setCurrentTab} />}
       </div>
 
       {/* Sidebar: Order 2 on Mobile (Bottom), Order 1 on Desktop (Left) */}

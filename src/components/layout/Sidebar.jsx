@@ -47,9 +47,13 @@ const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList }) =
       <div className="hidden md:block w-full h-px bg-gradient-to-r from-transparent via-exo-gold/30 to-transparent flex-shrink-0 mb-4" />
 
       <div className="flex flex-row md:flex-col space-x-6 md:space-x-0 md:space-y-6 items-center w-full md:w-auto justify-between md:justify-start">
-        <div className="hidden md:block p-1.5 md:p-2 bg-exo-bg rounded-lg border border-exo-gold/20 cursor-pointer text-exo-gold/70">
+        <button
+          onClick={() => { setCurrentTab('home'); setShowConvList(false); }}
+          className={`hidden md:flex items-center justify-center p-1.5 rounded-lg border transition-all ${currentTab === 'home' ? 'border-exo-gold/40 text-exo-gold bg-exo-gold/5' : 'border-exo-gold/15 text-exo-gold/40 hover:text-exo-gold/70 hover:border-exo-gold/30'}`}
+          title="控制台"
+        >
           <Hexagon size={20} />
-        </div>
+        </button>
 
         <div className="flex md:flex-col gap-8 md:gap-6 justify-around md:justify-start w-full md:w-auto">
           <NavIcon icon={MessageSquare} isActive={currentTab === 'chat'} onClick={() => { setCurrentTab('chat'); setShowConvList(true); }} />
