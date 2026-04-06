@@ -1,9 +1,17 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Tag, Edit3, Trash2, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import { baseUrl, getCsrfToken } from '../../utils/api';
+import { sortPresets } from '../../utils/presets';
 
 const MemoryManager = ({ presets }) => {
-  const [selectedPresetId, setSelectedPresetId] = useState(presets[0]?.id ?? '');
+  const sortedPresets = useMemo(() => sortPresets(presets), [presets]);
+  const [selectedPresetId, setSelectedPresetId] = useState(sortedPresets[0]?.id ?? '');
+
+  useEffect(() => {
+    if (!selectedPresetId && sortedPresets.length > 0) {
+      setSelectedPresetId(sortedPresets[0].id);
+    }
+  }, [sortedPresets, selectedPresetId]);
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({ scope: '', source: '', is_processed: '' });
@@ -91,8 +99,8 @@ const MemoryManager = ({ presets }) => {
           onChange={e => setSelectedPresetId(e.target.value)}
           className="bg-exo-panel border border-exo-border rounded-lg px-2 py-1.5 text-sm text-exo-text outline-none focus:border-exo-gold/50 cursor-pointer"
         >
-          {presets.length === 0 && <option value="">无 Agent</option>}
-          {presets.map(p => (
+          {sortedPresets.length === 0 && <option value="">无 Agent</option>}
+          {sortedPresets.map(p => (
             <option key={p.id} value={p.id} className="bg-[#1a1b23]">{p.name}</option>
           ))}
         </select>

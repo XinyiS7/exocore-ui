@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { X, Users, Crown, Check } from 'lucide-react';
 import { createCouncilSession } from '../../utils/councilApi';
+import { sortPresets } from '../../utils/presets';
 
 const CouncilCreateModal = ({ isOpen, onClose, presets, onSuccess }) => {
   const [name, setName] = useState('');
@@ -9,14 +10,16 @@ const CouncilCreateModal = ({ isOpen, onClose, presets, onSuccess }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  const sortedPresets = useMemo(() => sortPresets(presets), [presets, isOpen]);
+
   useEffect(() => {
     if (!isOpen) return;
     setName('');
     setError('');
     setSelectedParticipantIds([]);
-    const g045 = presets.find(p => p.agent_type === 'g045');
-    setArbitratorId(g045 ? String(g045.id) : (presets[0] ? String(presets[0].id) : ''));
-  }, [isOpen, presets]);
+    const g045 = sortedPresets.find(p => p.agent_type === 'g045');
+    setArbitratorId(g045 ? String(g045.id) : (sortedPresets[0] ? String(sortedPresets[0].id) : ''));
+  }, [isOpen, sortedPresets]);
 
   if (!isOpen) return null;
 
@@ -26,7 +29,7 @@ const CouncilCreateModal = ({ isOpen, onClose, presets, onSuccess }) => {
     );
   };
 
-  const participantCandidates = presets.filter(p => String(p.id) !== arbitratorId);
+  const participantCandidates = sortedPresets.filter(p => String(p.id) !== arbitratorId);
 
   const handleSubmit = async () => {
     if (!arbitratorId) { setError('请选择仲裁者'); return; }
@@ -82,7 +85,7 @@ const CouncilCreateModal = ({ isOpen, onClose, presets, onSuccess }) => {
               onChange={e => { setArbitratorId(e.target.value); setSelectedParticipantIds(p => p.filter(id => id !== parseInt(e.target.value))); }}
               className="w-full bg-black/40 border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-gold/50"
             >
-              {presets.map(p => (
+              {sortedPresets.map(p => (
                 <option key={p.id} value={p.id}>{p.name}{p.agent_type === 'g045' ? ' ★' : ''}</option>
               ))}
             </select>

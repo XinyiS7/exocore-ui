@@ -8,18 +8,21 @@ import { getAgentAvatarUrl } from '../../utils/avatar';
 import EditPresetModal from '../modals/EditPresetModal';
 import AvatarCropModal from '../modals/AvatarCropModal';
 import MemoryAnchorTicker from './MemoryAnchorTicker';
+import { getAgentHubOrder } from '../../utils/presets';
 
 const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, refreshPresets }) => {
   const [editTarget, setEditTarget] = useState(null);
   const [anchorCache, setAnchorCache] = useState({});
-  const [cardOrder, setCardOrder] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('agentHubOrder') || '{}'); } catch { return {}; }
-  });
+  const [cardOrder, setCardOrder] = useState(() => getAgentHubOrder());
   const [dragging, setDragging] = useState(null);
   const [dragOver, setDragOver] = useState(null);
 
   const applyOrder = (list) =>
-    [...list].sort((a, b) => (cardOrder[a.id] ?? a.id) - (cardOrder[b.id] ?? b.id));
+    [...list].sort((a, b) => {
+      const orderA = cardOrder[a.id] !== undefined ? cardOrder[a.id] : a.id;
+      const orderB = cardOrder[b.id] !== undefined ? cardOrder[b.id] : b.id;
+      return orderA - orderB;
+    });
 
   const g045Presets = applyOrder(presets.filter(p => p.agent_type === 'g045'));
   const standardPresets = applyOrder(presets.filter(p => p.agent_type !== 'g045'));

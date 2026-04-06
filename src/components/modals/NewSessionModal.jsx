@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, X, Activity, Folder, Check, MessageSquare, Code2 } from 'lucide-react';
 import { baseUrl, getCsrfToken } from '../../utils/api';
+import { sortPresets } from '../../utils/presets';
 
 const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, onSuccess }) => {
+  const sortedPresets = useMemo(() => sortPresets(presets), [presets, isOpen]);
   const [name, setName] = useState("");
   const [selectedPresetId, setSelectedPresetId] = useState("");
   const [selectedProjectIds, setSelectedProjectIds] = useState([]);
@@ -15,16 +17,16 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
     setSessionType("chat");
     setSelectedProjectIds(initialContext?.projectId ? [initialContext.projectId] : []);
 
-    if (initialContext?.presetId && presets.find(p => p.id === initialContext.presetId)) {
+    if (initialContext?.presetId && sortedPresets.find(p => p.id === initialContext.presetId)) {
       setSelectedPresetId(initialContext.presetId);
-    } else if (presets.length > 0) {
-      setSelectedPresetId(presets[0].id);
+    } else if (sortedPresets.length > 0) {
+      setSelectedPresetId(sortedPresets[0].id);
     }
-  }, [isOpen, initialContext, presets]);
+  }, [isOpen, initialContext, sortedPresets]);
 
   if (!isOpen) return null;
 
-  const currentPreset = presets.find(p => p.id === parseInt(selectedPresetId));
+  const currentPreset = sortedPresets.find(p => p.id === parseInt(selectedPresetId));
   const isG045 = currentPreset?.agent_type === 'g045';
 
   const toggleProject = (pid) => {
@@ -80,7 +82,7 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-exo-muted uppercase">Select Agent Core</label>
             <div className="grid grid-cols-1 gap-2">
-              {presets.map(preset => (
+              {sortedPresets.map(preset => (
                 <div key={preset.id} onClick={() => { setSelectedPresetId(preset.id); if (preset.agent_type !== 'g045' && selectedProjectIds.length > 1) setSelectedProjectIds([selectedProjectIds[0]]); }}
                   className={`p-3 rounded-lg border cursor-pointer flex justify-between ${parseInt(selectedPresetId) === preset.id ? (preset.agent_type === 'g045' ? 'bg-exo-gold/10 border-exo-gold' : 'bg-white/10 border-white/30') : 'bg-black/30 border-exo-border text-exo-muted'}`}>
                   <div className="flex flex-col">
