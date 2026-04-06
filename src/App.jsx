@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import 'highlight.js/styles/atom-one-dark.css';
-import { Hexagon, MessageSquare } from 'lucide-react';
+import { Hexagon, MessageSquare, Users, Plus } from 'lucide-react';
 import { baseUrl } from './utils/api';
 
 import DestructorModal from './components/modals/DestructorModal';

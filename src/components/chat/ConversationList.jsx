@@ -186,7 +186,7 @@ const ConversationList = ({
           
           {/* G045 Section: Max 50% */}
           {g045Sessions.length > 0 && (
-            <div className="shrink-0 max-h-[50%] flex flex-col border-b border-exo-border/20">
+            <div className="shrink-0 max-h-[40%] flex flex-col border-b border-exo-border/20">
               <div className="label-caps text-exo-gold/70 px-4 py-3 flex items-center gap-1.5 bg-black/10 shrink-0"><Cpu size={11} /> G045 Superior</div>
               <div className="overflow-y-auto px-3 pb-3 space-y-1">
                 <div className="p-1.5 rounded-xl border border-exo-gold/20 bg-gradient-to-b from-exo-gold/5 to-transparent space-y-1">
