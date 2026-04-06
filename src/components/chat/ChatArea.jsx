@@ -219,6 +219,21 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets, h
             continue;
           }
 
+          if (eventType === 'error') {
+            let errorMsg = dataStr;
+            try { const e = JSON.parse(dataStr); errorMsg = e.message || dataStr; } catch(e) {}
+            setMessages(prev => {
+              const newMsgs = [...prev];
+              const lastMsg = { ...newMsgs[newMsgs.length - 1] };
+              lastMsg.status_text = null;
+              lastMsg.error = errorMsg;
+              newMsgs[newMsgs.length - 1] = lastMsg;
+              allHistoryRef.current[allHistoryRef.current.length - 1] = lastMsg;
+              return newMsgs;
+            });
+            continue;
+          }
+
           let text = dataStr;
           try {
             const parsed = JSON.parse(dataStr);
@@ -237,8 +252,11 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets, h
               lastMsg.reasoning_content = (lastMsg.reasoning_content || '') + text;
             } else if (eventType === 'content') {
               lastMsg.content = (lastMsg.content || '') + text;
+              lastMsg.status_text = null;
             } else if (eventType === 'anchor_created') {
               try { lastMsg.new_anchors = [...(lastMsg.new_anchors || []), JSON.parse(text)]; } catch(e) {}
+            } else if (eventType === 'status') {
+              lastMsg.status_text = text;
             }
             allHistoryRef.current[allHistoryRef.current.length - 1] = lastMsg;
             return newMsgs;

@@ -100,6 +100,23 @@ data: "量子纠缠是两个粒子..."                  // string，正文回复
 event: anchor_created
 data: {"pattern": "量子纠缠"}                  // G045 function call 创建了新记忆锚点时触发
 
+event: status
+data: "正在搜索…"                              // string，工具调用前的状态提示（阻塞操作期间显示）
+// 可能的值：
+//   "正在搜索…"              — web_search 开始前
+//   "正在检索记忆…"          — history_backtracking 开始前
+//   "正在读取目录…"          — ls_local
+//   "正在读取文件…"          — cat_local
+//   "正在写入文件…"          — write_local
+//   "正在修改文件…"          — fileinput_local
+//   "正在执行命令…"          — execute_bash
+//   "正在启动子代理…"        — spawn_sub_agent
+//   "正在获取子代理结果…"    — get_sub_agent_result
+//   "正在读取日历…"          — calendar_list_events
+//   "正在创建日历事件…"      — calendar_create_event
+//   "正在删除日历事件…"      — calendar_delete_event
+// 前端：在 status 事件到来时显示加载指示器；收到下一个 content 或 done 时清除
+
 event: telemetry
 data: {
   "platform": "gemini",
@@ -110,7 +127,18 @@ data: {
 }
 
 event: error
-data: "LLM 传输层中断: ..."                    // string，发生错误时
+data: {
+  "code": "rate_limit",    // 错误代码（见下）
+  "message": "API 配额已用尽，请稍后重试"
+}
+// code 枚举值：
+//   "rate_limit"   — API 配额耗尽 / 限速 (429)
+//   "server_busy"  — 服务器繁忙 (503 / overloaded)
+//   "server_error" — 服务器内部错误 (500)
+//   "timeout"      — 请求超时
+//   "network"      — 网络连接中断
+//   "auth"         — API 密钥无效或未配置
+//   "stream_error" — 其他流式传输中断
 
 event: done
 data: "[DONE]"                                 // 流结束标志

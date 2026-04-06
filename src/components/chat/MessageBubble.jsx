@@ -72,6 +72,17 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
         {!isUser && msg.reasoning_steps && msg.reasoning_steps.map((step, sIdx) => (
           <div key={sIdx} className="text-[11px] text-exo-gold/70 bg-exo-gold/5 px-2 py-1 rounded">{step}</div>
         ))}
+        {!isUser && msg.status_text && (
+          <div className="flex items-center gap-2 text-[11px] text-exo-muted/70 px-2 py-1.5">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-exo-gold/60 animate-pulse shrink-0" />
+            <span>{msg.status_text}</span>
+          </div>
+        )}
+        {!isUser && msg.error && (
+          <div className="text-[11px] text-red-400/80 bg-red-500/5 border border-red-500/15 rounded-lg px-3 py-2">
+            {msg.error}
+          </div>
+        )}
         {!isUser && msg.reasoning_content && (
           <details className="bg-exo-metal border border-exo-border/50 rounded-lg text-xs text-exo-muted cursor-pointer w-full">
             <summary className="p-2 flex items-center gap-2 label-caps">Thinking Process</summary>
