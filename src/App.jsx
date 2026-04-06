@@ -107,10 +107,36 @@ export default function App() {
               setActiveFileProjectId={setActiveFileProjectId}
               showConvList={showConvList}
               onClose={() => setShowConvList(false)}
+            />
+            {activeFileProjectId ? (
+              <ProjectFilesArea projectId={activeFileProjectId} projects={projects} openDestructor={openDestructor} />
+            ) : activeSessionId ? (
+              <ChatArea activeSessionId={activeSessionId} setShowConvList={setShowConvList} openNewSession={openNewSession} presets={presets} />
+            ) : (
+              <div className="flex-1 min-w-0 flex flex-col items-center justify-center bg-exo-bg gap-4 text-center p-8">
+                <Hexagon size={44} className="text-exo-gold/20" />
+                <p className="text-exo-muted text-sm tracking-widest uppercase">初始化节点或选择已有会话</p>
+                <button onClick={() => setShowConvList(true)} className="md:hidden mt-1 px-4 py-2 text-xs text-exo-gold border border-exo-gold/30 rounded-lg hover:bg-exo-gold/10 flex items-center gap-2">
+                  <MessageSquare size={14} /> 打开会话列表
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {currentTab === 'council' && (
+          <div className="flex flex-1 min-w-0 h-full flex-row relative">
+            <ConversationList
+              isCouncilMode={true}
               councilSessions={councilSessions}
               activeCouncilId={activeCouncilId}
-              setActiveCouncilId={(id) => { setActiveCouncilId(id); setActiveSessionId(null); setActiveFileProjectId(null); }}
+              setActiveCouncilId={(id) => { setActiveCouncilId(id); setActiveSessionId(null); setShowConvList(false); }}
               onCreateCouncil={() => setShowCouncilCreate(true)}
+              showConvList={showConvList}
+              onClose={() => setShowConvList(false)}
+              refreshKey={refreshKey}
+              projects={projects}
+              setActiveSessionId={setActiveSessionId}
             />
             {activeCouncilId ? (
               <CouncilArea
@@ -120,16 +146,12 @@ export default function App() {
                 setShowConvList={setShowConvList}
                 openNewSession={openNewSession}
               />
-            ) : activeFileProjectId ? (
-              <ProjectFilesArea projectId={activeFileProjectId} projects={projects} openDestructor={openDestructor} />
-            ) : activeSessionId ? (
-              <ChatArea activeSessionId={activeSessionId} setShowConvList={setShowConvList} openNewSession={openNewSession} presets={presets} />
             ) : (
               <div className="flex-1 min-w-0 flex flex-col items-center justify-center bg-exo-bg gap-4 text-center p-8">
-                <Hexagon size={44} className="text-exo-gold/20" />
-                <p className="text-exo-muted text-sm">从列表中选择或新建一个会话</p>
-                <button onClick={() => setShowConvList(true)} className="md:hidden mt-1 px-4 py-2 text-xs text-exo-gold border border-exo-gold/30 rounded-lg hover:bg-exo-gold/10 flex items-center gap-2">
-                  <MessageSquare size={14} /> 打开会话列表
+                <Users size={44} className="text-exo-gold/20" />
+                <p className="text-exo-muted text-sm tracking-widest uppercase">选择议事链路或发起新召集</p>
+                <button onClick={() => setShowCouncilCreate(true)} className="mt-1 px-6 py-2 text-xs font-bold text-black bg-exo-gold rounded-lg hover:bg-yellow-400 flex items-center gap-2 transition-all">
+                  <Plus size={14} /> 召集议会
                 </button>
               </div>
             )}

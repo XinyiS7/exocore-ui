@@ -1,11 +1,12 @@
 import React, { useState, useRef } from 'react';
-import { MessageSquare, BrainCircuit, User, Settings, Hexagon, Camera } from 'lucide-react';
+import { MessageSquare, BrainCircuit, User, Settings, Hexagon, Camera, Users } from 'lucide-react';
 import { getUserAvatarUrl } from '../../utils/avatar';
 import AvatarCropModal from '../modals/AvatarCropModal';
 
-const NavIcon = ({ icon: Icon, isActive, onClick }) => (
+const NavIcon = ({ icon: Icon, isActive, onClick, title }) => (
   <button
     onClick={onClick}
+    title={title}
     className={`p-2 transition-all ${
       isActive
         ? 'text-exo-gold bg-exo-gold/5 border-b-2 border-exo-gold rounded-t-lg md:border-b-0 md:border-l-2 md:rounded-t-none md:rounded-r-lg'
@@ -56,10 +57,11 @@ const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList }) =
         </button>
 
         <div className="flex md:flex-col gap-8 md:gap-6 justify-around md:justify-start w-full md:w-auto">
-          <NavIcon icon={MessageSquare} isActive={currentTab === 'chat'} onClick={() => { setCurrentTab('chat'); setShowConvList(true); }} />
-          <NavIcon icon={BrainCircuit} isActive={currentTab === 'agent_hub'} onClick={() => { setCurrentTab('agent_hub'); setShowConvList(false); }} />
-          <NavIcon icon={User} isActive={currentTab === 'profile'} onClick={() => { setCurrentTab('profile'); setShowConvList(false); }} />
-          <span className="md:hidden"><NavIcon icon={Settings} isActive={currentTab === 'settings'} onClick={() => setCurrentTab('settings')} /></span>
+          <NavIcon icon={MessageSquare} title="会话" isActive={currentTab === 'chat'} onClick={() => { setCurrentTab('chat'); setShowConvList(true); }} />
+          <NavIcon icon={Users} title="议会" isActive={currentTab === 'council'} onClick={() => { setCurrentTab('council'); setShowConvList(true); }} />
+          <NavIcon icon={BrainCircuit} title="Agent 枢纽" isActive={currentTab === 'agent_hub'} onClick={() => { setCurrentTab('agent_hub'); setShowConvList(false); }} />
+          <NavIcon icon={User} title="时间线" isActive={currentTab === 'profile'} onClick={() => { setCurrentTab('profile'); setShowConvList(false); }} />
+          <span className="md:hidden"><NavIcon icon={Settings} title="设置" isActive={currentTab === 'settings'} onClick={() => setCurrentTab('settings')} /></span>
         </div>
       </div>
 

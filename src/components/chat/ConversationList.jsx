@@ -1,27 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   ChevronDown, ChevronRight, X, Plus, Cpu, Sparkles, Box,
   Folder, FolderOpen, Hash, MoreVertical, Edit2, Trash2,
-  ShieldAlert, Users, Check
+  ShieldAlert, ChevronLast
 } from 'lucide-react';
 import { baseUrl, getCsrfToken } from '../../utils/api';
 
-const CouncilStatusBadge = ({ status }) => {
-  const map = {
-    pre_alignment: { label: '待对齐', cls: 'border-exo-muted/30 text-exo-muted/60' },
-    dispatched:    { label: '分发中', cls: 'border-blue-400/30 text-blue-400/60' },
-    cross_exam:    { label: '互审中', cls: 'border-purple-400/30 text-purple-400/60' },
-    synthesizing:  { label: '综合中', cls: 'border-exo-gold/30 text-exo-gold/70' },
-    finished:      { label: '已完成', cls: 'border-green-400/30 text-green-400/60' },
-  };
-  const { label, cls } = map[status] || { label: status, cls: 'border-exo-muted/30 text-exo-muted/60' };
-  return <span className={`label-caps px-1.5 py-0.5 rounded border shrink-0 ${cls}`}>{label}</span>;
-};
-
-const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refreshKey, openDestructor, openNewSession, activeFileProjectId, setActiveFileProjectId, showConvList, onClose, councilSessions, activeCouncilId, setActiveCouncilId, onCreateCouncil }) => {
+const ConversationList = ({ 
+  activeSessionId, 
+  setActiveSessionId, 
+  projects, 
+  refreshKey, 
+  openDestructor, 
+  openNewSession, 
+  activeFileProjectId, 
+  setActiveFileProjectId, 
+  showConvList, 
+  onClose,
+  isCouncilMode = false, // 新增：是否为议会模式
+  councilSessions = [],
+  activeCouncilId,
+  setActiveCouncilId,
+  onCreateCouncil
+}) => {
   const [conversations, setConversations] = useState([]);
   const [expandedProjects, setExpandedProjects] = useState(new Set());
   const [activeMenuId, setActiveMenuId] = useState(null);
+  const [showAllProjects, setShowAllProjects] = useState(false);
 
   useEffect(() => {
     fetch(`${baseUrl}/api/agents/conversations/`, { credentials: 'include' })
@@ -29,10 +34,10 @@ const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refre
       .then(data => {
         const sortedData = data.sort((a, b) => new Date(b.last_message_at || b.created_at) - new Date(a.last_message_at || a.created_at));
         setConversations(sortedData);
-        if (sortedData.length > 0 && !activeSessionId) setActiveSessionId(sortedData[0].id);
+        if (sortedData.length > 0 && !activeSessionId && !isCouncilMode) setActiveSessionId(sortedData[0].id);
       })
       .catch(err => console.error("会话列表获取失败:", err));
-  }, [refreshKey]);
+  }, [refreshKey, isCouncilMode]);
 
   const toggleProject = (projectId) => {
     setExpandedProjects(prev => {
@@ -53,17 +58,28 @@ const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refre
   const g045Sessions = conversations.filter(c => c.agent_type === 'g045' && !councilInternalIds.has(c.id));
   const standardSessions = conversations.filter(c => c.agent_type !== 'g045' && c.project === null && !councilInternalIds.has(c.id));
 
+  // 项目排序逻辑：按项目中最近会话的活跃时间排序
+  const sortedProjects = useMemo(() => {
+    return [...projects].sort((a, b) => {
+      const lastA = conversations.find(c => c.project === a.id)?.last_message_at || 0;
+      const lastB = conversations.find(c => c.project === b.id)?.last_message_at || 0;
+      return new Date(lastB) - new Date(lastA);
+    });
+  }, [projects, conversations]);
+
+  const visibleProjects = showAllProjects ? sortedProjects : sortedProjects.slice(0, 2);
+
   const SessionItem = ({ conv, icon: Icon, colorClass }) => (
-    <div onClick={() => setActiveSessionId(conv.id)} className={`group relative flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all ${activeSessionId === conv.id ? `bg-${colorClass}/10 text-${colorClass} border border-${colorClass}/30 shadow-[0_0_10px_rgba(var(--color-${colorClass}),0.1)]` : 'text-exo-muted hover:bg-white/5 border border-transparent'}`}>
+    <div onClick={() => setActiveSessionId(conv.id)} className={`group relative flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-all ${activeSessionId === conv.id ? `bg-${colorClass}/10 text-${colorClass} border border-${colorClass}/30 shadow-[0_0_15px_rgba(var(--color-${colorClass}),0.05)]` : 'text-exo-muted hover:bg-white/5 border border-transparent'}`}>
       <div className="flex items-center gap-2 overflow-hidden">
         <Icon size={14} className={activeSessionId === conv.id ? `text-${colorClass}` : 'opacity-50'} />
-        <span className="text-xs truncate w-32 tracking-wide">{conv.name || `Session #${conv.id}`}</span>
+        <span className="text-xs truncate w-36 tracking-wide">{conv.name || `Session #${conv.id}`}</span>
       </div>
-      <div className="relative">
-        <button onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === conv.id ? null : conv.id); }} className={`p-1 rounded hover:bg-white/10 ${activeMenuId === conv.id ? 'opacity-100 text-exo-gold' : 'opacity-0 group-hover:opacity-100'}`}><MoreVertical size={14} /></button>
+      <div className="relative shrink-0">
+        <button onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === conv.id ? null : conv.id); }} className={`p-1.5 rounded hover:bg-white/10 transition-opacity ${activeMenuId === conv.id ? 'opacity-100 text-exo-gold' : 'opacity-0 group-hover:opacity-100'}`}><MoreVertical size={14} /></button>
         {activeMenuId === conv.id && (
-          <div className="absolute right-0 top-6 w-28 bg-[#1a1b23] border border-exo-border rounded-md shadow-xl z-50 overflow-hidden text-xs">
-            <div className="px-3 py-2 hover:bg-white/5 flex items-center gap-2 text-exo-text" onClick={(e) => {
+          <div className="absolute right-0 top-7 w-32 bg-[#1a1b23] border border-exo-border rounded-md shadow-2xl z-50 overflow-hidden text-xs py-1">
+            <div className="px-3 py-2 hover:bg-white/5 flex items-center gap-2 text-exo-text transition-colors" onClick={(e) => {
               e.stopPropagation(); setActiveMenuId(null);
               const newName = prompt("Rename:", conv.name);
               if (newName && newName !== conv.name) {
@@ -74,8 +90,8 @@ const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refre
                   body: JSON.stringify({ name: newName }),
                 }).then(r => { if (r.ok) setConversations(p => p.map(c => c.id === conv.id ? {...c, name: newName} : c)); });
               }
-            }}><Edit2 size={12} /> Rename</div>
-            <div className="px-3 py-2 hover:bg-red-500/10 flex items-center gap-2 text-red-400" onClick={(e) => {
+            }}><Edit2 size={12} /> 重命名</div>
+            <div className="px-3 py-2 hover:bg-red-500/10 flex items-center gap-2 text-red-400 transition-colors" onClick={(e) => {
               e.stopPropagation(); setActiveMenuId(null);
               openDestructor({
                 title: conv.name,
@@ -89,113 +105,156 @@ const ConversationList = ({ activeSessionId, setActiveSessionId, projects, refre
                   }).then(r => { if (r.ok) setConversations(p => p.filter(c => c.id !== conv.id)); });
                 },
               });
-            }}><Trash2 size={12} /> Delete</div>
+            }}><Trash2 size={12} /> 删除会话</div>
           </div>
         )}
       </div>
     </div>
   );
 
-  return (
-    <>
-      {showConvList && <div className="md:hidden fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm" onClick={onClose} />}
-      <div className={`${showConvList ? 'translate-x-0 opacity-100' : '-translate-x-full md:translate-x-0 opacity-0 md:opacity-100 hidden md:flex'} transition-all duration-300 fixed md:relative inset-y-0 left-0 z-[70] md:z-auto w-72 md:w-64 h-full bg-exo-surface border-r border-exo-border/50 flex-col flex-shrink-0 shadow-2xl md:shadow-none`}>
-        <div className="p-4 border-b border-exo-border/50 gold-line-top flex justify-between items-center bg-black/30">
-          <span className="label-caps text-exo-text/80 tracking-[0.2em]">EXO CORE</span>
-          <div className="flex items-center gap-2">
-            <button onClick={() => openNewSession()} className="p-1 rounded bg-exo-gold/10 text-exo-gold hover:bg-exo-gold hover:text-black"><Plus size={16} /></button>
-            <button onClick={onClose} className="md:hidden p-1 rounded text-exo-muted hover:text-exo-text hover:bg-white/5"><X size={16} /></button>
+  // 渲染议会列表逻辑（当作为议会列表使用时）
+  if (isCouncilMode) {
+    return (
+      <>
+        {showConvList && <div className="md:hidden fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm transition-opacity" onClick={onClose} />}
+        <div className={`${showConvList ? 'translate-x-0 opacity-100' : '-translate-x-full md:translate-x-0 opacity-0 md:opacity-100 hidden md:flex'} transition-all duration-300 fixed md:relative inset-y-0 left-0 z-[70] md:z-auto w-72 md:w-64 h-full bg-exo-surface border-r border-exo-border/50 flex flex-col flex-shrink-0 shadow-2xl md:shadow-none overflow-hidden`}>
+          <div className="p-4 border-b border-exo-border/50 gold-line-top flex justify-between items-center bg-black/30 shrink-0">
+            <span className="label-caps text-exo-text/80 tracking-[0.2em]">COUNCIL HUB</span>
+            <div className="flex items-center gap-2">
+              <button onClick={() => onCreateCouncil && onCreateCouncil()} className="p-1.5 rounded bg-exo-gold/10 text-exo-gold hover:bg-exo-gold hover:text-black transition-colors"><Plus size={16} /></button>
+              <button onClick={onClose} className="md:hidden p-1.5 rounded text-exo-muted hover:text-exo-text hover:bg-white/5 transition-colors"><X size={16} /></button>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
+            {(!councilSessions || councilSessions.length === 0) ? (
+              <div className="p-8 border border-dashed border-exo-border/30 rounded-2xl text-[11px] text-center text-exo-muted/40 uppercase tracking-widest leading-loose">
+                无活跃议事链路<br/>NO ACTIVE COUNCILS
+              </div>
+            ) : (
+              councilSessions.map(cs => (
+                <div
+                  key={cs.id}
+                  onClick={() => {
+                    setActiveCouncilId && setActiveCouncilId(cs.id);
+                    setActiveSessionId(null);
+                    onClose && onClose();
+                  }}
+                  className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border ${
+                    activeCouncilId === cs.id 
+                      ? 'bg-exo-gold/10 border-exo-gold/30 text-exo-gold shadow-[0_0_20px_rgba(212,175,55,0.05)]' 
+                      : 'border-transparent hover:bg-white/5 text-exo-muted hover:text-exo-text'
+                  }`}
+                >
+                  <Users size={15} className="shrink-0 opacity-70" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-bold truncate tracking-wide mb-1">
+                      {cs.topic || cs.arbitrator_preset_name || `议会 #${cs.id}`}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded border ${
+                        cs.status === 'finished' ? 'border-green-500/30 text-green-500/60' : 'border-exo-gold/30 text-exo-gold/60'
+                      }`}>
+                        {cs.status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto p-3 scrollbar-hide space-y-6" onClick={() => setActiveMenuId(null)}>
+      </>
+    );
+  }
+
+  return (
+    <>
+      {showConvList && <div className="md:hidden fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm transition-opacity" onClick={onClose} />}
+      <div className={`${showConvList ? 'translate-x-0 opacity-100' : '-translate-x-full md:translate-x-0 opacity-0 md:opacity-100 hidden md:flex'} transition-all duration-300 fixed md:relative inset-y-0 left-0 z-[70] md:z-auto w-72 md:w-64 h-full bg-exo-surface border-r border-exo-border/50 flex flex-col flex-shrink-0 shadow-2xl md:shadow-none overflow-hidden`}>
+        
+        {/* Header */}
+        <div className="p-4 border-b border-exo-border/50 gold-line-top flex justify-between items-center bg-black/30 shrink-0">
+          <span className="label-caps text-exo-text/80 tracking-[0.2em]">EXO CORE</span>
+          <div className="flex items-center gap-2">
+            <button onClick={() => openNewSession()} className="p-1.5 rounded bg-exo-gold/10 text-exo-gold hover:bg-exo-gold hover:text-black transition-colors"><Plus size={16} /></button>
+            <button onClick={onClose} className="md:hidden p-1.5 rounded text-exo-muted hover:text-exo-text hover:bg-white/5 transition-colors"><X size={16} /></button>
+          </div>
+        </div>
+
+        {/* Content Wrapper */}
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden" onClick={() => setActiveMenuId(null)}>
+          
+          {/* G045 Section: Max 50% */}
           {g045Sessions.length > 0 && (
-            <div className="space-y-1 relative">
-              <div className="label-caps text-exo-gold/70 mb-2 flex items-center gap-1.5"><Cpu size={11} /> G045 Superior</div>
-              <div className="p-1.5 rounded-xl border border-exo-gold/20 bg-gradient-to-b from-exo-gold/5 to-transparent space-y-1">
-                {g045Sessions.map(conv => <SessionItem key={conv.id} conv={conv} icon={Sparkles} colorClass="exo-gold" />)}
+            <div className="shrink-0 max-h-[50%] flex flex-col border-b border-exo-border/20">
+              <div className="label-caps text-exo-gold/70 px-4 py-3 flex items-center gap-1.5 bg-black/10 shrink-0"><Cpu size={11} /> G045 Superior</div>
+              <div className="overflow-y-auto px-3 pb-3 space-y-1">
+                <div className="p-1.5 rounded-xl border border-exo-gold/20 bg-gradient-to-b from-exo-gold/5 to-transparent space-y-1">
+                  {g045Sessions.map(conv => <SessionItem key={conv.id} conv={conv} icon={Sparkles} colorClass="exo-gold" />)}
+                </div>
               </div>
             </div>
           )}
-          {projects.length > 0 && (
-            <div className="space-y-2">
-              <div className="label-caps text-exo-muted/70 mb-2 flex items-center gap-1.5"><Box size={11} /> Projects</div>
-              {projects.map(proj => {
-                const isExpanded = expandedProjects.has(proj.id);
-                const projSessions = conversations.filter(c => c.project === proj.id && c.agent_type !== 'g045');
-                return (
-                  <div key={proj.id} className="space-y-1">
-                    <div onClick={() => toggleProject(proj.id)} className="flex items-center gap-2 p-2 rounded-lg cursor-pointer text-exo-text hover:bg-white/5">
-                      {isExpanded ? <ChevronDown size={14} className="text-exo-muted"/> : <ChevronRight size={14} className="text-exo-muted"/>}
-                      <Folder size={14} className={isExpanded ? "text-blue-400" : "text-exo-muted"} />
-                      <span className="text-xs font-medium truncate flex-1">{proj.name}</span>
-                      <span className="text-[10px] bg-black/50 px-1.5 rounded text-exo-muted">{projSessions.length}</span>
-                    </div>
-                    {isExpanded && (
-                      <div className="pl-6 pr-1 space-y-1 border-l-2 border-exo-border/50 ml-3 py-1">
-                        <div
-                          onClick={() => { setActiveFileProjectId(proj.id); onClose(); }}
-                          className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer text-xs font-bold transition-all ${
-                            activeFileProjectId === proj.id
-                              ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                              : 'text-blue-400/70 hover:bg-blue-500/10 hover:text-blue-400 border border-transparent'
-                          }`}
-                        >
-                          <FolderOpen size={14} /> Project Files
-                        </div>
-                        {projSessions.map(conv => <SessionItem key={conv.id} conv={conv} icon={Hash} colorClass="exo-text" />)}
-                        <div onClick={() => openNewSession({ projectId: proj.id })} className="flex items-center gap-2 p-2 rounded-lg cursor-pointer text-exo-muted hover:text-exo-text text-xs border border-dashed border-exo-border mt-1"><Plus size={14} /> New Record</div>
+
+          {/* Standard Sessions Section: Flex-1 */}
+          <div className="flex-1 overflow-y-auto p-3 space-y-6 custom-scrollbar">
+            {projects.length > 0 && (
+              <div className="space-y-2">
+                <div className="label-caps text-exo-muted/70 mb-2 flex items-center justify-between px-1">
+                  <span className="flex items-center gap-1.5"><Box size={11} /> Projects</span>
+                  {projects.length > 2 && (
+                    <button 
+                      onClick={() => setShowAllProjects(!showAllProjects)}
+                      className="text-[9px] text-exo-gold/50 hover:text-exo-gold transition-colors flex items-center gap-0.5"
+                    >
+                      {showAllProjects ? '隐藏' : `显示全部 (${projects.length})`}
+                    </button>
+                  )}
+                </div>
+                {visibleProjects.map(proj => {
+                  const isExpanded = expandedProjects.has(proj.id);
+                  const projSessions = conversations.filter(c => c.project === proj.id && c.agent_type !== 'g045');
+                  return (
+                    <div key={proj.id} className="space-y-1">
+                      <div onClick={() => toggleProject(proj.id)} className="flex items-center gap-2 p-2 rounded-lg cursor-pointer text-exo-text hover:bg-white/5 transition-colors">
+                        {isExpanded ? <ChevronDown size={14} className="text-exo-muted"/> : <ChevronRight size={14} className="text-exo-muted"/>}
+                        <Folder size={14} className={isExpanded ? "text-blue-400" : "text-exo-muted"} />
+                        <span className="text-xs font-medium truncate flex-1">{proj.name}</span>
+                        <span className="text-[10px] bg-black/50 px-1.5 rounded text-exo-muted font-mono">{projSessions.length}</span>
                       </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-          {standardSessions.length > 0 && (
-            <div className="space-y-1">
-              <div className="label-caps text-exo-muted/70 mb-2 mt-4 flex items-center gap-1.5"><Hash size={11} /> Standard Nodes</div>
-              {standardSessions.map(conv => <SessionItem key={conv.id} conv={conv} icon={Hash} colorClass="exo-text" />)}
-            </div>
-          )}
+                      {isExpanded && (
+                        <div className="pl-6 pr-1 space-y-1 border-l-2 border-exo-border/50 ml-3 py-1">
+                          <div
+                            onClick={() => { setActiveFileProjectId(proj.id); onClose(); }}
+                            className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer text-xs font-bold transition-all ${
+                              activeFileProjectId === proj.id
+                                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.1)]'
+                                : 'text-blue-400/70 hover:bg-blue-500/10 hover:text-blue-400 border border-transparent'
+                            }`}
+                          >
+                            <FolderOpen size={14} /> Project Files
+                          </div>
+                          {projSessions.map(conv => <SessionItem key={conv.id} conv={conv} icon={Hash} colorClass="exo-text" />)}
+                          <div onClick={() => openNewSession({ projectId: proj.id })} className="flex items-center gap-2 p-2 rounded-lg cursor-pointer text-exo-muted hover:text-exo-text text-xs border border-dashed border-exo-border/50 mt-1 transition-all"><Plus size={14} /> New Record</div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
-          {conversations.length === 0 && projects.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-10 opacity-30 text-center gap-2">
-              <ShieldAlert size={32} className="text-exo-muted" />
-              <p className="text-[10px] uppercase tracking-widest leading-relaxed">未发现活动链路<br/>请检查后端连接</p>
-            </div>
-          )}
-
-          <div className="mt-auto pt-4 border-t border-exo-border/40">
-            <div className="label-caps text-exo-muted/70 mb-2 flex items-center justify-between">
-              <span className="flex items-center gap-1.5"><Users size={11} /> Council Room</span>
-              <button
-                onClick={e => { e.stopPropagation(); onCreateCouncil && onCreateCouncil(); }}
-                className="p-0.5 rounded text-exo-muted hover:text-exo-gold hover:bg-exo-gold/10 transition-colors"
-                title="召集新议会"
-              >
-                <Plus size={12} />
-              </button>
-            </div>
-            {(!councilSessions || councilSessions.length === 0) ? (
-              <div className="p-2 border border-dashed border-exo-border rounded-lg text-[11px] text-center text-exo-muted/50 bg-black/20">暂无议会</div>
-            ) : (
+            {standardSessions.length > 0 && (
               <div className="space-y-1">
-                {councilSessions.map(cs => (
-                  <div
-                    key={cs.id}
-                    onClick={() => {
-                      setActiveCouncilId && setActiveCouncilId(cs.id);
-                      setActiveSessionId(null);
-                      setActiveFileProjectId && setActiveFileProjectId(null);
-                      onClose && onClose();
-                    }}
-                    className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all border ${activeCouncilId === cs.id ? 'bg-exo-gold/10 border-exo-gold/30 text-exo-gold' : 'border-transparent hover:bg-white/5 text-exo-muted hover:text-exo-text'}`}
-                  >
-                    <Users size={13} className="shrink-0 opacity-70" />
-                    <span className="text-xs font-medium truncate flex-1">{cs.topic || cs.arbitrator_preset_name || `议会 #${cs.id}`}</span>
-                    <CouncilStatusBadge status={cs.status} />
-                  </div>
-                ))}
+                <div className="label-caps text-exo-muted/70 mb-2 mt-2 flex items-center gap-1.5 px-1"><Hash size={11} /> Standard Nodes</div>
+                {standardSessions.map(conv => <SessionItem key={conv.id} conv={conv} icon={Hash} colorClass="exo-text" />)}
+              </div>
+            )}
+
+            {conversations.length === 0 && projects.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-10 opacity-30 text-center gap-3">
+                <ShieldAlert size={32} className="text-exo-muted" />
+                <p className="text-[10px] uppercase tracking-[0.2em] leading-relaxed">No Active Link<br/>Check Connection</p>
               </div>
             )}
           </div>
