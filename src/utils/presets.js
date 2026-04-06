@@ -18,8 +18,24 @@ export const sortPresets = (presets) => {
   const order = getAgentHubOrder();
   
   return [...presets].sort((a, b) => {
-    const orderA = order[a.id] !== undefined ? order[a.id] : a.id;
-    const orderB = order[b.id] !== undefined ? order[b.id] : b.id;
-    return orderA - orderB;
+    // 1. 优先级：g045 核心置顶
+    const typeA = a.agent_type === 'g045' ? 0 : 1;
+    const typeB = b.agent_type === 'g045' ? 0 : 1;
+    if (typeA !== typeB) return typeA - typeB;
+    
+    // 2. 优先级：手动排序顺序
+    const hasOrderA = order[a.id] !== undefined;
+    const hasOrderB = order[b.id] !== undefined;
+    
+    if (hasOrderA && hasOrderB) {
+      return order[a.id] - order[b.id];
+    }
+    
+    // 如果只有一个有手动排序，有排序的排在前面（在其类型组内）
+    if (hasOrderA) return -1;
+    if (hasOrderB) return 1;
+    
+    // 3. 兜底：按 ID 升序（模拟后端默认顺序）
+    return a.id - b.id;
   });
 };
