@@ -1,11 +1,11 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { FileText, Copy, Bookmark, Check, X, ZoomIn } from 'lucide-react';
+import { FileText, Copy, Bookmark, Check, X, ZoomIn, Edit2, RotateCw, GitFork } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { baseUrl, getCsrfToken } from '../../utils/api';
 
-const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, userAvatarUrl }) => {
+const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, userAvatarUrl, onEdit, onRegenerate, onBranch, isGenerating }) => {
   const isUser = msg.role === 'user';
   const [copied, setCopied] = useState(false);
   const [showBookmark, setShowBookmark] = useState(false);
@@ -56,7 +56,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
   }, [msg.id, bookmarkText]);
 
   return (
-    <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
+    <div className={`flex flex-col group ${isUser ? 'items-end' : 'items-start'}`}>
       <div className={`flex items-center gap-2 mb-1.5 ${isUser ? 'flex-row-reverse' : ''}`}>
         <img
           src={isUser ? userAvatarUrl : agentAvatarUrl}
@@ -142,22 +142,50 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
       </div>
 
       {/* Action toolbar */}
-      <div className={`flex items-center gap-0.5 mt-1 ${isUser ? 'flex-row-reverse' : ''}`}>
+      <div className={`flex items-center gap-0.5 mt-1 opacity-0 group-hover:opacity-100 transition-opacity ${isUser ? 'flex-row-reverse mr-2' : 'ml-1'}`}>
         <button
           onClick={handleCopy}
-          className="p-1.5 text-exo-muted/25 hover:text-exo-muted transition-colors rounded-lg hover:bg-white/5"
+          className="p-1.5 text-exo-muted/40 hover:text-exo-muted transition-colors rounded-lg hover:bg-white/5"
           title="复制"
         >
           {copied ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
         </button>
-        {!isUser && (
+
+        {isUser ? (
           <button
-            onClick={openBookmark}
-            className={`p-1.5 transition-colors rounded-lg hover:bg-exo-gold/10 ${showBookmark ? 'text-exo-gold' : 'text-exo-muted/25 hover:text-exo-gold'}`}
-            title="标记到长期记忆"
+            onClick={() => onEdit && onEdit(msg)}
+            disabled={isGenerating}
+            className="p-1.5 text-exo-muted/40 hover:text-exo-gold transition-colors rounded-lg hover:bg-white/5 disabled:opacity-20"
+            title="编辑并重发"
           >
-            <Bookmark size={12} />
+            <Edit2 size={12} />
           </button>
+        ) : (
+          <>
+            <button
+              onClick={() => onRegenerate && onRegenerate(msg)}
+              disabled={isGenerating}
+              className="p-1.5 text-exo-muted/40 hover:text-exo-gold transition-colors rounded-lg hover:bg-white/5 disabled:opacity-20"
+              title="重新生成"
+            >
+              <RotateCw size={12} />
+            </button>
+            <button
+              onClick={() => onBranch && onBranch(msg.id)}
+              disabled={isGenerating}
+              className="p-1.5 text-exo-muted/40 hover:text-blue-400 transition-colors rounded-lg hover:bg-white/5 disabled:opacity-20"
+              title="从此分叉"
+            >
+              <GitFork size={12} />
+            </button>
+            <button
+              onClick={openBookmark}
+              className={`p-1.5 transition-colors rounded-lg hover:bg-exo-gold/10 ${showBookmark ? 'text-exo-gold' : 'text-exo-muted/40 hover:text-exo-gold'}`}
+              title="标记到长期记忆"
+            >
+              <Bookmark size={12} />
+            </button>
+          </>
         )}
       </div>
 

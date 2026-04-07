@@ -19,10 +19,10 @@ export default {
           panel:   '#1a1c29',
           surface: '#1f1f2e',
           border:  '#212122',
-          gold:    '#d4af37',
-          goldDim: '#8b7322',
-          text:    '#b1b1d8',
-          muted:   '#767888',
+          gold:    '#d19806',
+          goldDim: '#a16703',
+          text:    '#d1d1ef',
+          muted:   '#a2a2ae',
         }
       },
       keyframes: {

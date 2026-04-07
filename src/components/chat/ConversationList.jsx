@@ -11,6 +11,7 @@ const ConversationList = ({
   setActiveSessionId, 
   projects, 
   refreshKey, 
+  setRefreshKey,
   openDestructor, 
   openNewSession, 
   activeFileProjectId, 
@@ -88,7 +89,14 @@ const ConversationList = ({
                   headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
                   credentials: 'include',
                   body: JSON.stringify({ name: newName }),
-                }).then(r => { if (r.ok) setConversations(p => p.map(c => c.id === conv.id ? {...c, name: newName} : c)); });
+                }).then(r => { 
+                  if (r.ok) {
+                    setConversations(p => p.map(c => c.id === conv.id ? {...c, name: newName} : c));
+                    if (setRefreshKey) setRefreshKey(p => p + 1);
+                  } else {
+                    alert("重命名失败，请重试");
+                  }
+                }).catch(() => alert("网络错误，重命名失败"));
               }
             }}><Edit2 size={12} /> 重命名</div>
             <div className="px-3 py-2 hover:bg-red-500/10 flex items-center gap-2 text-red-400 transition-colors" onClick={(e) => {
@@ -102,7 +110,15 @@ const ConversationList = ({
                     method: 'DELETE',
                     headers: { 'X-CSRFToken': getCsrfToken() },
                     credentials: 'include',
-                  }).then(r => { if (r.ok) setConversations(p => p.filter(c => c.id !== conv.id)); });
+                  }).then(r => { 
+                    if (r.ok) {
+                      setConversations(p => p.filter(c => c.id !== conv.id));
+                      if (activeSessionId === conv.id) setActiveSessionId(null);
+                      if (setRefreshKey) setRefreshKey(p => p + 1);
+                    } else {
+                      alert("删除失败");
+                    }
+                  }).catch(() => alert("网络错误，删除失败"));
                 },
               });
             }}><Trash2 size={12} /> 删除会话</div>

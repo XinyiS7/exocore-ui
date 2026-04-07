@@ -10,11 +10,13 @@ import MessageBubble from './MessageBubble';
 
 const MSGS_PER_PAGE = 40;
 
-const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets, headerTitleOverride, rightExtraButton, onBack }) => {
+const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowConvList, openNewSession, presets, headerTitleOverride, rightExtraButton, onBack }) => {
   const [messages, setMessages] = useState([]);
   const [sessionInfo, setSessionInfo] = useState(null);
   const [inputValue, setInputValue] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const abortControllerRef = useRef(null);
   const [thinkingLevel, setThinkingLevel] = useState("auto");
   const [temperature, setTemperature] = useState(1.0);
   const [currentModel, setCurrentModel] = useState("");
@@ -148,30 +150,78 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets, h
       .catch(() => {});
   }, [activeSessionId, presets]);
 
-  const handleSend = async () => {
-    if ((!inputValue.trim() && attachedFiles.length === 0) || isGenerating) return;
-    const userMsg = {
-      role: 'user',
-      content: inputValue,
-      attachments: attachedFiles.map(f => ({
-        name: f.name,
-        type: f.type,
-        size: f.size,
-        preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : null
-      }))
-    };
-    const aiMsg = { id: Date.now(), role: 'assistant', content: '', reasoning_content: '', reasoning_steps: [], new_anchors: [] };
-    allHistoryRef.current = [...allHistoryRef.current, userMsg, aiMsg];
-    setMessages(prev => [...prev, userMsg, aiMsg]);
+  const handleStop = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      setIsGenerating(false);
+    }
+  };
 
-    const currentInput = inputValue; const currentFiles = [...attachedFiles];
+  const handleSend = async (options = {}) => {
+    const { editMessageId, regenerateMessageId } = options;
+    if ((!inputValue.trim() && !regenerateMessageId && attachedFiles.length === 0) || isGenerating) return;
+
+    let historyToKeep = [...allHistoryRef.current];
+    let userMsg = null;
+    let aiMsg = { id: Date.now(), role: 'assistant', content: '', reasoning_content: '', reasoning_steps: [], new_anchors: [] };
+
+    if (editMessageId) {
+      const idx = historyToKeep.findIndex(m => m.id === editMessageId);
+      if (idx !== -1) {
+        historyToKeep = historyToKeep.slice(0, idx);
+        userMsg = {
+          id: editMessageId, // Keep same ID if possible or let backend handle
+          role: 'user',
+          content: inputValue,
+          attachments: attachedFiles.map(f => ({
+            name: f.name,
+            type: f.type,
+            size: f.size,
+            preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : null
+          }))
+        };
+        historyToKeep.push(userMsg, aiMsg);
+      }
+    } else if (regenerateMessageId) {
+      const idx = historyToKeep.findIndex(m => m.id === regenerateMessageId);
+      if (idx !== -1) {
+        historyToKeep = historyToKeep.slice(0, idx);
+        historyToKeep.push(aiMsg);
+      }
+    } else {
+      userMsg = {
+        role: 'user',
+        content: inputValue,
+        attachments: attachedFiles.map(f => ({
+          name: f.name,
+          type: f.type,
+          size: f.size,
+          preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : null
+        }))
+      };
+      historyToKeep.push(userMsg, aiMsg);
+    }
+
+    allHistoryRef.current = historyToKeep;
+    const newStart = Math.max(0, historyToKeep.length - messages.length - (userMsg ? 2 : 1)); // Heuristic to keep view stable
+    setMessages(historyToKeep.slice(visibleStartRef.current));
+
+    const currentInput = inputValue;
+    const currentFiles = [...attachedFiles];
     const currentPending = [...pendingAttachments];
-    // 提前启动附件转 base64 的异步操作，与网络请求并行
+    
     pendingAttachConversionRef.current = currentFiles.length > 0
       ? filesToAttachmentData(currentFiles)
       : null;
-    setInputValue(""); setAttachedFiles([]); setIsGenerating(true); scrollToBottom(true);
+
+    setInputValue("");
+    setAttachedFiles([]);
+    setIsGenerating(true);
+    setEditingMessageId(null);
+    scrollToBottom(true);
     localStorage.removeItem(`exo_draft_${activeSessionId}`);
+
+    abortControllerRef.current = new AbortController();
 
     try {
       let response;
@@ -181,19 +231,32 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets, h
         thinking_level: thinkingLevel,
         temperature: temperature,
         ...(currentPending.length > 0 && { pending_attachments: currentPending }),
+        ...(editMessageId && { edit_message_id: editMessageId }),
+        ...(regenerateMessageId && { regenerate_message_id: regenerateMessageId }),
       };
 
-      if (currentFiles.length > 0) {
+      const fetchOptions = {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCsrfToken() },
+        credentials: 'include',
+        signal: abortControllerRef.current.signal,
+      };
+
+      if (currentFiles.length > 0 && !regenerateMessageId) {
         const formData = new FormData();
         Object.keys(bodyData).forEach(k => {
           const v = bodyData[k];
           formData.append(k, typeof v === 'object' ? JSON.stringify(v) : v);
         });
         currentFiles.forEach(f => formData.append('files', f));
-        response = await fetch(`${baseUrl}/api/agents/chat/${activeSessionId}/`, { method: 'POST', headers: { 'X-CSRFToken': getCsrfToken() }, body: formData, credentials: 'include' });
+        fetchOptions.body = formData;
       } else {
-        response = await fetch(`${baseUrl}/api/agents/chat/${activeSessionId}/`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() }, body: JSON.stringify(bodyData), credentials: 'include' });
+        fetchOptions.headers['Content-Type'] = 'application/json';
+        fetchOptions.body = JSON.stringify(bodyData);
       }
+
+      response = await fetch(`${baseUrl}/api/agents/chat/${activeSessionId}/`, fetchOptions);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder("utf-8");
@@ -264,8 +327,20 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets, h
         }
         if (isNearBottom()) scrollToBottom(false);
       }
-    } catch (err) { console.error("中断:", err); } finally {
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        console.log("Stream aborted by user");
+        // Refill input with last user message if it was a normal send or edit
+        if (currentInput) {
+          setInputValue(currentInput);
+          if (activeSessionId) localStorage.setItem(`exo_draft_${activeSessionId}`, currentInput);
+        }
+      } else {
+        console.error("Stream error:", err);
+      }
+    } finally {
       setIsGenerating(false);
+      abortControllerRef.current = null;
       // 刷新消息列表以获取真实 DB id（供书签功能及附件持久化使用）
       fetch(`${baseUrl}/api/agents/chat/${activeSessionId}/`, { credentials: 'include' })
         .then(res => res.json())
@@ -371,6 +446,36 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets, h
     }
   };
 
+  const handleBranch = async (messageId) => {
+    try {
+      const res = await fetch(`${baseUrl}/api/agents/conversations/${activeSessionId}/branch/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+        credentials: 'include',
+        body: JSON.stringify({ branch_from_message_id: messageId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        if (setRefreshKey) setRefreshKey(p => p + 1);
+        if (setActiveSessionId) setActiveSessionId(data.conversation_id);
+      } else {
+        alert(data.error || '分叉失败');
+      }
+    } catch (err) {
+      console.error('分叉失败:', err);
+    }
+  };
+
+  const onEdit = (msg) => {
+    setInputValue(msg.content);
+    setEditingMessageId(msg.id);
+    if (textareaRef.current) textareaRef.current.focus();
+  };
+
+  const onRegenerate = (msg) => {
+    handleSend({ regenerateMessageId: msg.id });
+  };
+
   return (
     <div className="flex-1 min-w-0 flex flex-col h-full bg-exo-bg relative">
       <div className="h-14 border-b border-exo-border/50 flex items-center justify-between px-4 md:px-6 bg-exo-panel/40 backdrop-blur-md">
@@ -469,12 +574,34 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets, h
         {messages.map((msg, idx) => {
           const agentPreset = presets.find(x => x.id === sessionInfo?.agent_preset_id);
           const agentName = agentPreset?.name || 'Core';
-          return <MessageBubble key={msg.id || idx} msg={msg} agentName={agentName} agentAvatarUrl={getAgentAvatarUrl(sessionInfo?.agent_preset_id, agentName)} userNick={userNick} userAvatarUrl={userAvatarUrl} />;
+          return (
+            <MessageBubble
+              key={msg.id || idx}
+              msg={msg}
+              agentName={agentName}
+              agentAvatarUrl={getAgentAvatarUrl(sessionInfo?.agent_preset_id, agentName)}
+              userNick={userNick}
+              userAvatarUrl={userAvatarUrl}
+              onEdit={onEdit}
+              onRegenerate={onRegenerate}
+              onBranch={handleBranch}
+              isGenerating={isGenerating}
+            />
+          );
         })}
         <div ref={messagesEndRef} />
       </div>
 
       <div className="p-4 border-t border-exo-border/50 bg-exo-bg flex flex-col gap-3">
+        {editingMessageId && (
+          <div className="flex items-center justify-between px-3 py-1.5 bg-exo-gold/10 border border-exo-gold/20 rounded-lg">
+            <div className="flex items-center gap-2 text-exo-gold text-xs">
+              <Edit2 size={12} />
+              <span>正在编辑消息 #{editingMessageId}</span>
+            </div>
+            <button onClick={() => { setEditingMessageId(null); setInputValue(''); }} className="text-exo-gold/50 hover:text-exo-gold"><X size={14} /></button>
+          </div>
+        )}
         <div className="flex flex-wrap items-center gap-3 px-1 text-exo-muted">
           <div className="flex items-center gap-1.5 text-exo-gold/70 bg-exo-gold/5 px-2 py-1 rounded border border-exo-gold/10">
             <Cpu size={11} />
@@ -577,7 +704,24 @@ const ChatArea = ({ activeSessionId, setShowConvList, openNewSession, presets, h
             </div>
             <div className="flex items-center gap-2">
               {rightExtraButton}
-              <button onClick={handleSend} disabled={isGenerating || (!inputValue.trim() && attachedFiles.length === 0)} className="p-2 bg-exo-gold text-black rounded-lg hover:bg-yellow-400 disabled:opacity-50"><Send size={16} /></button>
+              {isGenerating ? (
+                <button
+                  onClick={handleStop}
+                  className="p-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500 hover:text-white transition-all flex items-center gap-2"
+                  title="中止生成"
+                >
+                  <X size={16} />
+                  <span className="text-xs font-bold md:hidden lg:inline">STOP</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleSend(editingMessageId ? { editMessageId: editingMessageId } : {})}
+                  disabled={isGenerating || (!inputValue.trim() && attachedFiles.length === 0)}
+                  className="p-2 bg-exo-gold text-black rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition-all shadow-[0_0_10px_rgba(212,175,55,0.2)]"
+                >
+                  <Send size={16} />
+                </button>
+              )}
             </div>
           </div>
         </div>

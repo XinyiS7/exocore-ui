@@ -79,6 +79,32 @@
    用途：发送消息并接收流式回复
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+// ── 请求体（multipart/form-data 或 JSON）────────────────
+// content              string   用户消息正文（regenerate_message_id 模式下可省略）
+// thinking_level       string   "off"|"auto"|"low"|"medium"|"high"，默认 "medium"
+// temperature          float    0.0~2.0，默认 1.0
+// model                string?  模型名称覆盖（可省，使用 preset 默认值）
+// pending_attachments  array?   本地文件 pending 元数据列表
+// files                File[]?  直接上传的图片/文件（multipart）
+//
+// ── 消息编辑 / 重生成（三者互斥）────────────────────────
+// regenerate           bool     重生成最后一条 AI 消息（旧接口，已修复：会真正删除旧 AI 消息）
+// edit_message_id      int?     覆盖指定用户消息（id）并重新生成；后端自动删除该消息之后的所有消息
+// regenerate_message_id int?    重新生成指定 AI 消息（id）；后端自动删除该消息及其之后的所有消息
+//
+// 前端处理逻辑：
+//   普通发送：{ content: "..." }
+//   编辑用户消息并重发：{ content: "修改后的内容", edit_message_id: 101 }
+//     → 后端覆盖消息 101 内容，删除 index > 101.index 的所有消息，重新生成 AI 回复
+//   重生成指定 AI 消息：{ regenerate_message_id: 102 }
+//     → 后端删除消息 102 及之后的所有消息，基于前驱 user 消息重新生成
+//   重生成最后一条：{ regenerate: true, content: "<上一条用户消息>" }
+//     （推荐改用 regenerate_message_id 精确指定）
+//
+// 注意：
+//   - edit_message_id / regenerate_message_id 触发后，前端应清除本地对应位置之后的所有消息
+//   - Stop（中止流式）：使用 AbortController.abort()，后端无消息入库（持久化在流结束后）
+
 // 每个 SSE 块格式：
 //   event: <event_type>
 //   data: <JSON string>
@@ -451,37 +477,53 @@ data: "[DONE]"                                 // 流结束标志
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 14. GET  /api/memory/entries/?preset_id=<id>[&scope=][&source=][&is_processed=]
     POST /api/memory/entries/
-    用途：长期记忆条目列表 / 用户划线笔记提交
+    用途：长期记忆条目列表 / 创建（划线 or 用户手动）
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-// GET 查询参数（全部可选，preset_id 必填）：
-// preset_id   — AgentPreset.id（必填）
-// scope       — work | life | hobby | emotion
-// source      — highlight | g045_tool
+// GET 查询参数（preset_id 必填，其余可选）：
+// preset_id    — AgentPreset.id（必填）
+// scope        — work | life | hobby | emotion
+// source       — highlight | g045_tool | user_manual
 // is_processed — true | false
 
 // MemoryEntry 对象结构（GET list / POST response 共用）：
 {
   "id":             1,
-  "source":         "highlight",       // "highlight" | "g045_tool"
+  "source":         "highlight",       // "highlight" | "g045_tool" | "user_manual"
   "raw_text":       "选中的文字片段",
-  "scope":          "work",            // null 表示还未处理
+  "scope":          "work",            // null 表示还未处理（LLM 将异步补全）
   "tags":           ["效率", "工作流"],
   "is_processed":   true,
   "preset_id":      1,
-  "conversation_id": 42,
-  "message_id":     137,               // highlight 时有值，g045_tool 时为 null
+  "conversation_id": 42,               // user_manual 时为 null
+  "message_id":     137,               // highlight 时有值，其余为 null
   "created_at":     "2026-03-27T10:00:00+00:00",
   "updated_at":     "2026-03-27T10:01:00+00:00"
 }
 
-// POST 请求体：
+// POST 路径 A — 划线笔记（highlight，消息来源）：
 { "message_id": 137, "raw_text": "选中的文字片段" }
+// → source="highlight"，preset/conversation 自动从 message 派生，LLM 异步补全 scope/tags
+
+// POST 路径 B — 用户手动新增（user_manual，无消息来源）：
+{
+  "preset_id": 1,
+  "raw_text":  "用户自己写的长期记忆内容",
+  "scope":     "work",               // 可选，"work"|"life"|"hobby"|"emotion"
+  "tags":      ["效率", "工作流"]    // 可选，string[]
+}
+// → source="user_manual"；若已提供 scope → is_processed=true（跳过 LLM）；
+//   若未提供 scope → LLM 异步补全（同 highlight）
+
+// 注意：message_id 与 preset_id 互斥，同时传 → 400
+
 // Response (201)：上方 MemoryEntry 对象
-// 错误 (400)：{ "error": "message_id 为必填字段" }
+// 错误 (400)：{ "error": "message_id 与 preset_id 互斥，只能传其一" }
+//           | { "error": "message_id 或 preset_id 至少提供一个" }
 //           | { "error": "raw_text 不能为空" }
+//           | { "error": "scope 值无效，可选：..." }
 //           | { "error": "该消息所属会话未绑定 AgentPreset，无法创建记忆条目" }
-// 错误 (404)：{ "error": "消息不存在" }
+// 错误 (404)：{ "error": "消息不存在" } | { "error": "AgentPreset 不存在" }
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -492,11 +534,35 @@ data: "[DONE]"                                 // 流结束标志
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 // GET：无请求体，返回 MemoryEntry 对象
-// PATCH 请求体（字段均可选）：
-{ "raw_text": "修改后的文字", "tags": ["新标签"] }
+// PATCH 请求体（所有字段可选）：
+{
+  "raw_text": "修改后的文字",
+  "scope":    "life",               // "work"|"life"|"hobby"|"emotion"|null
+  "tags":     ["新标签"]
+}
 // PATCH Response (200)：更新后的 MemoryEntry 对象
+// 错误 (400)：{ "error": "raw_text 不能为空" }
+//           | { "error": "tags 必须是数组" }
+//           | { "error": "scope 值无效，可选：..." }
 // DELETE Response (204)：无响应体
 // 错误 (404)：{ "error": "条目不存在" }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+14c. GET /api/memory/entries/tags/?preset_id=<id>
+     用途：获取该 preset 下所有已有 tag 值（用于前端 autocomplete）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// preset_id 必填
+// Response (200)：string[] — 去重、升序排列
+["工作流", "效率", "量子纠缠"]
+
+// scope 固定枚举（前端直接硬编码，无需接口）：
+// "work"    → 工作
+// "life"    → 生活
+// "hobby"   → 爱好
+// "emotion" → 情感
+// 错误 (400)：{ "error": "preset_id 为必填参数" }
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -886,3 +952,38 @@ POST /api/council/sessions/<pk>/finish/
 // 4. SSE 并行订阅：dispatch/cross_exam 返回的 stream_urls 应同时 fetch，不要串行
 // 5. 动态参与者选择：创建会话前用 GET /api/agents/presets/ 获取可用 preset 列表；
 //    arbitrator 选 1 个，participants 选 ≥2 个，不可重复
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+20. POST /api/agents/conversations/<pk>/branch/
+    用途：从指定 AI 消息处分叉，复制历史消息生成新的独立对话（Branch Here）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// Request Body（JSON）：
+{
+  "branch_from_message_id": 102   // 分叉点 AI 消息的 id（必须属于该 conversation 且 role="assistant"）
+}
+
+// Response（201 Created）：
+{
+  "session_id":      15,                        // 新建 AgentSession.id（用于后续 chat 接口）
+  "conversation_id": 28,                        // 新建 Conversation.id
+  "name":            "Branch from 量子纠缠讨论"  // 自动生成的名称
+}
+
+// 分叉规则：
+//   - 复制从对话开始到 branch_from_message_id 所在位置的消息（含），最多取末尾 21 条
+//   - 确保首条为 user 消息、末条为 assistant 消息
+//   - 新对话继承：project / agent_preset / session_type / thinking_level / temperature
+//   - 新对话重置：last_summarized_index=0 / active_tool_groups=[] / Proposal 不复制
+//   - 附件关联不复制（attachment_ids=[]），消息文本正文完整保留
+//   - parent_conversation 指向原会话（可用于溯源，前端无需处理）
+
+// 前端处理逻辑：
+//   1. 用户点击 AI 消息上的「Branch Here」按钮
+//   2. POST /api/agents/conversations/<current_conv_id>/branch/
+//      Body: { "branch_from_message_id": <该 AI 消息的 id> }
+//   3. 成功后：
+//      a. 将新会话插入左侧对话列表顶部（或触发列表刷新）
+//      b. 跳转到新会话：使用返回的 session_id 加载 GET /api/agents/chat/<session_id>/
+//   4. 新会话从此独立运作，操作方式与普通对话完全相同

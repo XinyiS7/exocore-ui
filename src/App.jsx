@@ -101,6 +101,7 @@ export default function App() {
               setActiveSessionId={(id) => { setActiveSessionId(id); setActiveFileProjectId(null); setActiveCouncilId(null); setShowConvList(false); }}
               projects={projects}
               refreshKey={refreshKey}
+              setRefreshKey={setRefreshKey}
               openDestructor={openDestructor}
               openNewSession={openNewSession}
               activeFileProjectId={activeFileProjectId}
@@ -111,7 +112,14 @@ export default function App() {
             {activeFileProjectId ? (
               <ProjectFilesArea projectId={activeFileProjectId} projects={projects} openDestructor={openDestructor} />
             ) : activeSessionId ? (
-              <ChatArea activeSessionId={activeSessionId} setShowConvList={setShowConvList} openNewSession={openNewSession} presets={presets} />
+              <ChatArea
+                activeSessionId={activeSessionId}
+                setActiveSessionId={setActiveSessionId}
+                setRefreshKey={setRefreshKey}
+                setShowConvList={setShowConvList}
+                openNewSession={openNewSession}
+                presets={presets}
+              />
             ) : (
               <div className="flex-1 min-w-0 flex flex-col items-center justify-center bg-exo-bg gap-4 text-center p-8">
                 <Hexagon size={44} className="text-exo-gold/20" />
