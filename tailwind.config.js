@@ -22,7 +22,7 @@ export default {
           gold:    '#d19806',
           goldDim: '#a16703',
           text:    '#d1d1ef',
-          muted:   '#a2a2ae',
+          muted:   'rgb(162 162 174 / 0,26)',
         }
       },
       keyframes: {

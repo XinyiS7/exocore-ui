@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Menu, Save, Plus, RefreshCw, X, FileText,
-  Paperclip, Send, Cpu, Activity, Files, ImageIcon, ArrowLeft
+  Paperclip, Send, Cpu, Activity, Files, ImageIcon, ArrowLeft, Edit2
 } from 'lucide-react';
 import { baseUrl, getCsrfToken, AVAILABLE_MODELS } from '../../utils/api';
 import { getUserAvatarUrl, getAgentAvatarUrl } from '../../utils/avatar';
 import { filesToAttachmentData, saveAttachments, enrichMessages } from '../../utils/attachmentStorage';
 import MessageBubble from './MessageBubble';
+import BranchSessionModal from '../modals/BranchSessionModal';
 
 const MSGS_PER_PAGE = 40;
 
@@ -22,18 +23,30 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   const [currentModel, setCurrentModel] = useState("");
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [attachedFilePreviews, setAttachedFilePreviews] = useState([]);
+  const blobUrlMapRef = useRef(new Map());
   const [hasMore, setHasMore] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [lastTelemetry, setLastTelemetry] = useState(null);
-  const [userNick] = useState(() => localStorage.getItem('exo_user_nick') || 'You');
+  const [userNick, setUserNick] = useState(() => localStorage.getItem('exo_user_nick') || 'You');
   const [userAvatarUrl] = useState(() => getUserAvatarUrl());
 
   const [showAttachPanel, setShowAttachPanel] = useState(false);
   const [sessionAttachments, setSessionAttachments] = useState([]);
   const [pendingAttachments, setPendingAttachments] = useState([]);
+  
+  const isImageFile = (filename) => {
+    const ext = filename?.split('.').pop()?.toLowerCase();
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext);
+  };
+
+  const filteredSessionAttachments = sessionAttachments.filter(att => !isImageFile(att.original_filename));
+  const filteredPendingAttachments = pendingAttachments.filter(att => !isImageFile(att.original_filename));
   const [newAttachPath, setNewAttachPath] = useState('');
   const [newAttachName, setNewAttachName] = useState('');
   const [isAddingAttach, setIsAddingAttach] = useState(false);
+
+  const [branchingMessageId, setBranchingMessageId] = useState(null);
+  const [isBranching, setIsBranching] = useState(false);
 
   const allHistoryRef = useRef([]);
   const visibleStartRef = useRef(0);
@@ -45,6 +58,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   // 保存当前正在发送消息的附件转换 Promise（用于 SSE 结束后持久化到 localStorage）
   const pendingAttachConversionRef = useRef(null);
   const textareaRef = useRef(null);
+  const draftTimerRef = useRef(null);
 
   const autoResize = () => {
     const el = textareaRef.current;
@@ -55,14 +69,57 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
 
   useEffect(() => { autoResize(); }, [inputValue]);
 
+  // Sync userNick if it changes in localStorage (e.g. from settings)
   useEffect(() => {
-    const previews = attachedFiles.map(f => ({
-      name: f.name,
-      type: f.type,
-      preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : null
-    }));
-    setAttachedFilePreviews(previews);
-    return () => previews.forEach(p => { if (p.preview) URL.revokeObjectURL(p.preview); });
+    const handleStorage = () => {
+      setUserNick(localStorage.getItem('exo_user_nick') || 'You');
+    };
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('user-nick-updated', handleStorage);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('user-nick-updated', handleStorage);
+    };
+  }, []);
+
+  // Debounced draft save
+  useEffect(() => {
+    if (!activeSessionId) return;
+    if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
+    
+    draftTimerRef.current = setTimeout(() => {
+      if (inputValue) {
+        localStorage.setItem(`exo_draft_${activeSessionId}`, inputValue);
+      } else {
+        localStorage.removeItem(`exo_draft_${activeSessionId}`);
+      }
+    }, 500); // 500ms debounce
+
+    return () => {
+      if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
+    };
+  }, [inputValue, activeSessionId]);
+
+  useEffect(() => {
+    const newPreviews = attachedFiles.map(f => {
+      if (blobUrlMapRef.current.has(f)) {
+        return blobUrlMapRef.current.get(f);
+      }
+      const preview = f.type.startsWith('image/') ? URL.createObjectURL(f) : null;
+      const data = { name: f.name, type: f.type, preview };
+      blobUrlMapRef.current.set(f, data);
+      return data;
+    });
+
+    // Cleanup URLs for files no longer in attachedFiles
+    for (const [file, data] of blobUrlMapRef.current.entries()) {
+      if (!attachedFiles.includes(file)) {
+        if (data.preview) URL.revokeObjectURL(data.preview);
+        blobUrlMapRef.current.delete(file);
+      }
+    }
+
+    setAttachedFilePreviews(newPreviews);
   }, [attachedFiles]);
 
   const scrollToBottom = (smooth = true) =>
@@ -158,7 +215,9 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   };
 
   const handleSend = async (options = {}) => {
-    const { editMessageId, regenerateMessageId } = options;
+    const regenerateMessageId = options.regenerateMessageId;
+    const editMessageId = options.editMessageId !== undefined ? options.editMessageId : (regenerateMessageId ? null : editingMessageId);
+    
     if ((!inputValue.trim() && !regenerateMessageId && attachedFiles.length === 0) || isGenerating) return;
 
     let historyToKeep = [...allHistoryRef.current];
@@ -358,14 +417,11 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
             }
             pendingAttachConversionRef.current = null;
           }
-          allHistoryRef.current = enrichMessages(data);
-          setMessages(prev => {
-            if (prev.length < 2) return prev;
-            const copy = [...prev];
-            copy[copy.length - 2] = { ...copy[copy.length - 2], id: data[n - 2]?.id };
-            copy[copy.length - 1] = { ...copy[copy.length - 1], id: data[n - 1]?.id };
-            return copy;
-          });
+          const enriched = enrichMessages(data);
+          allHistoryRef.current = enriched;
+          const startIdx = Math.max(0, enriched.length - MSGS_PER_PAGE);
+          visibleStartRef.current = startIdx;
+          setMessages(enriched.slice(startIdx));
         })
         .catch(() => {});
       if (currentPending.length > 0) {
@@ -446,35 +502,50 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     }
   };
 
-  const handleBranch = async (messageId) => {
+  const handleBranch = useCallback((messageId) => {
+    setBranchingMessageId(messageId);
+  }, []);
+
+  const onConfirmBranch = async (newName) => {
+    if (!branchingMessageId) return;
+    setIsBranching(true);
     try {
       const res = await fetch(`${baseUrl}/api/agents/conversations/${activeSessionId}/branch/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
         credentials: 'include',
-        body: JSON.stringify({ branch_from_message_id: messageId }),
+        body: JSON.stringify({ 
+          branch_from_message_id: branchingMessageId,
+          name: newName.trim() || undefined
+        }),
       });
       const data = await res.json();
       if (res.ok) {
         if (setRefreshKey) setRefreshKey(p => p + 1);
         if (setActiveSessionId) setActiveSessionId(data.conversation_id);
+        setBranchingMessageId(null);
       } else {
         alert(data.error || '分叉失败');
       }
     } catch (err) {
       console.error('分叉失败:', err);
+    } finally {
+      setIsBranching(false);
     }
   };
 
-  const onEdit = (msg) => {
+  const onEdit = useCallback((msg) => {
     setInputValue(msg.content);
     setEditingMessageId(msg.id);
     if (textareaRef.current) textareaRef.current.focus();
-  };
+  }, []);
 
-  const onRegenerate = (msg) => {
-    handleSend({ regenerateMessageId: msg.id });
-  };
+  const handleSendRef = useRef(handleSend);
+  useEffect(() => { handleSendRef.current = handleSend; }, [handleSend]);
+
+  const onRegenerate = useCallback((msg) => {
+    handleSendRef.current({ regenerateMessageId: msg.id });
+  }, []);
 
   return (
     <div className="flex-1 min-w-0 flex flex-col h-full bg-exo-bg relative">
@@ -498,71 +569,81 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-1 md:gap-2">
+        <div className="flex items-center gap-1 md:gap-2 relative">
           <button
             onClick={() => setShowAttachPanel(p => !p)}
             className={`p-2 transition-colors relative ${showAttachPanel ? 'text-exo-gold' : 'text-exo-muted hover:text-exo-gold'}`}
             title="Session Docs"
           >
             <Files size={18} />
-            {(sessionAttachments.length + pendingAttachments.length) > 0 && (
+            {(filteredSessionAttachments.length + filteredPendingAttachments.length) > 0 && (
               <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-exo-gold" />
             )}
           </button>
+          {showAttachPanel && (
+            <div className="absolute top-full right-0 mt-2 w-80 max-h-[70vh] bg-[#1a1b23] border border-exo-border rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col animate-fade-in">
+              <div className="px-4 py-3 border-b border-exo-border bg-white/5 flex items-center justify-between">
+                <span className="label-caps text-exo-muted">挂载文档 ({filteredSessionAttachments.length + filteredPendingAttachments.length})</span>
+                <button onClick={() => setShowAttachPanel(false)} className="text-exo-muted hover:text-white"><X size={14} /></button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                {filteredSessionAttachments.map(att => (
+                  <div key={att.id} className="flex items-center gap-2 px-2 py-1.5 hover:bg-white/5 rounded-lg group transition-colors">
+                    <FileText size={14} className="text-blue-400 shrink-0" />
+                    <span className="flex-1 text-xs text-exo-text break-all leading-tight">{att.display_name || att.original_filename}</span>
+                    <button onClick={() => handleRemoveAttachment(att)} className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 transition-all"><X size={12} /></button>
+                  </div>
+                ))}
+                {filteredPendingAttachments.map((att, i) => (
+                  <div key={i} className="flex items-center gap-2 px-2 py-1.5 bg-exo-gold/5 rounded-lg group">
+                    <FileText size={14} className="text-exo-gold/50 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs text-exo-gold/80 break-all leading-tight">{att.display_name || att.original_filename}</div>
+                      <div className="text-[9px] text-exo-gold/40 font-mono">PENDING</div>
+                    </div>
+                    <button onClick={() => setPendingAttachments(p => p.filter((_, j) => j !== i))} className="p-1 hover:text-red-400 transition-colors"><X size={12} /></button>
+                  </div>
+                ))}
+                {filteredSessionAttachments.length === 0 && filteredPendingAttachments.length === 0 && !isAddingAttach && (
+                  <div className="py-8 text-center text-xs text-exo-muted/30 font-mono italic">
+                    [ 无挂载文档 ]
+                  </div>
+                )}
+                {isAddingAttach && (
+                  <div className="p-2 space-y-2 bg-black/40 rounded-lg border border-exo-border/50">
+                    <input
+                      value={newAttachPath}
+                      onChange={e => setNewAttachPath(e.target.value)}
+                      placeholder="文件绝对路径..."
+                      autoFocus
+                      className="w-full bg-black border border-exo-border rounded px-2 py-1.5 text-xs text-exo-text outline-none focus:border-exo-gold/50 transition-colors font-mono"
+                    />
+                    <input
+                      value={newAttachName}
+                      onChange={e => setNewAttachName(e.target.value)}
+                      placeholder="显示名（可选）"
+                      className="w-full bg-black border border-exo-border rounded px-2 py-1.5 text-xs text-exo-text outline-none focus:border-exo-gold/50 transition-colors"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button onClick={() => { setIsAddingAttach(false); setNewAttachPath(''); setNewAttachName(''); }} className="px-3 py-1 text-exo-muted hover:text-white text-xs">取消</button>
+                      <button onClick={handleAddAttachment} className="px-3 py-1 bg-exo-gold/10 text-exo-gold border border-exo-gold/20 rounded text-xs hover:bg-exo-gold hover:text-black transition-all">确认</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              {!isAddingAttach && (
+                <div className="p-2 border-t border-exo-border bg-white/5">
+                  <button onClick={() => setIsAddingAttach(true)} className="w-full py-2 text-xs text-exo-muted hover:text-white hover:bg-white/5 flex items-center justify-center gap-2 rounded-lg border border-dashed border-exo-border hover:border-exo-muted transition-all">
+                    <Plus size={14} /> 挂载外部路径
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
           <button onClick={handleCompress} className="p-2 text-exo-muted hover:text-exo-gold transition-colors" title="Save & Compress"><Save size={18} /></button>
           <button onClick={() => openNewSession()} className="p-2 text-exo-muted hover:text-exo-gold transition-colors" title="New Session"><Plus size={18} /></button>
         </div>
       </div>
-
-      {showAttachPanel && (
-        <div className="border-b border-exo-border bg-exo-panel/30 px-4 py-3 flex flex-col gap-2">
-          <div className="flex flex-wrap gap-2 items-center">
-            {sessionAttachments.map(att => (
-              <span key={att.id} className="flex items-center gap-1.5 text-[11px] bg-black/50 border border-exo-border rounded-lg px-2 py-1 text-exo-muted">
-                <FileText size={10} className="text-blue-400 shrink-0" />
-                <span className="max-w-[140px] truncate">{att.display_name || att.original_filename}</span>
-                <button onClick={() => handleRemoveAttachment(att)} className="ml-0.5 hover:text-red-400 transition-colors"><X size={10} /></button>
-              </span>
-            ))}
-            {pendingAttachments.map((att, i) => (
-              <span key={i} className="flex items-center gap-1.5 text-[11px] bg-exo-gold/5 border border-exo-gold/20 rounded-lg px-2 py-1 text-exo-gold/70">
-                <FileText size={10} className="text-exo-gold/50 shrink-0" />
-                <span className="max-w-[120px] truncate">{att.display_name || att.original_filename}</span>
-                <span className="text-[9px] opacity-50">pending</span>
-                <button onClick={() => setPendingAttachments(p => p.filter((_, j) => j !== i))} className="ml-0.5 hover:text-red-400 transition-colors"><X size={10} /></button>
-              </span>
-            ))}
-            {sessionAttachments.length === 0 && pendingAttachments.length === 0 && !isAddingAttach && (
-              <span className="text-[11px] text-exo-muted/40 font-mono">[ 无挂载文档 ]</span>
-            )}
-            {!isAddingAttach && (
-              <button onClick={() => setIsAddingAttach(true)} className="text-[11px] text-exo-muted hover:text-white flex items-center gap-1 px-2 py-1 rounded border border-dashed border-exo-border hover:border-exo-muted transition-colors">
-                <Plus size={10} /> 挂载
-              </button>
-            )}
-          </div>
-          {isAddingAttach && (
-            <div className="flex gap-2 items-center flex-wrap">
-              <input
-                value={newAttachPath}
-                onChange={e => setNewAttachPath(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') handleAddAttachment(); if (e.key === 'Escape') { setIsAddingAttach(false); setNewAttachPath(''); setNewAttachName(''); } }}
-                placeholder="文件绝对路径..."
-                autoFocus
-                className="flex-1 min-w-0 bg-black border border-exo-border rounded px-2 py-1 text-xs text-exo-text outline-none focus:border-exo-gold/50 transition-colors font-mono"
-              />
-              <input
-                value={newAttachName}
-                onChange={e => setNewAttachName(e.target.value)}
-                placeholder="显示名（可选）"
-                className="w-28 bg-black border border-exo-border rounded px-2 py-1 text-xs text-exo-text outline-none focus:border-exo-gold/50 transition-colors"
-              />
-              <button onClick={handleAddAttachment} className="px-2 py-1 bg-exo-gold/10 text-exo-gold border border-exo-gold/20 rounded text-xs hover:bg-exo-gold hover:text-black transition-all">确认</button>
-              <button onClick={() => { setIsAddingAttach(false); setNewAttachPath(''); setNewAttachName(''); }} className="px-2 py-1 text-exo-muted hover:text-white text-xs transition-colors">取消</button>
-            </div>
-          )}
-        </div>
-      )}
 
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 space-y-6">
         <div ref={topSentinelRef} className="h-px" />
@@ -591,6 +672,13 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
         })}
         <div ref={messagesEndRef} />
       </div>
+
+      <BranchSessionModal
+        isOpen={!!branchingMessageId}
+        onClose={() => setBranchingMessageId(null)}
+        onConfirm={onConfirmBranch}
+        isSubmitting={isBranching}
+      />
 
       <div className="p-4 border-t border-exo-border/50 bg-exo-bg flex flex-col gap-3">
         {editingMessageId && (
@@ -647,8 +735,22 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
             <div className="flex flex-wrap gap-2 px-3 pt-3 pb-2 border-b border-exo-border/50">
               {attachedFilePreviews.map((fp, i) => (
                 fp.preview
-                  ? <div key={i} className="relative group h-16 w-16 shrink-0">
-                      <img src={fp.preview} alt={fp.name} title={fp.name} className="h-full w-full object-cover rounded-lg border border-exo-border" />
+                  ? <div key={i} className="relative group h-16 w-16 shrink-0 bg-black/40 rounded-lg overflow-hidden border border-exo-border">
+                      <img 
+                        src={fp.preview} 
+                        alt={fp.name} 
+                        title={fp.name} 
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = ""; // Clear broken src
+                          e.target.parentElement.classList.add('flex', 'items-center', 'justify-center');
+                          e.target.style.display = 'none';
+                          const icon = document.createElement('div');
+                          icon.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" class="text-exo-muted/50"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>';
+                          e.target.parentElement.appendChild(icon.firstChild);
+                        }}
+                      />
                       <button
                         onClick={() => setAttachedFiles(p => p.filter((_, j) => j !== i))}
                         className="absolute -top-1.5 -right-1.5 bg-black border border-exo-border/50 rounded-full p-0.5 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -672,10 +774,6 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
               const v = e.target.value;
               setInputValue(v);
               autoResize();
-              if (activeSessionId) {
-                v ? localStorage.setItem(`exo_draft_${activeSessionId}`, v)
-                  : localStorage.removeItem(`exo_draft_${activeSessionId}`);
-              }
             }}
             onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey && !e.isComposing) { e.preventDefault(); handleSend(); } }}
             onPaste={e => {

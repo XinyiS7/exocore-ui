@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   BookOpen, FolderOpen, Folder, ChevronDown, ChevronRight,
-  FileText, Edit3, MessageSquare, Brain
+  FileText, Edit3, MessageSquare, Brain, PanelLeftClose, PanelLeftOpen, UserCircle
 } from 'lucide-react';
 import { baseUrl } from '../../utils/api';
 import KnowledgeEditModal from '../modals/KnowledgeEditModal';
@@ -11,6 +11,8 @@ import MemoryManager from './MemoryManager';
 const SettingsPanel = ({ projects, presets }) => {
   const [activeSettingsTab, setActiveSettingsTab] = useState('memory');
   const [memSubTab, setMemSubTab] = useState('files');
+  const [isCollapsedDesktop, setIsCollapsedDesktop] = useState(false);
+  const [nickInput, setNickInput] = useState(() => localStorage.getItem('exo_user_nick') || 'Exo User');
 
   const [expandedProjects, setExpandedProjects] = useState(new Set());
   const [projectFiles, setProjectFiles] = useState({});
@@ -91,23 +93,39 @@ const SettingsPanel = ({ projects, presets }) => {
   );
 
   return (
-    <div className="flex-1 h-full flex overflow-hidden bg-exo-bg">
+    <div className="flex-1 h-full flex overflow-hidden bg-exo-bg relative">
       <KnowledgeEditModal
         isOpen={kfEditTarget !== null}
         onClose={() => setKfEditTarget(null)}
         knowledgeId={kfEditTarget}
       />
 
-      <div className="hidden md:flex w-48 shrink-0 bg-exo-panel border-r border-exo-border flex-col py-6 px-3 gap-1">
-        <div className="text-[10px] font-bold text-exo-muted uppercase tracking-widest px-2 mb-3">设置</div>
+      {/* Desktop Expand Button (Floating) */}
+      <button 
+        onClick={() => setIsCollapsedDesktop(false)}
+        className={`hidden md:flex absolute top-4 left-4 z-[80] p-2 rounded-xl bg-[#111121]/80 backdrop-blur-md border border-white/10 text-exo-muted hover:text-exo-gold transition-all shadow-lg ${isCollapsedDesktop ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10 pointer-events-none'}`}
+        title="展开面板"
+      >
+        <PanelLeftOpen size={16} />
+      </button>
+
+      <div className={`hidden md:flex flex-col py-5 px-3 gap-1 shrink-0 bg-[#111121]/30 backdrop-blur-xl border-r border-white/5 transition-all duration-300 overflow-hidden ${isCollapsedDesktop ? 'w-0 opacity-0 border-none px-0' : 'w-56 opacity-100'}`}>
+        <div className="flex items-center justify-between px-2 mb-4 shrink-0">
+          <span className="text-[10px] font-bold text-exo-muted uppercase tracking-[0.3em]">System Preferences</span>
+          <button onClick={() => setIsCollapsedDesktop(true)} className="p-1.5 rounded-xl text-exo-muted hover:text-exo-text hover:bg-white/5 transition-colors" title="收起面板">
+            <PanelLeftClose size={16} />
+          </button>
+        </div>
         {navBtn('memory', <BookOpen size={16} />, '历史管理')}
         {navBtn('memory_mgmt', <Brain size={16} />, '记忆管理')}
+        {navBtn('account', <UserCircle size={16} />, '用户管理')}
       </div>
 
       <div className="flex-1 min-w-0 h-full flex flex-col overflow-hidden">
-        <div className="flex md:hidden items-center gap-1 px-4 pt-4 pb-2 border-b border-exo-border shrink-0">
-          {navBtn('memory', <BookOpen size={14} />, '历史管理')}
-          {navBtn('memory_mgmt', <Brain size={14} />, '记忆管理')}
+        <div className="flex md:hidden items-center gap-1 px-4 pt-4 pb-2 border-b border-exo-border shrink-0 overflow-x-auto">
+          {navBtn('memory', <BookOpen size={14} />, '历史')}
+          {navBtn('memory_mgmt', <Brain size={14} />, '记忆')}
+          {navBtn('account', <UserCircle size={14} />, '账户')}
         </div>
         {activeSettingsTab === 'memory' && (
           <>
@@ -237,6 +255,51 @@ const SettingsPanel = ({ projects, presets }) => {
 
         {activeSettingsTab === 'memory_mgmt' && (
           <MemoryManager presets={presets} />
+        )}
+
+        {activeSettingsTab === 'account' && (
+          <div className="flex-1 overflow-y-auto p-4 md:p-6">
+            <div className="max-w-2xl space-y-8">
+              <section>
+                <h3 className="text-sm font-bold text-exo-gold uppercase tracking-widest mb-4">身份识别 / Identity</h3>
+                <div className="bg-exo-panel/30 border border-exo-border rounded-xl p-5 space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-exo-muted uppercase tracking-wider">用户昵称</label>
+                    <div className="flex gap-3">
+                      <input 
+                        type="text" 
+                        value={nickInput}
+                        onChange={(e) => setNickInput(e.target.value)}
+                        className="flex-1 bg-black/40 border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:border-exo-gold/40 outline-none transition-all"
+                        placeholder="输入你的昵称..."
+                      />
+                      <button 
+                        onClick={() => {
+                          localStorage.setItem('exo_user_nick', nickInput);
+                          window.dispatchEvent(new Event('user-nick-updated'));
+                        }}
+                        className="px-4 py-2 bg-exo-gold/10 text-exo-gold border border-exo-gold/20 rounded-lg text-xs font-bold hover:bg-exo-gold hover:text-black transition-all"
+                      >
+                        保存
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-exo-muted/60 leading-relaxed mt-2">
+                      该昵称将用于本地 UI 显示。在会话中，你依然会被标记为 "You" 以保持交互简洁性。
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              <section>
+                <h3 className="text-sm font-bold text-exo-gold/60 uppercase tracking-widest mb-4 opacity-50">平台密钥 / Platform Keys (Coming Soon)</h3>
+                <div className="bg-exo-panel/20 border border-exo-border/50 rounded-xl p-5 border-dashed">
+                  <p className="text-xs text-exo-muted/40 text-center py-4 italic">
+                    未来将在此管理各平台 API 密钥（如 OpenAI, Anthropic, Google Cloud 等）
+                  </p>
+                </div>
+              </section>
+            </div>
+          </div>
         )}
       </div>
     </div>

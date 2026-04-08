@@ -4,6 +4,26 @@
 
 ---
 
+## 2026-04-07
+
+### UI 交互体验升级与核心功能补全
+
+**背景**：完善聊天功能栈（编辑/分支/重新生成/停止），优化输入性能（解决 React 渲染穿透导致卡顿），落地 Claude 风格的悬浮侧边栏，并增加本地账户/昵称设置机制。
+
+**主要改动**
+
+| 模块 | 改动内容 |
+|---|---|
+| **聊天性能优化** | 彻底修复输入框打字卡顿问题。1. `localStorage` 草稿保存改为 500ms 防抖；2. 使用 `useCallback` 和 `useRef` 固化传给 `MessageBubble` 的函数引用（`onEdit`, `onRegenerate`, `handleBranch`），修复 `React.memo` 缓存被击穿导致的全量列表重绘。 |
+| **消息操作** | 1. 接入流中断（`AbortController.abort()`）并支持打断回填；<br>2. 新增**编辑内容**、**重新生成**、**从此处分支** 功能；<br>3. **Bugfix**: 修复 `Ctrl+Enter` 快捷键未正确传递 `editMessageId` 导致编辑被当做新消息发送的问题；<br>4. 优化 `handleSend` 结束后的状态同步，确保 UI 消息列表长度与后端严格一致，实现完美的“原位替换”效果。 |
+| **侧边栏 (Sidebar)** | 重构为 "Claude-style" 悬浮展开模式（结合 `group-hover` 与 `backdrop-blur-xl`）；分离显式的桌面折叠状态控制 (`isCollapsedDesktop`)。优化移动端 padding 避免底部导航被截断。 |
+| **用户管理** | `SettingsPanel` 增加账号管理（修改代号）；`Sidebar` 标题动态读取 `exo_user_nick`；利用 `window.dispatchEvent('user-nick-updated')` 实现跨组件的 localStorage 状态同步。保持气泡视图中仍统一显示 "You"。 |
+| **记忆管理** | `MemoryManager` 增加 `scope` 支持（work/life/hobby/emotion）及手动录入功能，结合 `<datalist>` 实现 Tag 的自动补全。 |
+| **新增弹窗** | `BranchSessionModal`: 点击“从此分叉”时弹出确认框，支持用户自定义新分支会话的名称。 |
+| **Bugfix (白屏)** | 补全了 `ChatArea.jsx` 中缺失的 `Edit2` 图标和 `MemoryManager.jsx` 中缺失的 `Plus` 图标，解决了因 `lucide-react` 未导入导致的页面白屏问题。 |
+
+---
+
 ## 2026-04-05
 
 ### 赛博朋克设计系统改造 + Home 控制台

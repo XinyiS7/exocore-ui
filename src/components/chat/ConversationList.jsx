@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   ChevronDown, ChevronRight, X, Plus, Cpu, Sparkles, Box,
   Folder, FolderOpen, Hash, MoreVertical, Edit2, Trash2,
-  ShieldAlert, ChevronLast
+  ShieldAlert, ChevronLast, PanelLeftClose, PanelLeftOpen, Users
 } from 'lucide-react';
 import { baseUrl, getCsrfToken } from '../../utils/api';
 
@@ -28,6 +28,7 @@ const ConversationList = ({
   const [expandedProjects, setExpandedProjects] = useState(new Set());
   const [activeMenuId, setActiveMenuId] = useState(null);
   const [showAllProjects, setShowAllProjects] = useState(false);
+  const [isCollapsedDesktop, setIsCollapsedDesktop] = useState(false);
 
   useEffect(() => {
     fetch(`${baseUrl}/api/agents/conversations/`, { credentials: 'include' })
@@ -133,18 +134,40 @@ const ConversationList = ({
     return (
       <>
         {showConvList && <div className="md:hidden fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm transition-opacity" onClick={onClose} />}
-        <div className={`${showConvList ? 'translate-x-0 opacity-100' : '-translate-x-full md:translate-x-0 opacity-0 md:opacity-100 hidden md:flex'} transition-all duration-300 fixed md:relative inset-y-0 left-0 z-[70] md:z-auto w-72 md:w-64 h-full bg-exo-surface border-r border-exo-border/50 flex flex-col flex-shrink-0 shadow-2xl md:shadow-none overflow-hidden`}>
-          <div className="p-4 border-b border-exo-border/50 gold-line-top flex justify-between items-center bg-black/30 shrink-0">
-            <span className="label-caps text-exo-text/80 tracking-[0.2em]">COUNCIL HUB</span>
+        
+        {/* Desktop Expand Button (Floating) */}
+        <button 
+          onClick={() => setIsCollapsedDesktop(false)}
+          className={`hidden md:flex absolute top-4 left-4 z-[80] p-2 rounded-xl bg-[#111121]/80 backdrop-blur-md border border-white/10 text-exo-muted hover:text-exo-gold transition-all shadow-lg ${isCollapsedDesktop ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10 pointer-events-none'}`}
+          title="展开面板"
+        >
+          <PanelLeftOpen size={16} />
+        </button>
+
+        <div className={`
+          ${showConvList ? 'translate-x-0 opacity-100' : '-translate-x-full md:translate-x-0 opacity-0 md:opacity-100 hidden md:flex'} 
+          ${isCollapsedDesktop ? 'md:w-0 md:opacity-0 md:border-none' : 'md:w-64 md:opacity-100'}
+          transition-all duration-300 fixed md:relative inset-y-0 left-0 z-[70] md:z-auto w-72 h-full bg-[#111121]/30 backdrop-blur-xl border-r border-white/5 flex flex-col flex-shrink-0 shadow-2xl md:shadow-none overflow-hidden
+        `}>
+          <div className="p-5 flex justify-between items-center shrink-0">
+            <span className="text-[10px] font-bold text-exo-muted tracking-[0.3em] uppercase">Council Hub</span>
             <div className="flex items-center gap-2">
-              <button onClick={() => onCreateCouncil && onCreateCouncil()} className="p-1.5 rounded bg-exo-gold/10 text-exo-gold hover:bg-exo-gold hover:text-black transition-colors"><Plus size={16} /></button>
-              <button onClick={onClose} className="md:hidden p-1.5 rounded text-exo-muted hover:text-exo-text hover:bg-white/5 transition-colors"><X size={16} /></button>
+              <button 
+                onClick={() => onCreateCouncil && onCreateCouncil()} 
+                className="p-1.5 rounded-xl bg-exo-gold/10 text-exo-gold border border-exo-gold/20 hover:bg-exo-gold hover:text-black transition-all shadow-[0_0_10px_rgba(212,175,55,0.1)]"
+                title="召集议会"
+              >
+                <Plus size={16} />
+              </button>
+              <button onClick={() => setIsCollapsedDesktop(true)} className="hidden md:flex p-1.5 rounded-xl text-exo-muted hover:text-exo-text hover:bg-white/5 transition-colors" title="收起面板"><PanelLeftClose size={16} /></button>
+              <button onClick={onClose} className="md:hidden p-1.5 rounded-xl text-exo-muted hover:text-exo-text hover:bg-white/5 transition-colors"><X size={16} /></button>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
             {(!councilSessions || councilSessions.length === 0) ? (
-              <div className="p-8 border border-dashed border-exo-border/30 rounded-2xl text-[11px] text-center text-exo-muted/40 uppercase tracking-widest leading-loose">
-                无活跃议事链路<br/>NO ACTIVE COUNCILS
+              <div className="flex flex-col items-center justify-center py-20 opacity-20 text-center gap-4">
+                <Users size={40} strokeWidth={1} className="text-exo-muted" />
+                <p className="text-[10px] uppercase tracking-[0.3em] font-light leading-relaxed">No Active Councils<br/>Idle State</p>
               </div>
             ) : (
               councilSessions.map(cs => (
@@ -163,14 +186,14 @@ const ConversationList = ({
                 >
                   <Users size={15} className="shrink-0 opacity-70" />
                   <div className="flex-1 min-w-0">
-                    <div className="text-xs font-bold truncate tracking-wide mb-1">
-                      {cs.topic || cs.arbitrator_preset_name || `议会 #${cs.id}`}
+                    <div className="text-[13px] font-bold truncate tracking-wide mb-1">
+                      {cs.topic || cs.arbitrator_preset_name || `议事 #${cs.id}`}
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded border ${
-                        cs.status === 'finished' ? 'border-green-500/30 text-green-500/60' : 'border-exo-gold/30 text-exo-gold/60'
+                      <span className={`text-[9px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded border ${
+                        cs.status === 'finished' ? 'border-green-500/20 text-green-500/70 bg-green-500/5' : 'border-exo-gold/20 text-exo-gold/70 bg-exo-gold/5'
                       }`}>
-                        {cs.status}
+                        {cs.status.replace('_', ' ')}
                       </span>
                     </div>
                   </div>
@@ -186,26 +209,49 @@ const ConversationList = ({
   return (
     <>
       {showConvList && <div className="md:hidden fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm transition-opacity" onClick={onClose} />}
-      <div className={`${showConvList ? 'translate-x-0 opacity-100' : '-translate-x-full md:translate-x-0 opacity-0 md:opacity-100 hidden md:flex'} transition-all duration-300 fixed md:relative inset-y-0 left-0 z-[70] md:z-auto w-72 md:w-64 h-full bg-exo-surface border-r border-exo-border/50 flex flex-col flex-shrink-0 shadow-2xl md:shadow-none overflow-hidden`}>
+      
+      {/* Desktop Expand Button (Floating) */}
+      <button 
+        onClick={() => setIsCollapsedDesktop(false)}
+        className={`hidden md:flex absolute top-4 left-4 z-[80] p-2 rounded-xl bg-[#111121]/80 backdrop-blur-md border border-white/10 text-exo-muted hover:text-exo-gold transition-all shadow-lg ${isCollapsedDesktop ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10 pointer-events-none'}`}
+        title="展开面板"
+      >
+        <PanelLeftOpen size={16} />
+      </button>
+
+      <div className={`
+        ${showConvList ? 'translate-x-0 opacity-100' : '-translate-x-full md:translate-x-0 opacity-0 md:opacity-100 hidden md:flex'} 
+        ${isCollapsedDesktop ? 'md:w-0 md:opacity-0 md:border-none' : 'md:w-64 md:opacity-100'}
+        transition-all duration-300 fixed md:relative inset-y-0 left-0 z-[70] md:z-auto w-72 h-full bg-[#111121]/30 backdrop-blur-xl border-r border-white/5 flex flex-col flex-shrink-0 shadow-2xl md:shadow-none overflow-hidden
+      `}>
         
         {/* Header */}
-        <div className="p-4 border-b border-exo-border/50 gold-line-top flex justify-between items-center bg-black/30 shrink-0">
-          <span className="label-caps text-exo-text/80 tracking-[0.2em]">EXO CORE</span>
+        <div className="p-5 flex justify-between items-center shrink-0">
+          <span className="text-[10px] font-bold text-exo-muted tracking-[0.3em] uppercase">Nodes Control</span>
           <div className="flex items-center gap-2">
-            <button onClick={() => openNewSession()} className="p-1.5 rounded bg-exo-gold/10 text-exo-gold hover:bg-exo-gold hover:text-black transition-colors"><Plus size={16} /></button>
-            <button onClick={onClose} className="md:hidden p-1.5 rounded text-exo-muted hover:text-exo-text hover:bg-white/5 transition-colors"><X size={16} /></button>
+            <button 
+              onClick={() => openNewSession()} 
+              className="p-1.5 rounded-xl bg-exo-gold/10 text-exo-gold border border-exo-gold/20 hover:bg-exo-gold hover:text-black transition-all shadow-[0_0_10px_rgba(212,175,55,0.1)]"
+              title="新建会话"
+            >
+              <Plus size={16} />
+            </button>
+            <button onClick={() => setIsCollapsedDesktop(true)} className="hidden md:flex p-1.5 rounded-xl text-exo-muted hover:text-exo-text hover:bg-white/5 transition-colors" title="收起面板"><PanelLeftClose size={16} /></button>
+            <button onClick={onClose} className="md:hidden p-1.5 rounded-xl text-exo-muted hover:text-exo-text hover:bg-white/5 transition-colors"><X size={16} /></button>
           </div>
         </div>
 
         {/* Content Wrapper */}
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden" onClick={() => setActiveMenuId(null)}>
           
-          {/* G045 Section: Max 50% */}
+          {/* G045 Section */}
           {g045Sessions.length > 0 && (
-            <div className="shrink-0 max-h-[40%] flex flex-col border-b border-exo-border/20">
-              <div className="label-caps text-exo-gold/70 px-4 py-3 flex items-center gap-1.5 bg-black/10 shrink-0"><Cpu size={11} /> G045 Superior</div>
-              <div className="overflow-y-auto px-3 pb-3 space-y-1">
-                <div className="p-1.5 rounded-xl border border-exo-gold/20 bg-gradient-to-b from-exo-gold/5 to-transparent space-y-1">
+            <div className="shrink-0 max-h-[40%] flex flex-col border-b border-white/5 bg-white/[0.02]">
+              <div className="text-[9px] font-bold text-exo-gold/60 px-5 py-3 flex items-center gap-1.5 uppercase tracking-widest shrink-0">
+                <Cpu size={10} /> Superior Cognitive
+              </div>
+              <div className="overflow-y-auto px-3 pb-4 space-y-1">
+                <div className="p-1 rounded-2xl bg-exo-gold/[0.03] border border-exo-gold/10 space-y-1">
                   {g045Sessions.map(conv => <SessionItem key={conv.id} conv={conv} icon={Sparkles} colorClass="exo-gold" />)}
                 </div>
               </div>
@@ -213,64 +259,82 @@ const ConversationList = ({
           )}
 
           {/* Standard Sessions Section: Flex-1 */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-6 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-4 space-y-8 custom-scrollbar">
             {projects.length > 0 && (
-              <div className="space-y-2">
-                <div className="label-caps text-exo-muted/70 mb-2 flex items-center justify-between px-1">
-                  <span className="flex items-center gap-1.5"><Box size={11} /> Projects</span>
+              <div className="space-y-3">
+                <div className="text-[9px] font-bold text-exo-muted/50 mb-1 flex items-center justify-between px-1 uppercase tracking-widest">
+                  <span className="flex items-center gap-1.5"><Box size={10} /> Repositories</span>
                   {projects.length > 2 && (
                     <button 
                       onClick={() => setShowAllProjects(!showAllProjects)}
-                      className="text-[9px] text-exo-gold/50 hover:text-exo-gold transition-colors flex items-center gap-0.5"
+                      className="text-[9px] text-exo-gold/40 hover:text-exo-gold transition-colors"
                     >
-                      {showAllProjects ? '隐藏' : `显示全部 (${projects.length})`}
+                      {showAllProjects ? 'COLLAPSE' : `VIEW ALL (${projects.length})`}
                     </button>
                   )}
                 </div>
+                <div className="space-y-1">
                 {visibleProjects.map(proj => {
                   const isExpanded = expandedProjects.has(proj.id);
                   const projSessions = conversations.filter(c => c.project === proj.id && c.agent_type !== 'g045');
                   return (
                     <div key={proj.id} className="space-y-1">
-                      <div onClick={() => toggleProject(proj.id)} className="flex items-center gap-2 p-2 rounded-lg cursor-pointer text-exo-text hover:bg-white/5 transition-colors">
-                        {isExpanded ? <ChevronDown size={14} className="text-exo-muted"/> : <ChevronRight size={14} className="text-exo-muted"/>}
-                        <Folder size={14} className={isExpanded ? "text-blue-400" : "text-exo-muted"} />
-                        <span className="text-xs font-medium truncate flex-1">{proj.name}</span>
-                        <span className="text-[10px] bg-black/50 px-1.5 rounded text-exo-muted font-mono">{projSessions.length}</span>
+                      <div 
+                        onClick={() => toggleProject(proj.id)} 
+                        className={`flex items-center gap-2.5 p-2 rounded-xl cursor-pointer transition-all ${isExpanded ? 'bg-white/5' : 'hover:bg-white/[0.03]'}`}
+                      >
+                        <div className={`p-1 rounded-lg transition-colors ${isExpanded ? 'bg-blue-500/10 text-blue-400' : 'text-exo-muted/40'}`}>
+                          {isExpanded ? <FolderOpen size={14}/> : <Folder size={14}/>}
+                        </div>
+                        <span className={`text-[13px] truncate flex-1 transition-colors ${isExpanded ? 'text-exo-text font-medium' : 'text-exo-muted'}`}>
+                          {proj.name}
+                        </span>
+                        <span className="text-[9px] text-exo-muted/30 font-mono tracking-tighter">{projSessions.length}</span>
                       </div>
+                      
                       {isExpanded && (
-                        <div className="pl-6 pr-1 space-y-1 border-l-2 border-exo-border/50 ml-3 py-1">
+                        <div className="pl-4 pr-1 space-y-1 border-l border-white/5 ml-4 py-1 animate-fade-in">
                           <div
                             onClick={() => { setActiveFileProjectId(proj.id); onClose(); }}
-                            className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer text-xs font-bold transition-all ${
+                            className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer text-[11px] font-bold tracking-tight transition-all ${
                               activeFileProjectId === proj.id
-                                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.1)]'
-                                : 'text-blue-400/70 hover:bg-blue-500/10 hover:text-blue-400 border border-transparent'
+                                ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                                : 'text-blue-400/60 hover:bg-blue-500/5 hover:text-blue-400'
                             }`}
                           >
-                            <FolderOpen size={14} /> Project Files
+                            <Box size={12} /> ARCHIVE FILES
                           </div>
                           {projSessions.map(conv => <SessionItem key={conv.id} conv={conv} icon={Hash} colorClass="exo-text" />)}
-                          <div onClick={() => openNewSession({ projectId: proj.id })} className="flex items-center gap-2 p-2 rounded-lg cursor-pointer text-exo-muted hover:text-exo-text text-xs border border-dashed border-exo-border/50 mt-1 transition-all"><Plus size={14} /> New Record</div>
+                          <div 
+                            onClick={() => openNewSession({ projectId: proj.id })} 
+                            className="flex items-center gap-2 p-2 rounded-lg cursor-pointer text-exo-muted/40 hover:text-exo-muted text-[11px] border border-dashed border-white/5 mt-1 transition-all"
+                          >
+                            <Plus size={12} /> NEW NODE
+                          </div>
                         </div>
                       )}
                     </div>
                   );
                 })}
+                </div>
               </div>
             )}
 
             {standardSessions.length > 0 && (
-              <div className="space-y-1">
-                <div className="label-caps text-exo-muted/70 mb-2 mt-2 flex items-center gap-1.5 px-1"><Hash size={11} /> Standard Nodes</div>
-                {standardSessions.map(conv => <SessionItem key={conv.id} conv={conv} icon={Hash} colorClass="exo-text" />)}
+              <div className="space-y-2">
+                <div className="text-[9px] font-bold text-exo-muted/50 mb-1 flex items-center gap-1.5 px-1 uppercase tracking-widest">
+                  <Hash size={10} /> Independent Nodes
+                </div>
+                <div className="space-y-1">
+                  {standardSessions.map(conv => <SessionItem key={conv.id} conv={conv} icon={Hash} colorClass="exo-text" />)}
+                </div>
               </div>
             )}
 
             {conversations.length === 0 && projects.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-10 opacity-30 text-center gap-3">
-                <ShieldAlert size={32} className="text-exo-muted" />
-                <p className="text-[10px] uppercase tracking-[0.2em] leading-relaxed">No Active Link<br/>Check Connection</p>
+              <div className="flex flex-col items-center justify-center py-20 opacity-20 text-center gap-4">
+                <ShieldAlert size={40} strokeWidth={1} className="text-exo-muted" />
+                <p className="text-[10px] uppercase tracking-[0.3em] font-light leading-relaxed">System Idle<br/>Establishing Link...</p>
               </div>
             )}
           </div>

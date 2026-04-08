@@ -22,7 +22,9 @@ ExoCore UI is a React-based Single Page Application (SPA) designed as the fronte
 | `npm run lint` | Run ESLint checks across the codebase. |
 | `npm run preview` | Preview the production build locally. |
 
-**Known Issue**: `npm run build` may fail due to `lightningcss` errors caused by dynamic Tailwind class construction in `ConversationList.jsx`. Avoid adding new dynamic class patterns like `` `bg-${color}/10` ``.
+**Common Pitfalls**:
+- **White Screen on Interaction**: Often caused by using a `lucide-react` icon in JSX without importing it at the top of the file (e.g., `Plus`, `Edit2`). Always verify imports when adding new UI elements.
+- **LightningCSS Build Failures**: `npm run build` may fail due to dynamic Tailwind class construction in `ConversationList.jsx`. Avoid adding new dynamic class patterns like `` `bg-${color}/10` ``.
 
 ## Development Conventions
 
@@ -41,7 +43,10 @@ ExoCore UI is a React-based Single Page Application (SPA) designed as the fronte
 
 ### Component Structure
 - **Root View**: `App.jsx` manages the `currentTab` ('home', 'chat', 'agent_hub', 'profile', 'settings').
-- **Modals**: Use `DestructorModal` for any destructive actions (delete, archive) rather than native `window.confirm`.
+- **Modals**: 
+  - `DestructorModal`: For destructive actions (delete, archive).
+  - `BranchSessionModal`: For creating a new session branch from a specific message.
+  - `NewSessionModal`: For fresh session initialization.
 - **Chat History**: Implements windowed rendering and infinite scroll via `IntersectionObserver` on the `topSentinelRef`.
 - **State Flow**: State is typically lifted to `App.jsx` or the nearest common ancestor and passed down as props. Use refs (`useRef`) for non-rendering state like full message history.
 
