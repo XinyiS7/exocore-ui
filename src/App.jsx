@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import 'highlight.js/styles/atom-one-dark.css';
-import { Hexagon, MessageSquare, Users, Plus } from 'lucide-react';
+import { Hexagon, MessageSquare, Users, Plus, Menu } from 'lucide-react';
 import { baseUrl } from './utils/api';
 
 import DestructorModal from './components/modals/DestructorModal';
@@ -18,13 +18,21 @@ import { listCouncilSessions } from './utils/councilApi';
 import HomePanel from './components/home/HomePanel';
 
 export default function App() {
-  const [currentTab, setCurrentTab] = useState('chat');
+  const [currentTab, setCurrentTab] = useState('home');
   const [activeSessionId, setActiveSessionId] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [projects, setProjects] = useState([]);
   const [presets, setPresets] = useState([]);
   const [activeFileProjectId, setActiveFileProjectId] = useState(null);
+  
+  // Sidebar and List states
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [showConvList, setShowConvList] = useState(false);
+  
+  // Council state
+  const [activeCouncilId, setActiveCouncilId] = useState(null);
+  const [councilSessions, setCouncilSessions] = useState([]);
+  const [showCouncilCreate, setShowCouncilCreate] = useState(false);
 
   useEffect(() => {
     fetch(`${baseUrl}/api/core/projects/`, { credentials: 'include' })
@@ -45,10 +53,6 @@ export default function App() {
       .catch(err => console.error("Presets 刷新失败", err));
   };
 
-  const [activeCouncilId, setActiveCouncilId] = useState(null);
-  const [councilSessions, setCouncilSessions] = useState([]);
-  const [showCouncilCreate, setShowCouncilCreate] = useState(false);
-
   const refreshCouncilSessions = () => {
     listCouncilSessions()
       .then(setCouncilSessions)
@@ -63,11 +67,114 @@ export default function App() {
   const [newSessionConfig, setNewSessionConfig] = useState({ isOpen: false, initialContext: null });
   const openNewSession = (initialContext = null) => setNewSessionConfig({ isOpen: true, initialContext });
 
+  // Helper to reset selections when switching tabs
+  const handleTabChange = (tab) => {
+    setCurrentTab(tab);
+    if (tab !== 'chat') { setActiveSessionId(null); setActiveFileProjectId(null); }
+    if (tab !== 'council') { setActiveCouncilId(null); }
+    // On mobile, close sidebar after selection
+    if (window.innerWidth < 768) setIsSidebarExpanded(false);
+  };
+
+  const renderMainContent = () => {
+    switch (currentTab) {
+      case 'home':
+        return <HomePanel setCurrentTab={handleTabChange} />;
+      
+      case 'chat':
+        if (activeFileProjectId) return <ProjectFilesArea projectId={activeFileProjectId} projects={projects} openDestructor={openDestructor} />;
+        if (activeSessionId) return (
+          <ChatArea
+            activeSessionId={activeSessionId}
+            setActiveSessionId={setActiveSessionId}
+            setRefreshKey={setRefreshKey}
+            setShowConvList={setShowConvList}
+            openNewSession={openNewSession}
+            presets={presets}
+          />
+        );
+        return (
+          <ConversationList
+            mode="chat"
+            isMainView={true}
+            activeSessionId={activeSessionId}
+            setActiveSessionId={setActiveSessionId}
+            projects={projects}
+            refreshKey={refreshKey}
+            openDestructor={openDestructor}
+            openNewSession={openNewSession}
+            activeFileProjectId={activeFileProjectId}
+            setActiveFileProjectId={setActiveFileProjectId}
+          />
+        );
+
+      case 'project':
+        if (activeFileProjectId) return <ProjectFilesArea projectId={activeFileProjectId} projects={projects} openDestructor={openDestructor} />;
+        if (activeSessionId) return (
+          <ChatArea
+            activeSessionId={activeSessionId}
+            setActiveSessionId={setActiveSessionId}
+            setRefreshKey={setRefreshKey}
+            setShowConvList={setShowConvList}
+            openNewSession={openNewSession}
+            presets={presets}
+          />
+        );
+        return (
+          <ConversationList
+            mode="project"
+            isMainView={true}
+            projects={projects}
+            refreshKey={refreshKey}
+            openDestructor={openDestructor}
+            openNewSession={openNewSession}
+            setActiveFileProjectId={setActiveFileProjectId}
+            setActiveSessionId={setActiveSessionId}
+          />
+        );
+
+      case 'council':
+        if (activeCouncilId) return (
+          <CouncilArea
+            councilId={activeCouncilId}
+            presets={presets}
+            onBack={() => setActiveCouncilId(null)}
+            setShowConvList={setShowConvList}
+            openNewSession={openNewSession}
+          />
+        );
+        return (
+          <ConversationList
+            mode="council"
+            isMainView={true}
+            councilSessions={councilSessions}
+            activeCouncilId={activeCouncilId}
+            setActiveCouncilId={setActiveCouncilId}
+            onCreateCouncil={() => setShowCouncilCreate(true)}
+            refreshKey={refreshKey}
+            setActiveSessionId={setActiveSessionId}
+          />
+        );
+
+      case 'agent_hub':
+        return <AgentManager openNewSession={openNewSession} openDestructor={openDestructor} setCurrentTab={handleTabChange} presets={presets} refreshPresets={refreshPresets} />;
+      
+      case 'profile':
+        return <UserProfile presets={presets} />;
+      
+      case 'settings':
+        return <SettingsPanel projects={projects} presets={presets} />;
+      
+      default:
+        return <HomePanel setCurrentTab={handleTabChange} />;
+    }
+  };
+
   return (
-    <div className="w-full h-[100dvh] bg-exo-bg text-exo-text font-sans flex flex-col md:flex-row overflow-hidden">
-
+    <div className="w-full h-[100dvh] bg-noise text-exo-text font-sans flex overflow-hidden relative">
+      
+      {/* Modals */}
       <DestructorModal {...destructorConfig} onClose={() => setDestructorConfig(p => ({...p, isOpen: false}))} />
-
       <CouncilCreateModal
         isOpen={showCouncilCreate}
         onClose={() => setShowCouncilCreate(false)}
@@ -75,11 +182,9 @@ export default function App() {
         onSuccess={(newId) => {
           refreshCouncilSessions();
           setActiveCouncilId(newId);
-          setActiveSessionId(null);
-          setActiveFileProjectId(null);
+          handleTabChange('council');
         }}
       />
-
       <NewSessionModal
         isOpen={newSessionConfig.isOpen}
         onClose={() => setNewSessionConfig(p => ({...p, isOpen: false}))}
@@ -89,102 +194,72 @@ export default function App() {
         onSuccess={(newSessionId) => {
           setRefreshKey(prev => prev + 1);
           setActiveSessionId(newSessionId);
+          if (currentTab === 'home') handleTabChange('chat');
         }}
       />
 
-      {/* Main Content: Order 1 on Mobile, Order 2 on Desktop */}
-      <div className="flex-1 min-w-0 h-full flex flex-row relative order-1 md:order-2 overflow-hidden">
-        {currentTab === 'chat' && (
-          <div className="flex flex-1 min-w-0 h-full flex-row relative">
-            <ConversationList
-              activeSessionId={activeSessionId}
-              setActiveSessionId={(id) => { setActiveSessionId(id); setActiveFileProjectId(null); setActiveCouncilId(null); setShowConvList(false); }}
-              projects={projects}
-              refreshKey={refreshKey}
-              setRefreshKey={setRefreshKey}
-              openDestructor={openDestructor}
-              openNewSession={openNewSession}
-              activeFileProjectId={activeFileProjectId}
-              setActiveFileProjectId={setActiveFileProjectId}
-              showConvList={showConvList}
-              onClose={() => setShowConvList(false)}
-            />
-            {activeFileProjectId ? (
-              <ProjectFilesArea projectId={activeFileProjectId} projects={projects} openDestructor={openDestructor} />
-            ) : activeSessionId ? (
-              <ChatArea
+      {/* Sidebar Overlay for Mobile */}
+      <div className={`md:hidden fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm transition-opacity ${isSidebarExpanded ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsSidebarExpanded(false)} />
+
+      {/* Sidebar Container */}
+      <div className={`
+        fixed md:relative inset-y-0 left-0 z-[120] md:z-auto transition-transform duration-500 ease-out
+        ${isSidebarExpanded ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
+        <Sidebar 
+          currentTab={currentTab} 
+          setCurrentTab={handleTabChange} 
+          showConvList={showConvList} 
+          setShowConvList={setShowConvList}
+          isExpanded={isSidebarExpanded}
+          setIsExpanded={setIsSidebarExpanded}
+        />
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 relative h-full">
+        
+        {/* Mobile Header Toggle */}
+        <div className="md:hidden h-14 border-b border-white/5 flex items-center px-4 shrink-0 bg-[#05060A]/40 backdrop-blur-md justify-between">
+          <button onClick={() => setIsSidebarExpanded(true)} className="p-2 text-exo-muted hover:text-exo-accent transition-colors">
+            <Menu size={20} />
+          </button>
+          <div className="text-exo-accent font-bold tracking-widest text-xs uppercase">ExoCore</div>
+          <div className="w-10" /> {/* Spacer */}
+        </div>
+
+        <div className="flex-1 flex flex-row overflow-hidden relative">
+          
+          {/* Side Column List (Visible in chat/council/project if showConvList is true and NOT in main view) */}
+          {showConvList && (['chat', 'council', 'project'].includes(currentTab)) && (
+            <div className="absolute inset-y-0 left-0 z-[80] h-full shadow-[20px_0_50px_rgba(0,0,0,0.5)]">
+              <ConversationList
+                mode={currentTab}
                 activeSessionId={activeSessionId}
-                setActiveSessionId={setActiveSessionId}
+                setActiveSessionId={(id) => { setActiveSessionId(id); setActiveFileProjectId(null); setActiveCouncilId(null); setShowConvList(false); }}
+                projects={projects}
+                refreshKey={refreshKey}
                 setRefreshKey={setRefreshKey}
-                setShowConvList={setShowConvList}
+                openDestructor={openDestructor}
                 openNewSession={openNewSession}
-                presets={presets}
+                activeFileProjectId={activeFileProjectId}
+                setActiveFileProjectId={setActiveFileProjectId}
+                showConvList={showConvList}
+                onClose={() => setShowConvList(false)}
+                councilSessions={councilSessions}
+                activeCouncilId={activeCouncilId}
+                setActiveCouncilId={(id) => { setActiveCouncilId(id); setActiveSessionId(null); setShowConvList(false); }}
+                onCreateCouncil={() => setShowCouncilCreate(true)}
               />
-            ) : (
-              <div className="flex-1 min-w-0 flex flex-col items-center justify-center bg-exo-bg gap-4 text-center p-8">
-                <Hexagon size={44} className="text-exo-gold/20" />
-                <p className="text-exo-muted text-sm tracking-widest uppercase">初始化节点或选择已有会话</p>
-                <button onClick={() => setShowConvList(true)} className="md:hidden mt-1 px-4 py-2 text-xs text-exo-gold border border-exo-gold/30 rounded-lg hover:bg-exo-gold/10 flex items-center gap-2">
-                  <MessageSquare size={14} /> 打开会话列表
-                </button>
-              </div>
-            )}
+            </div>
+          )}
+
+          {/* Actual Tab Content */}
+          <div className="flex-1 min-w-0 overflow-hidden relative h-full">
+            {renderMainContent()}
           </div>
-        )}
-
-        {currentTab === 'council' && (
-          <div className="flex flex-1 min-w-0 h-full flex-row relative">
-            <ConversationList
-              isCouncilMode={true}
-              councilSessions={councilSessions}
-              activeCouncilId={activeCouncilId}
-              setActiveCouncilId={(id) => { setActiveCouncilId(id); setActiveSessionId(null); setShowConvList(false); }}
-              onCreateCouncil={() => setShowCouncilCreate(true)}
-              showConvList={showConvList}
-              onClose={() => setShowConvList(false)}
-              refreshKey={refreshKey}
-              projects={projects}
-              setActiveSessionId={setActiveSessionId}
-            />
-            {activeCouncilId ? (
-              <CouncilArea
-                councilId={activeCouncilId}
-                presets={presets}
-                onBack={() => setActiveCouncilId(null)}
-                setShowConvList={setShowConvList}
-                openNewSession={openNewSession}
-              />
-            ) : (
-              <div className="flex-1 min-w-0 flex flex-col items-center justify-center bg-exo-bg gap-4 text-center p-8">
-                <Users size={44} className="text-exo-gold/20" />
-                <p className="text-exo-muted text-sm tracking-widest uppercase">选择议事链路或发起新召集</p>
-                <button onClick={() => setShowCouncilCreate(true)} className="mt-1 px-6 py-2 text-xs font-bold text-black bg-exo-gold rounded-lg hover:bg-yellow-400 flex items-center gap-2 transition-all">
-                  <Plus size={14} /> 召集议会
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {currentTab === 'agent_hub' && (
-          <AgentManager
-            openNewSession={openNewSession}
-            openDestructor={openDestructor}
-            setCurrentTab={setCurrentTab}
-            presets={presets}
-            refreshPresets={refreshPresets}
-          />
-        )}
-        {currentTab === 'profile' && <UserProfile presets={presets} />}
-        {currentTab === 'settings' && <SettingsPanel projects={projects} presets={presets} />}
-        {currentTab === 'home' && <HomePanel setCurrentTab={setCurrentTab} />}
+        </div>
       </div>
-
-      {/* Sidebar: Order 2 on Mobile (Bottom), Order 1 on Desktop (Left) */}
-      <div className="order-2 md:order-1 z-50">
-        <Sidebar currentTab={currentTab} setCurrentTab={setCurrentTab} showConvList={showConvList} setShowConvList={setShowConvList} />
-      </div>
-
     </div>
   );
 }

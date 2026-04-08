@@ -59,14 +59,14 @@ const CouncilGroupChat = ({ council, streamBuffers, displayOrder, refetchTrigger
             <div className="flex items-end gap-2 max-w-[75%]">
               <div className="flex flex-col items-end gap-1">
                 <span className="text-[10px] text-exo-muted/60 pr-1">{userNick}</span>
-                <div className="bg-exo-gold/20 border border-exo-gold/30 text-exo-text text-sm rounded-2xl rounded-br-sm px-4 py-2.5 leading-relaxed">
+                <div className="bg-exo-accent/20 border border-exo-accent/30 text-exo-text text-sm rounded-2xl rounded-br-sm px-4 py-2.5 leading-relaxed">
                   {topic}
                 </div>
               </div>
               {userAvatarUrl ? (
                 <img src={userAvatarUrl} alt={userNick} className="w-7 h-7 rounded-full shrink-0 object-cover" />
               ) : (
-                <div className="w-7 h-7 rounded-full shrink-0 bg-exo-gold/20 flex items-center justify-center text-exo-gold text-[10px] font-bold">
+                <div className="w-7 h-7 rounded-full shrink-0 bg-exo-accent/20 flex items-center justify-center text-exo-accent text-[10px] font-bold">
                   {userNick.charAt(0).toUpperCase()}
                 </div>
               )}
@@ -87,7 +87,7 @@ const CouncilGroupChat = ({ council, streamBuffers, displayOrder, refetchTrigger
               <div className="flex items-center gap-2 pl-9">
                 <span className="text-[10px] font-semibold text-exo-muted/80">{participant.preset_name}</span>
                 {participant.phase_status === 'generating' && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-exo-gold animate-pulse" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-exo-accent animate-pulse" />
                 )}
                 {participant.phase_status === 'done' && (
                   <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
@@ -113,8 +113,8 @@ const CouncilGroupChat = ({ council, streamBuffers, displayOrder, refetchTrigger
 
         {/* Synthesizing indicator */}
         {isSynthesizing && (
-          <div className="flex items-center gap-2 text-exo-gold/60 text-xs pl-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-exo-gold animate-pulse inline-block" />
+          <div className="flex items-center gap-2 text-exo-accent/60 text-xs pl-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-exo-accent animate-pulse inline-block" />
             Arbitrator 正在综合...
           </div>
         )}
@@ -130,7 +130,7 @@ const CouncilGroupChat = ({ council, streamBuffers, displayOrder, refetchTrigger
             onChange={e => onOpinionChange(e.target.value)}
             placeholder="追加意见（可选）— 综合时将作为你的观点提交给 Arbitrator"
             rows={2}
-            className="w-full bg-black/30 border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text placeholder-exo-muted/30 focus:outline-none focus:border-exo-gold/40 resize-none scrollbar-hide"
+            className="w-full bg-black/30 border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text placeholder-exo-muted/30 focus:outline-none focus:border-exo-accent/40 resize-none scrollbar-hide"
           />
         </div>
       )}

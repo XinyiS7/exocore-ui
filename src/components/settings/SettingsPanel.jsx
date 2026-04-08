@@ -83,7 +83,7 @@ const SettingsPanel = ({ projects, presets }) => {
       onClick={() => setActiveSettingsTab(tab)}
       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
         activeSettingsTab === tab
-          ? 'bg-exo-gold/10 text-exo-gold border border-exo-gold/20'
+          ? 'bg-exo-accent/10 text-exo-accent border border-exo-accent/20'
           : 'text-exo-muted hover:text-exo-text hover:bg-white/5'
       }`}
     >
@@ -93,7 +93,7 @@ const SettingsPanel = ({ projects, presets }) => {
   );
 
   return (
-    <div className="flex-1 h-full flex overflow-hidden bg-exo-bg relative">
+    <div className="flex-1 h-full flex overflow-hidden bg-noise relative">
       <KnowledgeEditModal
         isOpen={kfEditTarget !== null}
         onClose={() => setKfEditTarget(null)}
@@ -103,7 +103,7 @@ const SettingsPanel = ({ projects, presets }) => {
       {/* Desktop Expand Button (Floating) */}
       <button 
         onClick={() => setIsCollapsedDesktop(false)}
-        className={`hidden md:flex absolute top-4 left-4 z-[80] p-2 rounded-xl bg-[#111121]/80 backdrop-blur-md border border-white/10 text-exo-muted hover:text-exo-gold transition-all shadow-lg ${isCollapsedDesktop ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10 pointer-events-none'}`}
+        className={`hidden md:flex absolute top-4 left-4 z-[80] p-2 rounded-xl bg-[#111121]/80 backdrop-blur-md border border-white/10 text-exo-muted hover:text-exo-accent transition-all shadow-lg ${isCollapsedDesktop ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10 pointer-events-none'}`}
         title="展开面板"
       >
         <PanelLeftOpen size={16} />
@@ -141,11 +141,11 @@ const SettingsPanel = ({ projects, presets }) => {
                 <div className="flex items-center gap-1 p-4 border-b border-exo-border shrink-0">
                   <button
                     onClick={() => setMemSubTab('files')}
-                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${memSubTab === 'files' ? 'bg-exo-gold/10 text-exo-gold border border-exo-gold/20' : 'text-exo-muted hover:text-exo-text hover:bg-white/5'}`}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${memSubTab === 'files' ? 'bg-exo-accent/10 text-exo-accent border border-exo-accent/20' : 'text-exo-muted hover:text-exo-text hover:bg-white/5'}`}
                   >文件库</button>
                   <button
                     onClick={() => setMemSubTab('proposals')}
-                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${memSubTab === 'proposals' ? 'bg-exo-gold/10 text-exo-gold border border-exo-gold/20' : 'text-exo-muted hover:text-exo-text hover:bg-white/5'}`}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${memSubTab === 'proposals' ? 'bg-exo-accent/10 text-exo-accent border border-exo-accent/20' : 'text-exo-muted hover:text-exo-text hover:bg-white/5'}`}
                   >会话摘要</button>
                 </div>
 
@@ -164,7 +164,7 @@ const SettingsPanel = ({ projects, presets }) => {
                             className="w-full flex items-center justify-between px-4 py-3 bg-exo-panel hover:bg-white/5 transition-colors"
                           >
                             <div className="flex items-center gap-3">
-                              {isExpanded ? <FolderOpen size={15} className="text-exo-gold/70" /> : <Folder size={15} className="text-exo-muted" />}
+                              {isExpanded ? <FolderOpen size={15} className="text-exo-accent/70" /> : <Folder size={15} className="text-exo-muted" />}
                               <span className="text-sm font-medium text-exo-text">{proj.name}</span>
                               {files && <span className="text-[10px] text-exo-muted/60">({files.length})</span>}
                             </div>
@@ -212,7 +212,7 @@ const SettingsPanel = ({ projects, presets }) => {
                             className="w-full flex items-center justify-between px-4 py-3 bg-exo-panel hover:bg-white/5 transition-colors"
                           >
                             <div className="flex items-center gap-3 overflow-hidden">
-                              <MessageSquare size={14} className={isExpanded ? 'text-exo-gold/70 shrink-0' : 'text-exo-muted/50 shrink-0'} />
+                              <MessageSquare size={14} className={isExpanded ? 'text-exo-accent/70 shrink-0' : 'text-exo-muted/50 shrink-0'} />
                               <span className="text-sm font-medium text-exo-text truncate">{conv.name || `Session #${conv.id}`}</span>
                               {proposals && <span className="text-[10px] text-exo-muted/60 shrink-0">({proposals.length})</span>}
                             </div>
@@ -261,7 +261,7 @@ const SettingsPanel = ({ projects, presets }) => {
           <div className="flex-1 overflow-y-auto p-4 md:p-6">
             <div className="max-w-2xl space-y-8">
               <section>
-                <h3 className="text-sm font-bold text-exo-gold uppercase tracking-widest mb-4">身份识别 / Identity</h3>
+                <h3 className="text-sm font-bold text-exo-accent uppercase tracking-widest mb-4">身份识别 / Identity</h3>
                 <div className="bg-exo-panel/30 border border-exo-border rounded-xl p-5 space-y-4">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-exo-muted uppercase tracking-wider">用户昵称</label>
@@ -270,7 +270,7 @@ const SettingsPanel = ({ projects, presets }) => {
                         type="text" 
                         value={nickInput}
                         onChange={(e) => setNickInput(e.target.value)}
-                        className="flex-1 bg-black/40 border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:border-exo-gold/40 outline-none transition-all"
+                        className="flex-1 bg-black/40 border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:border-exo-accent/40 outline-none transition-all"
                         placeholder="输入你的昵称..."
                       />
                       <button 
@@ -278,7 +278,7 @@ const SettingsPanel = ({ projects, presets }) => {
                           localStorage.setItem('exo_user_nick', nickInput);
                           window.dispatchEvent(new Event('user-nick-updated'));
                         }}
-                        className="px-4 py-2 bg-exo-gold/10 text-exo-gold border border-exo-gold/20 rounded-lg text-xs font-bold hover:bg-exo-gold hover:text-black transition-all"
+                        className="px-4 py-2 bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded-lg text-xs font-bold hover:bg-exo-accent hover:text-black transition-all"
                       >
                         保存
                       </button>
@@ -291,7 +291,7 @@ const SettingsPanel = ({ projects, presets }) => {
               </section>
 
               <section>
-                <h3 className="text-sm font-bold text-exo-gold/60 uppercase tracking-widest mb-4 opacity-50">平台密钥 / Platform Keys (Coming Soon)</h3>
+                <h3 className="text-sm font-bold text-exo-accent/60 uppercase tracking-widest mb-4 opacity-50">平台密钥 / Platform Keys (Coming Soon)</h3>
                 <div className="bg-exo-panel/20 border border-exo-border/50 rounded-xl p-5 border-dashed">
                   <p className="text-xs text-exo-muted/40 text-center py-4 italic">
                     未来将在此管理各平台 API 密钥（如 OpenAI, Anthropic, Google Cloud 等）

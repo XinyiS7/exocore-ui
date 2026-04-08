@@ -80,8 +80,8 @@ const CouncilStreamView = ({ conversationId, streamBuffer, agentName, agentAvata
         />
       ))}
       {isStreaming && !(streamBuffer?.content) && (
-        <div className="flex items-center gap-2 text-exo-gold/60 text-xs pl-10">
-          <span className="w-1.5 h-1.5 rounded-full bg-exo-gold animate-pulse inline-block" />
+        <div className="flex items-center gap-2 text-exo-accent/60 text-xs pl-10">
+          <span className="w-1.5 h-1.5 rounded-full bg-exo-accent animate-pulse inline-block" />
           正在生成...
         </div>
       )}

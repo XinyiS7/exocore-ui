@@ -135,7 +135,7 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }) => {
 
         <div
           ref={cropContainerRef}
-          className="relative rounded-full border-2 border-exo-gold/60 overflow-hidden cursor-move select-none bg-black"
+          className="relative rounded-full border-2 border-exo-accent/60 overflow-hidden cursor-move select-none bg-black"
           style={{ width: CROP_SIZE, height: CROP_SIZE, flexShrink: 0, touchAction: 'none' }}
         >
           {/* Flex wrapper centers the image so transform: translate+scale works cleanly */}
@@ -168,7 +168,7 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }) => {
           </button>
           <button
             onClick={handleConfirm}
-            className="flex-1 py-2 text-sm font-bold text-black bg-exo-gold rounded-lg hover:bg-yellow-400 transition-colors"
+            className="flex-1 py-2 text-sm font-bold text-black bg-exo-accent rounded-lg hover:bg-yellow-400 transition-colors"
           >
             确认
           </button>

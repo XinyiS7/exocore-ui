@@ -178,7 +178,7 @@ const UserProfile = ({ presets }) => {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-exo-bg overflow-hidden">
+    <div className="flex-1 flex flex-col h-full bg-noise overflow-hidden">
       {cropFile && (
         <AvatarCropModal
           file={cropFile}
@@ -228,7 +228,7 @@ const UserProfile = ({ presets }) => {
                   <button
                     onClick={handlePost}
                     disabled={!newPostContent.trim() || isPosting}
-                    className="px-5 py-1.5 bg-exo-gold text-black text-xs font-bold rounded-full hover:bg-yellow-400 disabled:opacity-50 transition-colors flex items-center gap-1.5"
+                    className="px-5 py-1.5 bg-exo-accent text-black text-xs font-bold rounded-full hover:bg-yellow-400 disabled:opacity-50 transition-colors flex items-center gap-1.5"
                   >
                     {isPosting ? <Activity size={12} className="animate-spin" /> : <Send size={12} />}
                     发布
@@ -301,18 +301,18 @@ const TweetCard = ({
       <div className="flex gap-3 py-3">
         <img
           src={avatar}
-          className={`w-9 h-9 rounded-full border shrink-0 bg-black object-cover ${isUser ? 'border-white/20' : 'border-exo-gold/50'}`}
+          className={`w-9 h-9 rounded-full border shrink-0 bg-black object-cover ${isUser ? 'border-white/20' : 'border-exo-accent/50'}`}
           alt={name}
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-2 mb-1">
-            <span className={`text-sm font-bold ${isUser ? 'text-exo-text' : 'text-exo-gold'}`}>{name}</span>
+            <span className={`text-sm font-bold ${isUser ? 'text-exo-text' : 'text-exo-accent'}`}>{name}</span>
             <span className="text-[10px] text-exo-muted/50 font-mono">{formatTime(tweet.created_at)}</span>
           </div>
           <p className="text-sm text-exo-text/90 leading-relaxed whitespace-pre-wrap break-words">{tweet.content}</p>
           <button
             onClick={() => { setReplyingToId(isReplyingHere ? null : tweet.id); setReplyContent(''); }}
-            className="mt-2 text-[11px] text-exo-muted/50 hover:text-exo-gold transition-colors flex items-center gap-1"
+            className="mt-2 text-[11px] text-exo-muted/50 hover:text-exo-accent transition-colors flex items-center gap-1"
           >
             <CornerDownLeft size={11} /> 回复
           </button>
@@ -325,12 +325,12 @@ const TweetCard = ({
                 onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey && !e.isComposing) { e.preventDefault(); handleReply(tweet.id); } }}
                 placeholder={`回复 ${name}...`}
                 autoFocus
-                className="flex-1 bg-black/50 border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text outline-none focus:border-exo-gold/50 resize-none transition-colors"
+                className="flex-1 bg-black/50 border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text outline-none focus:border-exo-accent/50 resize-none transition-colors"
               />
               <button
                 onClick={() => handleReply(tweet.id)}
                 disabled={!replyContent.trim() || isSubmittingReply}
-                className="px-3 py-2 bg-exo-gold text-black text-xs font-bold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition-colors flex items-center gap-1 shrink-0"
+                className="px-3 py-2 bg-exo-accent text-black text-xs font-bold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition-colors flex items-center gap-1 shrink-0"
               >
                 <Send size={12} />
               </button>

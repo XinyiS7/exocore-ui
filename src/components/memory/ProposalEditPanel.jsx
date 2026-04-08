@@ -66,7 +66,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
             <label className="block text-[10px] font-bold text-exo-muted uppercase tracking-widest mb-1">摘要内容</label>
             <textarea
               rows={8}
-              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-gold/50 resize-none transition-colors"
+              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-accent/50 resize-none transition-colors"
               value={content}
               onChange={e => setContent(e.target.value)}
             />
@@ -74,22 +74,22 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
           <div>
             <label className="block text-[10px] font-bold text-exo-muted uppercase tracking-widest mb-1">关键词（逗号分隔）</label>
             <input
-              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-gold/50 transition-colors"
+              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-accent/50 transition-colors"
               value={keywords}
               onChange={e => setKeywords(e.target.value)}
             />
             <div className="mt-2 flex flex-wrap gap-1.5">
               {keywords.split(',').map(k => k.trim()).filter(Boolean).map((kw, i) => (
-                <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-exo-gold/10 border border-exo-gold/20 text-exo-gold/80">{kw}</span>
+                <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-exo-accent/10 border border-exo-accent/20 text-exo-accent/80">{kw}</span>
               ))}
             </div>
           </div>
           <div className="flex items-center justify-between">
-            {saveMsg ? <span className="text-xs text-exo-gold/80">{saveMsg}</span> : <span />}
+            {saveMsg ? <span className="text-xs text-exo-accent/80">{saveMsg}</span> : <span />}
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className="px-5 py-2 bg-exo-gold/10 text-exo-gold hover:bg-exo-gold hover:text-black border border-exo-gold/30 rounded-lg text-sm font-bold flex items-center gap-2 transition-all disabled:opacity-50"
+              className="px-5 py-2 bg-exo-accent/10 text-exo-accent hover:bg-exo-accent hover:text-black border border-exo-accent/30 rounded-lg text-sm font-bold flex items-center gap-2 transition-all disabled:opacity-50"
             >
               {isSaving ? <Activity size={14} className="animate-spin" /> : <Save size={14} />}
               {isSaving ? 'SAVING...' : 'SAVE'}
@@ -107,7 +107,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
               {originalMessages.map((msg, i) => (
                 <div key={i} className={`flex flex-col gap-0.5 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                   <span className="text-[9px] text-exo-muted/60 px-1 uppercase">{msg.role}</span>
-                  <div className={`max-w-[90%] px-3 py-2 rounded-lg text-xs leading-relaxed ${msg.role === 'user' ? 'bg-exo-gold/10 text-exo-text border border-exo-gold/20' : 'bg-white/5 text-exo-muted border border-white/10'}`}>
+                  <div className={`max-w-[90%] px-3 py-2 rounded-lg text-xs leading-relaxed ${msg.role === 'user' ? 'bg-exo-accent/10 text-exo-text border border-exo-accent/20' : 'bg-white/5 text-exo-muted border border-white/10'}`}>
                     {typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)}
                   </div>
                 </div>

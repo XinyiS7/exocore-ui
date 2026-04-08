@@ -8,34 +8,49 @@
   body {
     font-family: 'Outfit', system-ui, sans-serif;
     font-weight: 200;
+    color: #E0E7FF;
   }
   strong, b, th {
     font-weight: 300;
   }
-  /* 代码块统一使用 JetBrains Mono */
   code, pre, kbd, samp {
     font-family: 'JetBrains Mono', ui-monospace, monospace;
   }
 }
 
+@layer utilities {
+  .bg-noise {
+    background-color: #080A0F;
+    background-image: 
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E"),
+      linear-gradient(rgba(255, 215, 0, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 215, 0, 0.03) 1px, transparent 1px);
+    background-size: 150px 150px, 30px 30px, 30px 30px;
+    background-position: 0 0, 0 0, 0 0;
+  }
+}
+
 @layer components {
-  /* 顶部金色细线 — 用于面板/区域的顶部边界 */
-  .gold-line-top {
-    border-top: 1px solid rgba(212, 175, 55, 0.25);
+  /* Accent line top */
+  .accent-line-top {
+    border-top: 1px solid rgba(255, 215, 0, 0.25);
+    box-shadow: inset 0 1px 0 rgba(255, 215, 0, 0.1);
   }
 
-  /* 底部金色细线 */
-  .gold-line-bottom {
-    border-bottom: 1px solid rgba(212, 175, 55, 0.25);
+  /* Accent line bottom */
+  .accent-line-bottom {
+    border-bottom: 1px solid rgba(255, 215, 0, 0.25);
+    box-shadow: inset 0 -1px 0 rgba(255, 215, 0, 0.1);
   }
 
-  /* 活跃指示条 — 左侧 2px 金条 + 极浅金色背景 */
-  .gold-indicator {
-    border-left: 2px solid #d4af37;
-    background-color: rgba(212, 175, 55, 0.05);
+  /* Active indicator */
+  .accent-indicator {
+    border-left: 2px solid #FFD700;
+    background-color: rgba(255, 215, 0, 0.05);
+    box-shadow: inset 2px 0 8px rgba(255, 215, 0, 0.1);
   }
 
-  /* 系统标签样式 — Outfit 极细 + 宽字间距 + 全大写 */
+  /* Label Caps */
   .label-caps {
     font-family: 'Outfit', system-ui, sans-serif;
     letter-spacing: 0.14em;
@@ -43,9 +58,43 @@
     text-transform: uppercase;
     font-weight: 200;
   }
+
+  /* Hard Sci-Fi Textures */
+  .glass-panel {
+    background-color: rgba(18, 21, 29, 0.6);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(45, 52, 70, 0.8);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+  }
+
+  .lcd-screen {
+    background-color: #05060A;
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 1px,
+      rgba(255, 215, 0, 0.02) 1px,
+      rgba(255, 215, 0, 0.02) 2px
+    );
+    border: 1px solid #1A1E29;
+    box-shadow: inset 0 0 20px rgba(255, 215, 0, 0.03);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .btn-physical {
+    background-color: #1A1E29;
+    border: 1px solid #2D3446;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.5);
+    transition: all 0.1s ease;
+  }
+  
+  .btn-physical:active {
+    transform: translateY(1px);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.8), 0 1px 1px rgba(255, 255, 255, 0.05);
+  }
 }
 
-/* 全局极简金色丝线滚动条 */
+/* Cold Gold scrollbar */
 ::-webkit-scrollbar {
     width: 4px;
     height: 4px;
@@ -56,15 +105,14 @@
 }
 
 ::-webkit-scrollbar-thumb {
-    background: rgba(212, 175, 55, 0.3);
-    border-radius: 2px;
+    background: rgba(255, 215, 0, 0.3);
+    border-radius: 0px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(212, 175, 55, 0.6);
+    background: rgba(255, 215, 0, 0.6);
 }
 
-/* 极简箭头样式 */
 ::-webkit-scrollbar-button:single-button {
     background-color: transparent;
     display: block;
@@ -75,14 +123,13 @@
 }
 
 ::-webkit-scrollbar-button:single-button:vertical:decrement {
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><path d='M20 70 L50 40 L80 70' fill='none' stroke='rgba(212,175,55,0.3)' stroke-width='10'/></svg>");
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><path d='M20 70 L50 40 L80 70' fill='none' stroke='rgba(255,215,0,0.3)' stroke-width='10'/></svg>");
 }
 
 ::-webkit-scrollbar-button:single-button:vertical:increment {
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><path d='M20 30 L50 60 L80 30' fill='none' stroke='rgba(212,175,55,0.3)' stroke-width='10'/></svg>");
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><path d='M20 30 L50 60 L80 30' fill='none' stroke='rgba(255,215,0,0.3)' stroke-width='10'/></svg>");
 }
 
-/* 隐藏滚动条但保留滚动功能 (保留备用) */
 .scrollbar-hide::-webkit-scrollbar {
     display: none;
 }

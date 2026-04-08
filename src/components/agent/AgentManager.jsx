@@ -79,9 +79,9 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
       <div
         className={`relative flex flex-col p-5 rounded-xl border transition-all hover:bg-white/[0.02] ${
           isG045
-            ? 'bg-gradient-to-br from-exo-gold/5 to-transparent border-exo-gold/30 shadow-[0_4px_20px_rgba(255,215,0,0.03)]'
+            ? 'bg-gradient-to-br from-exo-accent/5 to-transparent border-exo-accent/30 shadow-[0_4px_20px_rgba(255,215,0,0.03)]'
             : 'bg-exo-panel border-exo-border'
-        } ${isDraggingThis ? 'opacity-40 scale-95' : ''} ${isDragOver ? (isG045 ? 'border-exo-gold/80 shadow-[0_0_20px_rgba(255,215,0,0.12)]' : 'border-exo-muted/60') : ''}`}
+        } ${isDraggingThis ? 'opacity-40 scale-95' : ''} ${isDragOver ? (isG045 ? 'border-exo-accent/80 shadow-[0_0_20px_rgba(255,215,0,0.12)]' : 'border-exo-muted/60') : ''}`}
         draggable
         onDragStart={() => setDragging(preset.id)}
         onDragEnd={() => { setDragging(null); setDragOver(null); }}
@@ -99,7 +99,7 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
               onClick={() => avatarInputRef.current?.click()}
               title="点击更换头像"
             >
-              <img src={avatarUrl} className={`w-12 h-12 rounded-lg border bg-black object-cover ${isG045 ? 'border-exo-gold/50' : 'border-exo-border'}`} alt="Avatar" />
+              <img src={avatarUrl} className={`w-12 h-12 rounded-lg border bg-black object-cover ${isG045 ? 'border-exo-accent/50' : 'border-exo-border'}`} alt="Avatar" />
               <div className="absolute inset-0 rounded-lg bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                 <Camera size={14} className="text-white" />
               </div>
@@ -107,9 +107,9 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
             </div>
 
             <div className="min-w-0">
-              <h3 className={`text-base font-bold flex items-center gap-2 ${isG045 ? 'text-exo-gold' : 'text-exo-text'}`}>
+              <h3 className={`text-base font-bold flex items-center gap-2 ${isG045 ? 'text-exo-accent' : 'text-exo-text'}`}>
                 <span className="truncate">{preset.name}</span>
-                {isG045 && <Sparkles size={14} className="text-exo-gold animate-pulse shrink-0" />}
+                {isG045 && <Sparkles size={14} className="text-exo-accent animate-pulse shrink-0" />}
               </h3>
               <p className="text-xs text-exo-muted font-mono mt-0.5 truncate">{preset.default_model}</p>
             </div>
@@ -141,7 +141,7 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
                 openNewSession({ presetId: preset.id });
                 setCurrentTab('chat');
               }}
-              className="px-3 py-1.5 bg-exo-gold/10 text-exo-gold hover:bg-exo-gold hover:text-black border border-exo-gold/30 rounded flex items-center gap-1 text-xs font-bold transition-all"
+              className="px-3 py-1.5 bg-exo-accent/10 text-exo-accent hover:bg-exo-accent hover:text-black border border-exo-accent/30 rounded flex items-center gap-1 text-xs font-bold transition-all"
             >
               <Play size={12} fill="currentColor" /> INITIATE
             </button>
@@ -151,8 +151,8 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
         <p className="text-sm text-gray-400 mb-4 line-clamp-2 leading-relaxed">{preset.description}</p>
 
         {isG045 && (
-          <div className="mt-auto pt-4 border-t border-exo-gold/10">
-            <div className="text-[10px] font-bold text-exo-gold/70 uppercase tracking-wider mb-2 flex items-center gap-1">
+          <div className="mt-auto pt-4 border-t border-exo-accent/10">
+            <div className="text-[10px] font-bold text-exo-accent/70 uppercase tracking-wider mb-2 flex items-center gap-1">
               <Clock size={12} /> Active Memory Stream
             </div>
             <MemoryAnchorTicker anchors={anchorCache[preset.id] || []} />
@@ -164,7 +164,7 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
   };
 
   return (
-    <div className="flex-1 h-full overflow-y-auto bg-exo-bg p-8 scrollbar-hide">
+    <div className="flex-1 h-full overflow-y-auto bg-noise p-8 scrollbar-hide">
       <EditPresetModal
         isOpen={!!editTarget}
         preset={editTarget}
@@ -174,16 +174,16 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
       <div className="max-w-5xl mx-auto space-y-10">
         <div>
           <h2 className="text-3xl font-black text-exo-text mb-2 flex items-center gap-3">
-            <BrainCircuit className="text-exo-gold" size={28} /> Central Agent Hub
+            <BrainCircuit className="text-exo-accent" size={28} /> Central Agent Hub
           </h2>
           <p className="text-exo-muted text-sm">管理系统代理核心预设。配置模型、提示词，并监控高级核心的记忆活动。</p>
         </div>
 
         {g045Presets.length > 0 && (
           <div className="space-y-4">
-            <div className="flex items-center gap-2 border-b border-exo-gold/20 pb-2">
-              <Cpu size={16} className="text-exo-gold" />
-              <h3 className="text-sm font-bold text-exo-gold uppercase tracking-widest">Superior Cores (G045)</h3>
+            <div className="flex items-center gap-2 border-b border-exo-accent/20 pb-2">
+              <Cpu size={16} className="text-exo-accent" />
+              <h3 className="text-sm font-bold text-exo-accent uppercase tracking-widest">Superior Cores (G045)</h3>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {g045Presets.map(p => <AgentCard key={p.id} preset={p} isG045={true} list={g045Presets} />)}

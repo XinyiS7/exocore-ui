@@ -58,7 +58,7 @@ const MemoryAnchorTicker = ({ anchors = [] }) => {
             {keywords.map((kw, i) => (
               <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded font-mono whitespace-nowrap ${
                 anchor.is_persistent
-                  ? 'bg-exo-gold/15 text-exo-gold border border-exo-gold/40'
+                  ? 'bg-exo-accent/15 text-exo-accent border border-exo-accent/40'
                   : 'bg-white/5 text-gray-300 border border-white/10'
               }`}>
                 {kw}
@@ -66,7 +66,7 @@ const MemoryAnchorTicker = ({ anchors = [] }) => {
             ))}
           </div>
           <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
-            {anchor.is_persistent && <ShieldAlert size={11} className="text-exo-gold" title="Persistent" />}
+            {anchor.is_persistent && <ShieldAlert size={11} className="text-exo-accent" title="Persistent" />}
             <span className="text-[10px] text-exo-muted font-mono bg-black/60 px-1.5 py-0.5 rounded border border-exo-border">
               {anchor.current_weight.toFixed(2)}
             </span>

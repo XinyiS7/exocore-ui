@@ -149,7 +149,7 @@ const MemoryManager = ({ presets }) => {
     'emotion': '情感'
   };
 
-  const filterSelect = 'bg-exo-panel border border-exo-border rounded-lg px-2 py-1.5 text-xs text-exo-muted outline-none focus:border-exo-gold/50 cursor-pointer';
+  const filterSelect = 'bg-exo-panel border border-exo-border rounded-lg px-2 py-1.5 text-xs text-exo-muted outline-none focus:border-exo-accent/50 cursor-pointer';
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -158,7 +158,7 @@ const MemoryManager = ({ presets }) => {
         <select
           value={selectedPresetId}
           onChange={e => setSelectedPresetId(e.target.value)}
-          className="bg-exo-panel border border-exo-border rounded-lg px-2 py-1.5 text-sm text-exo-text outline-none focus:border-exo-gold/50 cursor-pointer"
+          className="bg-exo-panel border border-exo-border rounded-lg px-2 py-1.5 text-sm text-exo-text outline-none focus:border-exo-accent/50 cursor-pointer"
         >
           {sortedPresets.length === 0 && <option value="">无 Agent</option>}
           {sortedPresets.map(p => (
@@ -189,7 +189,7 @@ const MemoryManager = ({ presets }) => {
         <button
           onClick={fetchEntries}
           disabled={loading}
-          className="p-1.5 text-exo-muted hover:text-exo-gold transition-colors rounded-lg hover:bg-exo-gold/10 disabled:opacity-40"
+          className="p-1.5 text-exo-muted hover:text-exo-accent transition-colors rounded-lg hover:bg-exo-accent/10 disabled:opacity-40"
           title="刷新"
         >
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
@@ -197,7 +197,7 @@ const MemoryManager = ({ presets }) => {
 
         <button
           onClick={() => setShowNewForm(!showNewForm)}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${showNewForm ? 'bg-exo-gold text-black' : 'bg-exo-gold/10 text-exo-gold border border-exo-gold/20 hover:bg-exo-gold/20'}`}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${showNewForm ? 'bg-exo-accent text-black' : 'bg-exo-accent/10 text-exo-accent border border-exo-accent/20 hover:bg-exo-accent/20'}`}
         >
           <Plus size={14} /> {showNewForm ? '取消新增' : '新增记忆'}
         </button>
@@ -207,14 +207,14 @@ const MemoryManager = ({ presets }) => {
 
       {/* New Entry Form */}
       {showNewForm && (
-        <div className="p-4 border-b border-exo-border bg-exo-gold/5 animate-fade-in shrink-0">
+        <div className="p-4 border-b border-exo-border bg-exo-accent/5 animate-fade-in shrink-0">
           <div className="space-y-3">
             <textarea
               placeholder="输入记忆内容..."
               value={newText}
               onChange={e => setNewText(e.target.value)}
               rows={3}
-              className="w-full bg-black border border-exo-border rounded-xl px-4 py-3 text-sm text-exo-text outline-none focus:border-exo-gold/50 resize-none font-mono"
+              className="w-full bg-black border border-exo-border rounded-xl px-4 py-3 text-sm text-exo-text outline-none focus:border-exo-accent/50 resize-none font-mono"
             />
             <div className="flex flex-wrap gap-3">
               <div className="flex-1 min-w-[200px]">
@@ -222,7 +222,7 @@ const MemoryManager = ({ presets }) => {
                   placeholder="标签 (逗号分隔)"
                   value={newTags}
                   onChange={e => setNewTags(e.target.value)}
-                  className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-xs text-exo-text outline-none focus:border-exo-gold/50"
+                  className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-xs text-exo-text outline-none focus:border-exo-accent/50"
                   list="available-tags"
                 />
                 <datalist id="available-tags">
@@ -232,7 +232,7 @@ const MemoryManager = ({ presets }) => {
               <select
                 value={newScope}
                 onChange={e => setNewScope(e.target.value)}
-                className="bg-black border border-exo-border rounded-lg px-3 py-2 text-xs text-exo-text outline-none focus:border-exo-gold/50 cursor-pointer"
+                className="bg-black border border-exo-border rounded-lg px-3 py-2 text-xs text-exo-text outline-none focus:border-exo-accent/50 cursor-pointer"
               >
                 {Object.entries(SCOPE_LABELS).map(([val, label]) => (
                   <option key={val} value={val}>{label}</option>
@@ -241,7 +241,7 @@ const MemoryManager = ({ presets }) => {
               <button
                 onClick={handleCreate}
                 disabled={creating || !newText.trim()}
-                className="px-6 py-2 bg-exo-gold text-black font-bold rounded-lg text-xs hover:bg-yellow-400 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-6 py-2 bg-exo-accent text-black font-bold rounded-lg text-xs hover:bg-yellow-400 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {creating ? '提交中...' : '保存记忆'}
               </button>
@@ -263,7 +263,7 @@ const MemoryManager = ({ presets }) => {
               <div className="flex items-start justify-between gap-2 mb-2">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {entry.scope && (
-                    <span className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-exo-gold/10 text-exo-gold/70 border border-exo-gold/20">
+                    <span className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-exo-accent/10 text-exo-accent/70 border border-exo-accent/20">
                       {SCOPE_LABELS[entry.scope] || entry.scope}
                     </span>
                   )}
@@ -291,7 +291,7 @@ const MemoryManager = ({ presets }) => {
                   <div className="flex items-center gap-0.5 shrink-0">
                     <button
                       onClick={() => handleEdit(entry)}
-                      className="p-1.5 text-exo-muted/40 hover:text-exo-gold transition-colors rounded-lg hover:bg-exo-gold/10"
+                      className="p-1.5 text-exo-muted/40 hover:text-exo-accent transition-colors rounded-lg hover:bg-exo-accent/10"
                       title="编辑"
                     >
                       <Edit3 size={12} />
@@ -314,7 +314,7 @@ const MemoryManager = ({ presets }) => {
                     value={editText}
                     onChange={e => setEditText(e.target.value)}
                     rows={4}
-                    className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-xs text-exo-text outline-none focus:border-exo-gold/50 resize-y font-mono leading-relaxed"
+                    className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-xs text-exo-text outline-none focus:border-exo-accent/50 resize-y font-mono leading-relaxed"
                   />
                   <div className="flex flex-wrap gap-2">
                     <div className="flex-1 min-w-[150px]">
@@ -322,7 +322,7 @@ const MemoryManager = ({ presets }) => {
                         value={editTags}
                         onChange={e => setEditTags(e.target.value)}
                         placeholder="Tags（逗号分隔）"
-                        className="w-full bg-black border border-exo-border rounded-lg px-3 py-1.5 text-xs text-exo-text outline-none focus:border-exo-gold/50"
+                        className="w-full bg-black border border-exo-border rounded-lg px-3 py-1.5 text-xs text-exo-text outline-none focus:border-exo-accent/50"
                         list="available-tags-edit"
                       />
                       <datalist id="available-tags-edit">
@@ -332,7 +332,7 @@ const MemoryManager = ({ presets }) => {
                     <select
                       value={editScope}
                       onChange={e => setEditScope(e.target.value)}
-                      className="bg-black border border-exo-border rounded-lg px-3 py-1.5 text-xs text-exo-text outline-none focus:border-exo-gold/50 cursor-pointer"
+                      className="bg-black border border-exo-border rounded-lg px-3 py-1.5 text-xs text-exo-text outline-none focus:border-exo-accent/50 cursor-pointer"
                     >
                       {Object.entries(SCOPE_LABELS).map(([val, label]) => (
                         <option key={val} value={val}>{label}</option>
@@ -344,7 +344,7 @@ const MemoryManager = ({ presets }) => {
                     <button
                       onClick={() => handleSave(entry.id)}
                       disabled={savingId === entry.id}
-                      className="px-3 py-1 bg-exo-gold/10 text-exo-gold border border-exo-gold/20 rounded-lg text-xs hover:bg-exo-gold hover:text-black transition-all disabled:opacity-50"
+                      className="px-3 py-1 bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded-lg text-xs hover:bg-exo-accent hover:text-black transition-all disabled:opacity-50"
                     >
                       {savingId === entry.id ? '保存中...' : '保存'}
                     </button>
@@ -356,7 +356,7 @@ const MemoryManager = ({ presets }) => {
                   {entry.raw_text?.length > 200 && (
                     <button
                       onClick={() => setExpandedId(id => id === entry.id ? null : entry.id)}
-                      className="flex items-center gap-1 text-[10px] text-exo-muted/50 hover:text-exo-gold transition-colors mb-2"
+                      className="flex items-center gap-1 text-[10px] text-exo-muted/50 hover:text-exo-accent transition-colors mb-2"
                     >
                       {expandedId === entry.id
                         ? <><ChevronUp size={10} />收起</>

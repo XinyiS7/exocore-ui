@@ -146,10 +146,10 @@ export default function CalendarWidget() {
       {/* ── 左列：日历网格 ──────────────────────────────────── */}
       <div className="flex-shrink-0 lg:w-64">
         <div className="bg-exo-surface border border-exo-border/50 rounded-xl overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 gold-line-top">
-            <button onClick={prevMonth} className="p-1 text-exo-muted hover:text-exo-gold transition-colors"><ChevronLeft size={14} /></button>
+          <div className="flex items-center justify-between px-4 py-3 accent-line-top">
+            <button onClick={prevMonth} className="p-1 text-exo-muted hover:text-exo-accent transition-colors"><ChevronLeft size={14} /></button>
             <span className="label-caps text-exo-text/70">{monthName}</span>
-            <button onClick={nextMonth} className="p-1 text-exo-muted hover:text-exo-gold transition-colors"><ChevronRight size={14} /></button>
+            <button onClick={nextMonth} className="p-1 text-exo-muted hover:text-exo-accent transition-colors"><ChevronRight size={14} /></button>
           </div>
 
           <div className="grid grid-cols-7 px-3 pb-1">
@@ -164,7 +164,7 @@ export default function CalendarWidget() {
                 {d && (
                   <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs transition-colors
                     ${isToday(d)
-                      ? 'bg-exo-gold text-black'
+                      ? 'bg-exo-accent text-black'
                       : isPast(d)
                       ? 'text-exo-muted/25'
                       : 'text-exo-text/60 hover:text-exo-text'
@@ -184,7 +184,7 @@ export default function CalendarWidget() {
 
         {/* Google Calendar — 预留接口区 */}
         <div className="bg-exo-surface border border-exo-border/50 rounded-xl overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 gold-line-top border-b border-exo-border/30">
+          <div className="flex items-center justify-between px-4 py-3 accent-line-top border-b border-exo-border/30">
             <div className="flex items-center gap-2">
               <Calendar size={13} className="text-exo-muted/50" />
               <span className="label-caps text-exo-muted/60">Google Calendar</span>
@@ -209,11 +209,11 @@ export default function CalendarWidget() {
 
         {/* 本地 Todo */}
         <div className="bg-exo-surface border border-exo-border/50 rounded-xl overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 gold-line-top border-b border-exo-border/30">
+          <div className="flex items-center justify-between px-4 py-3 accent-line-top border-b border-exo-border/30">
             <span className="label-caps text-exo-muted/60">本地任务</span>
             <button
               onClick={() => setShowAddForm(p => !p)}
-              className="p-1 text-exo-muted hover:text-exo-gold transition-colors"
+              className="p-1 text-exo-muted hover:text-exo-accent transition-colors"
             >
               <Plus size={14} />
             </button>
@@ -228,14 +228,14 @@ export default function CalendarWidget() {
                 onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
                 onKeyDown={e => { if (e.key === 'Enter') addTodo(); if (e.key === 'Escape') setShowAddForm(false); }}
                 placeholder="任务标题..."
-                className="w-full bg-transparent border-b border-exo-border/60 focus:border-exo-gold/40 outline-none text-sm text-exo-text pb-1 transition-colors placeholder:text-exo-muted/30"
+                className="w-full bg-transparent border-b border-exo-border/60 focus:border-exo-accent/40 outline-none text-sm text-exo-text pb-1 transition-colors placeholder:text-exo-muted/30"
               />
               <div className="flex gap-2 flex-wrap items-center">
                 <input
                   type="date"
                   value={form.deadline}
                   onChange={e => setForm(p => ({ ...p, deadline: e.target.value }))}
-                  className="bg-exo-metal border border-exo-border/50 rounded px-2 py-1 text-xs text-exo-text/70 outline-none focus:border-exo-gold/30 transition-colors"
+                  className="bg-exo-metal border border-exo-border/50 rounded px-2 py-1 text-xs text-exo-text/70 outline-none focus:border-exo-accent/30 transition-colors"
                 />
                 <select
                   value={form.repeat}
@@ -248,7 +248,7 @@ export default function CalendarWidget() {
                 </select>
                 <div className="flex gap-1.5 ml-auto">
                   <button onClick={() => { setShowAddForm(false); setForm(EmptyForm); }} className="px-2 py-1 text-xs text-exo-muted hover:text-white transition-colors">取消</button>
-                  <button onClick={addTodo} className="px-3 py-1 text-xs bg-exo-gold/10 text-exo-gold border border-exo-gold/20 rounded hover:bg-exo-gold hover:text-black transition-all">添加</button>
+                  <button onClick={addTodo} className="px-3 py-1 text-xs bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded hover:bg-exo-accent hover:text-black transition-all">添加</button>
                 </div>
               </div>
             </div>
@@ -290,10 +290,10 @@ function TodoItem({ todo, onToggle, onDelete }) {
     <div className="group flex items-start gap-3 px-4 py-2.5 hover:bg-white/[0.02] transition-colors">
       <button
         onClick={() => onToggle(todo.id, todo.completed)}
-        className="mt-0.5 flex-shrink-0 text-exo-muted hover:text-exo-gold transition-colors"
+        className="mt-0.5 flex-shrink-0 text-exo-muted hover:text-exo-accent transition-colors"
       >
         {todo.completed
-          ? <CheckCircle2 size={14} className="text-exo-gold/40" />
+          ? <CheckCircle2 size={14} className="text-exo-accent/40" />
           : <Circle size={14} />}
       </button>
       <div className="flex-1 min-w-0">

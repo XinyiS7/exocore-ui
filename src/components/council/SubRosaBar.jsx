@@ -25,8 +25,8 @@ const SubRosaBar = ({ conversationId, presets, arbitratorPresetName, isExpanded,
         style={{ height: '40px' }}
         onClick={onToggle}
       >
-        <Crown size={13} className="text-exo-gold shrink-0" />
-        <span className="text-xs font-semibold text-exo-gold flex-1">Sub Rosa</span>
+        <Crown size={13} className="text-exo-accent shrink-0" />
+        <span className="text-xs font-semibold text-exo-accent flex-1">Sub Rosa</span>
         {arbitratorPresetName && (
           <span className="text-[10px] text-exo-muted/60 truncate max-w-[100px]">{arbitratorPresetName}</span>
         )}
@@ -38,15 +38,15 @@ const SubRosaBar = ({ conversationId, presets, arbitratorPresetName, isExpanded,
 
       {/* Expanded overlay */}
       {isExpanded && (
-        <div className="absolute inset-0 z-20 flex flex-col bg-exo-bg" style={{ top: 0 }}>
+        <div className="absolute inset-0 z-20 flex flex-col bg-noise" style={{ top: 0 }}>
           {/* Overlay header bar */}
           <div
             className="shrink-0 flex items-center gap-2 px-4 cursor-pointer select-none border-b border-exo-border bg-black/40 hover:bg-black/60 transition-colors"
             style={{ height: '40px' }}
             onClick={onToggle}
           >
-            <Crown size={13} className="text-exo-gold shrink-0" />
-            <span className="text-xs font-semibold text-exo-gold flex-1">Sub Rosa</span>
+            <Crown size={13} className="text-exo-accent shrink-0" />
+            <span className="text-xs font-semibold text-exo-accent flex-1">Sub Rosa</span>
             {arbitratorPresetName && (
               <span className="text-[10px] text-exo-muted/60 truncate max-w-[100px]">{arbitratorPresetName}</span>
             )}

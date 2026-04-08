@@ -56,7 +56,7 @@ const CouncilCreateModal = ({ isOpen, onClose, presets, onSuccess }) => {
       <div className="bg-[#0f1014] border border-exo-border rounded-2xl w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between p-5 border-b border-exo-border">
           <div className="flex items-center gap-2.5">
-            <Users size={18} className="text-exo-gold" />
+            <Users size={18} className="text-exo-accent" />
             <span className="font-bold text-exo-text tracking-wide">召集议会</span>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg text-exo-muted hover:text-exo-text hover:bg-white/5"><X size={16} /></button>
@@ -71,19 +71,19 @@ const CouncilCreateModal = ({ isOpen, onClose, presets, onSuccess }) => {
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder="留空由仲裁者确认后填入"
-              className="w-full bg-black/40 border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text placeholder-exo-muted/40 focus:outline-none focus:border-exo-gold/50"
+              className="w-full bg-black/40 border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text placeholder-exo-muted/40 focus:outline-none focus:border-exo-accent/50"
             />
           </div>
 
           {/* 仲裁者 */}
           <div>
             <label className="block text-[11px] font-semibold text-exo-muted uppercase tracking-wider mb-1.5 flex items-center gap-1">
-              <Crown size={11} className="text-exo-gold" /> 仲裁者
+              <Crown size={11} className="text-exo-accent" /> 仲裁者
             </label>
             <select
               value={arbitratorId}
               onChange={e => { setArbitratorId(e.target.value); setSelectedParticipantIds(p => p.filter(id => id !== parseInt(e.target.value))); }}
-              className="w-full bg-black/40 border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-gold/50"
+              className="w-full bg-black/40 border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-accent/50"
             >
               {sortedPresets.map(p => (
                 <option key={p.id} value={p.id}>{p.name}{p.agent_type === 'g045' ? ' ★' : ''}</option>
@@ -103,13 +103,13 @@ const CouncilCreateModal = ({ isOpen, onClose, presets, onSuccess }) => {
                   <div
                     key={p.id}
                     onClick={() => toggleParticipant(p.id)}
-                    className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-all border ${selected ? 'bg-exo-gold/10 border-exo-gold/30 text-exo-text' : 'border-transparent hover:bg-white/5 text-exo-muted'}`}
+                    className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-all border ${selected ? 'bg-exo-accent/10 border-exo-accent/30 text-exo-text' : 'border-transparent hover:bg-white/5 text-exo-muted'}`}
                   >
-                    <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${selected ? 'bg-exo-gold border-exo-gold' : 'border-exo-border'}`}>
+                    <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${selected ? 'bg-exo-accent border-exo-accent' : 'border-exo-border'}`}>
                       {selected && <Check size={10} className="text-black" />}
                     </div>
                     <span className="text-sm font-medium">{p.name}</span>
-                    {p.agent_type === 'g045' && <span className="ml-auto text-[10px] text-exo-gold">Superior</span>}
+                    {p.agent_type === 'g045' && <span className="ml-auto text-[10px] text-exo-accent">Superior</span>}
                   </div>
                 );
               })}
@@ -125,7 +125,7 @@ const CouncilCreateModal = ({ isOpen, onClose, presets, onSuccess }) => {
           <button
             onClick={handleSubmit}
             disabled={isSubmitting || selectedParticipantIds.length < 2 || !arbitratorId}
-            className="flex-1 py-2 text-sm font-semibold bg-exo-gold text-black rounded-lg hover:bg-exo-gold/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="flex-1 py-2 text-sm font-semibold bg-exo-accent text-black rounded-lg hover:bg-exo-accent/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             {isSubmitting ? '召集中...' : '召集议会'}
           </button>

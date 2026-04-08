@@ -46,9 +46,9 @@ const EditPresetModal = ({ isOpen, onClose, preset, onSaved }) => {
       <div className="bg-exo-panel border border-exo-border rounded-xl w-full max-w-2xl flex flex-col max-h-[90vh]">
         <div className="flex items-center justify-between p-5 border-b border-exo-border">
           <div className="flex items-center gap-3">
-            <Edit3 size={18} className="text-exo-gold" />
+            <Edit3 size={18} className="text-exo-accent" />
             <h2 className="text-base font-bold text-exo-text">
-              Edit Core: <span className="text-exo-gold">{preset?.name}</span>
+              Edit Core: <span className="text-exo-accent">{preset?.name}</span>
             </h2>
           </div>
           <button onClick={onClose} className="p-1.5 text-exo-muted hover:text-white transition-colors">
@@ -60,7 +60,7 @@ const EditPresetModal = ({ isOpen, onClose, preset, onSaved }) => {
           <div>
             <label className="block text-[10px] font-bold text-exo-muted uppercase tracking-widest mb-1.5">Name</label>
             <input
-              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-gold/50 transition-colors"
+              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-accent/50 transition-colors"
               value={form.name}
               onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
             />
@@ -69,7 +69,7 @@ const EditPresetModal = ({ isOpen, onClose, preset, onSaved }) => {
             <label className="block text-[10px] font-bold text-exo-muted uppercase tracking-widest mb-1.5">Description</label>
             <textarea
               rows={2}
-              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-gold/50 transition-colors resize-none"
+              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-accent/50 transition-colors resize-none"
               value={form.description}
               onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
             />
@@ -77,7 +77,7 @@ const EditPresetModal = ({ isOpen, onClose, preset, onSaved }) => {
           <div>
             <label className="block text-[10px] font-bold text-exo-muted uppercase tracking-widest mb-1.5">Default Model</label>
             <select
-              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-gold/50 transition-colors"
+              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-accent/50 transition-colors"
               value={form.default_model}
               onChange={e => setForm(p => ({ ...p, default_model: e.target.value }))}
             >
@@ -88,7 +88,7 @@ const EditPresetModal = ({ isOpen, onClose, preset, onSaved }) => {
             <label className="block text-[10px] font-bold text-exo-muted uppercase tracking-widest mb-1.5">System Prompt</label>
             <textarea
               rows={12}
-              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-gold/50 transition-colors resize-y font-mono leading-relaxed"
+              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-accent/50 transition-colors resize-y font-mono leading-relaxed"
               value={form.system_prompt}
               onChange={e => setForm(p => ({ ...p, system_prompt: e.target.value }))}
             />
@@ -102,7 +102,7 @@ const EditPresetModal = ({ isOpen, onClose, preset, onSaved }) => {
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="px-5 py-2 bg-exo-gold/10 text-exo-gold hover:bg-exo-gold hover:text-black border border-exo-gold/30 rounded-lg text-sm font-bold flex items-center gap-2 transition-all disabled:opacity-50"
+            className="px-5 py-2 bg-exo-accent/10 text-exo-accent hover:bg-exo-accent hover:text-black border border-exo-accent/30 rounded-lg text-sm font-bold flex items-center gap-2 transition-all disabled:opacity-50"
           >
             {isSaving ? <Activity size={14} className="animate-spin" /> : <Save size={14} />}
             {isSaving ? 'SAVING...' : 'SAVE CORE'}

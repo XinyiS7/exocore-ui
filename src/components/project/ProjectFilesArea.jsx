@@ -60,7 +60,7 @@ const ProjectFilesArea = ({ projectId, projects, openDestructor }) => {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-exo-bg relative">
+    <div className="flex-1 flex flex-col h-full bg-noise relative">
       <div className="h-14 border-b border-exo-border flex items-center justify-between px-6 bg-exo-panel/50 backdrop-blur-md">
         <div className="flex items-center gap-3 text-exo-text">
           <HardDrive size={18} className="text-blue-400" />
@@ -78,7 +78,7 @@ const ProjectFilesArea = ({ projectId, projects, openDestructor }) => {
           <div
             onClick={() => fileInputRef.current?.click()}
             className={`border-2 border-dashed rounded-xl p-10 flex flex-col items-center justify-center cursor-pointer transition-all ${
-              isUploading ? 'border-blue-500 bg-blue-500/10' : 'border-exo-border bg-exo-panel hover:border-exo-gold/50 hover:bg-white/5'
+              isUploading ? 'border-blue-500 bg-blue-500/10' : 'border-exo-border bg-exo-panel hover:border-exo-accent/50 hover:bg-white/5'
             }`}
           >
             <input type="file" ref={fileInputRef} onChange={handleFileUpload} multiple className="hidden" />
@@ -105,7 +105,7 @@ const ProjectFilesArea = ({ projectId, projects, openDestructor }) => {
                 const isPdf = mime === 'application/pdf';
                 const FileIcon = isImage ? FileImage : isPdf ? FileType2 : FileText;
                 return (
-                  <div key={file.id} className="bg-[#121318] border border-exo-border rounded-lg p-4 flex flex-col justify-between group hover:border-exo-gold/30 transition-all">
+                  <div key={file.id} className="bg-[#121318] border border-exo-border rounded-lg p-4 flex flex-col justify-between group hover:border-exo-accent/30 transition-all">
                     <div className="flex items-start gap-3 mb-4">
                       <div className={`p-2 rounded bg-opacity-10 mt-1 ${file.source === 'obsidian_sync' ? 'bg-purple-500 text-purple-400' : isImage ? 'bg-emerald-500 text-emerald-400' : isPdf ? 'bg-red-500 text-red-400' : 'bg-blue-500 text-blue-400'}`}>
                         <FileIcon size={18} />

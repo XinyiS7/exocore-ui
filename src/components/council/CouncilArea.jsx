@@ -21,7 +21,7 @@ const STATUS_COLOR_CLASS = {
   pre_alignment: 'text-exo-muted border-exo-muted/30 bg-exo-muted/10',
   dispatched:    'text-blue-400 border-blue-400/30 bg-blue-400/10',
   cross_exam:    'text-purple-400 border-purple-400/30 bg-purple-400/10',
-  synthesizing:  'text-exo-gold border-exo-gold/30 bg-exo-gold/10',
+  synthesizing:  'text-exo-accent border-exo-accent/30 bg-exo-accent/10',
   finished:      'text-green-400 border-green-400/30 bg-green-400/10',
 };
 
@@ -257,14 +257,14 @@ const CouncilArea = ({ councilId, presets, onBack, setShowConvList, openNewSessi
       return (
         <div className="flex items-center gap-2">
           <button onClick={handleCrossExam} className="px-3 py-1.5 text-xs font-semibold border border-purple-400/40 text-purple-400 rounded-lg hover:bg-purple-400/10 transition-colors">开始互审</button>
-          <button onClick={handleSynthesize} className="px-3 py-1.5 text-xs font-semibold bg-exo-gold text-black rounded-lg hover:bg-exo-gold/80 transition-colors">直接综合</button>
+          <button onClick={handleSynthesize} className="px-3 py-1.5 text-xs font-semibold bg-exo-accent text-black rounded-lg hover:bg-exo-accent/80 transition-colors">直接综合</button>
         </div>
       );
     }
 
     if (status === 'cross_exam' && allParticipantsDone) {
       return (
-        <button onClick={handleSynthesize} className="px-3 py-1.5 text-xs font-semibold bg-exo-gold text-black rounded-lg hover:bg-exo-gold/80 transition-colors">进入综合</button>
+        <button onClick={handleSynthesize} className="px-3 py-1.5 text-xs font-semibold bg-exo-accent text-black rounded-lg hover:bg-exo-accent/80 transition-colors">进入综合</button>
       );
     }
 
@@ -272,14 +272,14 @@ const CouncilArea = ({ councilId, presets, onBack, setShowConvList, openNewSessi
       return (
         <div className="flex items-center gap-2">
           <button onClick={handleFinish} className="px-3 py-1.5 text-xs font-semibold border border-green-400/40 text-green-400 rounded-lg hover:bg-green-400/10 transition-colors">结束议会</button>
-          <button onClick={handleDispatch} className="px-3 py-1.5 text-xs font-semibold bg-exo-gold text-black rounded-lg hover:bg-exo-gold/80 transition-colors">继续分发</button>
+          <button onClick={handleDispatch} className="px-3 py-1.5 text-xs font-semibold bg-exo-accent text-black rounded-lg hover:bg-exo-accent/80 transition-colors">继续分发</button>
         </div>
       );
     }
 
     if (status === 'finished') {
       return (
-        <button onClick={handleDispatch} className="px-3 py-1.5 text-xs font-semibold bg-exo-gold text-black rounded-lg hover:bg-exo-gold/80 transition-colors">继续分发</button>
+        <button onClick={handleDispatch} className="px-3 py-1.5 text-xs font-semibold bg-exo-accent text-black rounded-lg hover:bg-exo-accent/80 transition-colors">继续分发</button>
       );
     }
 
@@ -292,7 +292,7 @@ const CouncilArea = ({ councilId, presets, onBack, setShowConvList, openNewSessi
       <button
         onClick={handleDispatch}
         disabled={isActing}
-        className="px-3 py-2 text-xs font-semibold bg-exo-gold text-black rounded-lg hover:bg-exo-gold/80 disabled:opacity-50 transition-colors whitespace-nowrap"
+        className="px-3 py-2 text-xs font-semibold bg-exo-accent text-black rounded-lg hover:bg-exo-accent/80 disabled:opacity-50 transition-colors whitespace-nowrap"
       >
         {isActing ? <Loader2 size={13} className="animate-spin" /> : '分发'}
       </button>

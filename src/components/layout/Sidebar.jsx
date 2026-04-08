@@ -1,48 +1,53 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, BrainCircuit, User, Settings, Hexagon, Camera, Users } from 'lucide-react';
+import { 
+  MessageSquare, BrainCircuit, User, Settings, Hexagon, 
+  Camera, Users, PanelLeftOpen, PanelLeftClose, List,
+  LayoutGrid, FolderOpen
+} from 'lucide-react';
 import { getUserAvatarUrl } from '../../utils/avatar';
 import AvatarCropModal from '../modals/AvatarCropModal';
 
-const NavIcon = ({ icon: Icon, isActive, onClick, title, label, isExpanded }) => (
+const NavIcon = ({ icon: Icon, isActive, onClick, title, label, isExpanded, showLabel = true }) => (
   <button
     onClick={onClick}
     className={`flex items-center gap-3 w-full p-2.5 transition-all group/nav relative ${
       isActive
-        ? 'text-exo-gold'
+        ? 'text-exo-accent'
         : 'text-exo-muted hover:text-exo-text'
     }`}
   >
-    <div className={`p-2 rounded-xl transition-all ${
+    <div className={`p-2 rounded-xl transition-all shrink-0 ${
       isActive 
-        ? 'bg-exo-gold/10 shadow-[0_0_15px_rgba(212,175,55,0.1)]' 
+        ? 'bg-exo-accent/10 shadow-[0_0_15px_rgba(255,215,0,0.1)]' 
         : 'group-hover/nav:bg-white/5'
     }`}>
-      <Icon size={20} className={isActive ? 'drop-shadow-[0_0_5px_rgba(212,175,55,0.5)]' : ''} />
+      <Icon size={20} className={isActive ? 'drop-shadow-[0_0_5px_rgba(255,215,0,0.5)]' : ''} />
     </div>
     
-    <span className={`text-sm font-medium whitespace-nowrap transition-all duration-300 overflow-hidden ${
-      isExpanded ? 'opacity-100 w-32' : 'opacity-0 w-0'
-    }`}>
-      {label}
-    </span>
+    {showLabel && (
+      <span className={`text-sm font-medium whitespace-nowrap transition-all duration-300 overflow-hidden hidden md:block ${
+        isExpanded ? 'opacity-100 w-32' : 'opacity-0 w-0'
+      }`}>
+        {label}
+      </span>
+    )}
 
     {/* Tooltip for collapsed state */}
     {!isExpanded && (
-      <div className="absolute left-14 px-2 py-1 bg-exo-panel border border-exo-border rounded text-[10px] text-exo-gold opacity-0 group-hover/nav:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-[100] tracking-widest uppercase">
+      <div className="absolute left-14 px-2 py-1 bg-exo-panel border border-exo-border rounded text-[10px] text-exo-accent opacity-0 group-hover/nav:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-[100] tracking-widest uppercase hidden md:block">
         {title}
       </div>
     )}
 
     {isActive && (
-      <div className="absolute right-0 w-0.5 h-6 bg-exo-gold rounded-l-full shadow-[0_0_10px_rgba(212,175,55,0.8)] md:block hidden" />
+      <div className="absolute right-0 w-0.5 h-6 bg-exo-accent rounded-l-full shadow-[0_0_10px_rgba(255,215,0,0.8)] md:block hidden" />
     )}
   </button>
 );
 
-const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList }) => {
+const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList, isExpanded, setIsExpanded }) => {
   const [userAvatarUrl, setUserAvatarUrl] = useState(() => getUserAvatarUrl());
   const [cropFile, setCropFile] = useState(null);
-  const [isHovered, setIsHovered] = useState(false);
   const avatarInputRef = useRef(null);
   const [userNick, setUserNick] = useState(() => localStorage.getItem('exo_user_nick') || 'Exo User');
 
@@ -80,65 +85,95 @@ const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList }) =
     )}
     
     <div 
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
       className={`
-        h-14 md:h-full flex flex-row md:flex-col items-center justify-between z-50 transition-all duration-500 ease-out
-        w-full md:w-16 md:hover:w-56
-        bg-exo-bg/40 backdrop-blur-xl
-        border-t border-exo-gold/10 md:border-t-0 md:border-r md:border-white/5
-        px-3 md:px-2 py-0 md:py-6 flex-shrink-0
+        h-full flex flex-col items-center justify-between z-[100] transition-all duration-500 ease-out
+        ${isExpanded ? 'w-56' : 'w-16'}
+        bg-[#05060A]/80 backdrop-blur-2xl
+        border-r border-white/5
+        py-6 flex-shrink-0
         relative group
       `}
     >
       {/* Decorative Top Accent */}
-      <div className="hidden md:block absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-exo-gold/20 to-transparent" />
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-exo-accent/20 to-transparent" />
 
-      <div className="flex flex-row md:flex-col items-center w-full md:w-auto justify-between md:justify-start md:space-y-4">
+      <div className="flex flex-col items-center w-full space-y-4">
         {/* Logo Section */}
-        <button
-          onClick={() => { setCurrentTab('home'); setShowConvList(false); }}
-          className={`hidden md:flex items-center gap-3 w-full p-2.5 mb-4 group/logo transition-all`}
+        <div className="flex items-center w-full px-2">
+          <button
+            onClick={() => { setCurrentTab('home'); }}
+            className={`flex items-center gap-3 p-2 group/logo transition-all flex-1 min-w-0`}
+          >
+            <div className={`p-2 rounded-xl border transition-all shrink-0 ${
+              currentTab === 'home' 
+                ? 'border-exo-accent/40 bg-exo-accent/5 text-exo-accent' 
+                : 'border-white/5 text-exo-accent/40 group-hover/logo:border-exo-accent/30 group-hover/logo:text-exo-accent/70'
+            }`}>
+              <Hexagon size={20} className={currentTab === 'home' ? 'animate-blink-sharp' : ''} />
+            </div>
+            <span className={`text-xs font-bold tracking-[0.2em] text-exo-accent uppercase transition-all duration-300 overflow-hidden ${
+              isExpanded ? 'opacity-100 w-32' : 'opacity-0 w-0'
+            }`}>
+              ExoCore
+            </span>
+          </button>
+        </div>
+
+        {/* Toggle Button */}
+        <button 
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="p-2 text-exo-muted hover:text-exo-accent transition-colors self-center mb-2"
         >
-          <div className={`p-2 rounded-xl border transition-all ${
-            currentTab === 'home' 
-              ? 'border-exo-gold/40 bg-exo-gold/5 text-exo-gold' 
-              : 'border-white/5 text-exo-gold/40 group-hover/logo:border-exo-gold/30 group-hover/logo:text-exo-gold/70'
-          }`}>
-            <Hexagon size={20} className={currentTab === 'home' ? 'animate-pulse-led' : ''} />
-          </div>
-          <span className={`text-xs font-bold tracking-[0.2em] text-exo-gold uppercase transition-all duration-300 overflow-hidden ${
-            isHovered ? 'opacity-100 w-32' : 'opacity-0 w-0'
-          }`}>
-            ExoCore
-          </span>
+          {isExpanded ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
         </button>
 
-        <div className="flex md:flex-col items-center justify-around md:justify-start w-full md:w-auto gap-2 md:gap-1">
-          <NavIcon icon={MessageSquare} title="会话" label="会话列表" isActive={currentTab === 'chat'} isExpanded={isHovered} onClick={() => { setCurrentTab('chat'); setShowConvList(true); }} />
-          <NavIcon icon={Users} title="议会" label="议事议会" isActive={currentTab === 'council'} isExpanded={isHovered} onClick={() => { setCurrentTab('council'); setShowConvList(true); }} />
-          <NavIcon icon={BrainCircuit} title="Agent 枢纽" label="Agent 枢纽" isActive={currentTab === 'agent_hub'} isExpanded={isHovered} onClick={() => { setCurrentTab('agent_hub'); setShowConvList(false); }} />
-          <NavIcon icon={User} title="时间线" label="个人时间线" isActive={currentTab === 'profile'} isExpanded={isHovered} onClick={() => { setCurrentTab('profile'); setShowConvList(false); }} />
-          <span className="md:hidden">
-            <NavIcon icon={Settings} title="设置" label="全局设置" isActive={currentTab === 'settings'} isExpanded={false} onClick={() => setCurrentTab('settings')} />
-          </span>
+        <div className="w-full h-px bg-white/5 mx-2" />
+
+        <div className="flex flex-col items-center w-full gap-1">
+          <NavIcon icon={LayoutGrid} title="概览" label="控制中心" isActive={currentTab === 'home'} isExpanded={isExpanded} onClick={() => setCurrentTab('home')} />
+          <NavIcon icon={MessageSquare} title="会话" label="即时会话" isActive={currentTab === 'chat'} isExpanded={isExpanded} onClick={() => { setCurrentTab('chat'); setShowConvList(true); }} />
+          <NavIcon icon={FolderOpen} title="项目" label="工程档案" isActive={currentTab === 'project'} isExpanded={isExpanded} onClick={() => { setCurrentTab('project'); setShowConvList(true); }} />
+          <NavIcon icon={Users} title="议会" label="决策议会" isActive={currentTab === 'council'} isExpanded={isExpanded} onClick={() => { setCurrentTab('council'); setShowConvList(true); }} />
+          <NavIcon icon={BrainCircuit} title="Agent" label="代理中心" isActive={currentTab === 'agent_hub'} isExpanded={isExpanded} onClick={() => { setCurrentTab('agent_hub'); }} />
+          <NavIcon icon={User} title="档案" label="个人信息" isActive={currentTab === 'profile'} isExpanded={isExpanded} onClick={() => { setCurrentTab('profile'); }} />
+          
+          {/* List Toggle for Chat/Council Mode */}
+          {(['chat', 'council', 'project'].includes(currentTab)) && (
+            <button
+              onClick={() => setShowConvList(!showConvList)}
+              className={`flex items-center gap-3 w-full p-2.5 transition-all group/list relative ${
+                showConvList ? 'text-exo-accent' : 'text-exo-muted hover:text-exo-text'
+              }`}
+            >
+              <div className={`p-2 rounded-xl transition-all shrink-0 ${
+                showConvList ? 'bg-exo-accent/10' : 'group-hover/list:bg-white/5'
+              }`}>
+                <List size={20} />
+              </div>
+              <span className={`text-sm font-medium whitespace-nowrap transition-all duration-300 overflow-hidden hidden md:block ${
+                isExpanded ? 'opacity-100 w-32' : 'opacity-0 w-0'
+              }`}>
+                {showConvList ? '隐藏列表' : '显示列表'}
+              </span>
+            </button>
+          )}
         </div>
       </div>
 
-      <div className="hidden md:flex flex-col items-center gap-4 w-full">
-        <NavIcon icon={Settings} title="设置" label="系统设置" isActive={currentTab === 'settings'} isExpanded={isHovered} onClick={() => setCurrentTab('settings')} />
+      <div className="flex flex-col items-center gap-4 w-full">
+        <NavIcon icon={Settings} title="设置" label="系统配置" isActive={currentTab === 'settings'} isExpanded={isExpanded} onClick={() => setCurrentTab('settings')} />
 
         {/* User Profile Section */}
         <div className="w-full h-px bg-white/5 my-2" />
         
         <div
-          className="relative cursor-pointer group/avatar flex items-center gap-3 w-full p-1 rounded-xl transition-all hover:bg-white/5"
+          className="relative cursor-pointer group/avatar flex items-center gap-3 w-full p-1 rounded-xl transition-all hover:bg-white/5 px-3"
           onClick={() => avatarInputRef.current?.click()}
         >
           <div className="relative shrink-0">
             <img 
               src={userAvatarUrl} 
-              className="w-10 h-10 rounded-xl border border-white/10 object-cover bg-black group-hover/avatar:border-exo-gold/30 transition-all" 
+              className="w-10 h-10 rounded-xl border border-white/10 object-cover bg-black group-hover/avatar:border-exo-accent/30 transition-all" 
               alt="User" 
             />
             <div className="absolute inset-0 rounded-xl bg-black/60 opacity-0 group-hover/avatar:opacity-100 flex items-center justify-center transition-opacity">
@@ -147,10 +182,10 @@ const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList }) =
           </div>
           
           <div className={`transition-all duration-300 overflow-hidden ${
-            isHovered ? 'opacity-100 w-32' : 'opacity-0 w-0'
+            isExpanded ? 'opacity-100 w-32' : 'opacity-0 w-0'
           }`}>
-            <p className="text-xs font-bold text-exo-gold/80 truncate">{userNick}</p>
-            <p className="text-[10px] text-exo-muted truncate tracking-tighter opacity-70">EXO-CORE AUTHENTICATED</p>
+            <p className="text-xs font-bold text-exo-accent/80 truncate">{userNick}</p>
+            <p className="text-[10px] text-exo-muted truncate tracking-tighter opacity-70">EXO-CORE AUTH</p>
           </div>
           
           <input type="file" ref={avatarInputRef} accept="image/*" className="hidden" onChange={handleAvatarChange} />

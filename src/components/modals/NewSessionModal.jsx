@@ -70,26 +70,26 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
       <div className="bg-exo-panel border border-exo-border rounded-xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
         <div className="px-6 py-4 border-b border-exo-border flex items-center justify-between bg-black/20">
           <h3 className="font-bold tracking-widest text-exo-text flex items-center gap-2">
-            <Plus size={18} className="text-exo-gold" /> INITIALIZE NODE
+            <Plus size={18} className="text-exo-accent" /> INITIALIZE NODE
           </h3>
           <button onClick={onClose} className="text-exo-muted hover:text-white"><X size={18}/></button>
         </div>
         <div className="p-6 space-y-5">
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-exo-muted uppercase">Session Name</label>
-            <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Leave blank for auto-generation..." className="w-full bg-black/50 border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text outline-none focus:border-exo-gold/50" />
+            <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Leave blank for auto-generation..." className="w-full bg-black/50 border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text outline-none focus:border-exo-accent/50" />
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-exo-muted uppercase">Select Agent Core</label>
             <div className="grid grid-cols-1 gap-2">
               {sortedPresets.map(preset => (
                 <div key={preset.id} onClick={() => { setSelectedPresetId(preset.id); if (preset.agent_type !== 'g045' && selectedProjectIds.length > 1) setSelectedProjectIds([selectedProjectIds[0]]); }}
-                  className={`p-3 rounded-lg border cursor-pointer flex justify-between ${parseInt(selectedPresetId) === preset.id ? (preset.agent_type === 'g045' ? 'bg-exo-gold/10 border-exo-gold' : 'bg-white/10 border-white/30') : 'bg-black/30 border-exo-border text-exo-muted'}`}>
+                  className={`p-3 rounded-lg border cursor-pointer flex justify-between ${parseInt(selectedPresetId) === preset.id ? (preset.agent_type === 'g045' ? 'bg-exo-accent/10 border-exo-accent' : 'bg-white/10 border-white/30') : 'bg-black/30 border-exo-border text-exo-muted'}`}>
                   <div className="flex flex-col">
-                    <span className={`text-sm font-bold ${preset.agent_type === 'g045' ? 'text-exo-gold' : 'text-exo-text'}`}>{preset.name}</span>
+                    <span className={`text-sm font-bold ${preset.agent_type === 'g045' ? 'text-exo-accent' : 'text-exo-text'}`}>{preset.name}</span>
                     <span className="text-[10px] opacity-70 font-mono">{preset.default_model}</span>
                   </div>
-                  {parseInt(selectedPresetId) === preset.id && <Check size={16} className={preset.agent_type === 'g045' ? 'text-exo-gold' : 'text-white'} />}
+                  {parseInt(selectedPresetId) === preset.id && <Check size={16} className={preset.agent_type === 'g045' ? 'text-exo-accent' : 'text-white'} />}
                 </div>
               ))}
             </div>
@@ -102,7 +102,7 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
                 { value: 'code', label: 'Code', icon: Code2,         desc: 'Analytic tools on' },
               ].map(({ value, label, icon: Icon, desc }) => (
                 <div key={value} onClick={() => setSessionType(value)}
-                  className={`p-3 rounded-lg border cursor-pointer flex items-center gap-2 transition-all ${sessionType === value ? 'bg-exo-gold/10 border-exo-gold text-exo-gold' : 'bg-black/30 border-exo-border text-exo-muted hover:border-exo-border/80'}`}>
+                  className={`p-3 rounded-lg border cursor-pointer flex items-center gap-2 transition-all ${sessionType === value ? 'bg-exo-accent/10 border-exo-accent text-exo-accent' : 'bg-black/30 border-exo-border text-exo-muted hover:border-exo-border/80'}`}>
                   <Icon size={14} />
                   <div className="flex flex-col">
                     <span className="text-xs font-bold">{label}</span>
@@ -114,7 +114,7 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-exo-muted uppercase flex justify-between">
-              <span>Bind Projects</span><span className="text-[10px] text-exo-gold/70">{isG045 ? 'Cross-Project Allowed' : 'Single Node Lock'}</span>
+              <span>Bind Projects</span><span className="text-[10px] text-exo-accent/70">{isG045 ? 'Cross-Project Allowed' : 'Single Node Lock'}</span>
             </label>
             <div className="max-h-32 overflow-y-auto border border-exo-border rounded-lg bg-black/30 p-1 space-y-1">
               {projects.map(proj => {
@@ -131,7 +131,7 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
         </div>
         <div className="p-4 border-t border-exo-border flex justify-end gap-3 bg-black/40">
           <button onClick={onClose} className="px-4 py-2 rounded-lg text-xs font-medium text-exo-muted hover:text-white">CANCEL</button>
-          <button onClick={handleSubmit} disabled={isSubmitting} className="px-6 py-2 rounded-lg text-xs font-bold bg-exo-gold text-black hover:bg-yellow-400 disabled:opacity-50 flex items-center gap-2">
+          <button onClick={handleSubmit} disabled={isSubmitting} className="px-6 py-2 rounded-lg text-xs font-bold bg-exo-accent text-black hover:bg-yellow-400 disabled:opacity-50 flex items-center gap-2">
             {isSubmitting ? <Activity size={14} className="animate-spin" /> : <Plus size={14} />} INITIALIZE
           </button>
         </div>

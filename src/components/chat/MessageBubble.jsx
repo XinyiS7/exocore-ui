@@ -60,21 +60,21 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
       <div className={`flex items-center gap-2 mb-1.5 ${isUser ? 'flex-row-reverse' : ''}`}>
         <img
           src={isUser ? userAvatarUrl : agentAvatarUrl}
-          className={`w-7 h-7 rounded-full border bg-black object-cover ${isUser ? 'border-white/20' : 'border-exo-gold/40'}`}
+          className={`w-7 h-7 rounded-full border bg-black object-cover ${isUser ? 'border-white/20' : 'border-exo-accent/40'}`}
           alt={isUser ? (userNick || 'You') : (agentName || 'Core')}
         />
-        <span className={`label-caps ${isUser ? 'text-white/30' : 'text-exo-gold/50'}`}>
+        <span className={`label-caps ${isUser ? 'text-white/30' : 'text-exo-accent/50'}`}>
           {isUser ? (userNick || 'You') : (agentName || 'Core')}
         </span>
       </div>
 
       <div className={`w-full space-y-2 ${isUser ? 'flex flex-col items-end' : ''}`}>
         {!isUser && msg.reasoning_steps && msg.reasoning_steps.map((step, sIdx) => (
-          <div key={sIdx} className="text-[11px] text-exo-gold/70 bg-exo-gold/5 px-2 py-1 rounded">{step}</div>
+          <div key={sIdx} className="text-[11px] text-exo-accent/70 bg-exo-accent/5 px-2 py-1 rounded">{step}</div>
         ))}
         {!isUser && msg.status_text && (
           <div className="flex items-center gap-2 text-[11px] text-exo-muted/70 px-2 py-1.5">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-exo-gold/60 animate-pulse shrink-0" />
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-exo-accent/60 animate-pulse shrink-0" />
             <span>{msg.status_text}</span>
           </div>
         )}
@@ -84,7 +84,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
           </div>
         )}
         {!isUser && msg.reasoning_content && (
-          <details className="bg-exo-metal border border-exo-border/50 rounded-lg text-xs text-exo-muted cursor-pointer w-full">
+          <details className="lcd-screen rounded-lg text-xs text-exo-muted cursor-pointer w-full">
             <summary className="p-2 flex items-center gap-2 label-caps">Thinking Process</summary>
             <div className="p-3 border-t border-exo-border bg-black/50 whitespace-pre-wrap font-mono">{msg.reasoning_content}</div>
           </details>
@@ -96,7 +96,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
                 ? <button
                     key={i}
                     onClick={() => setLightboxSrc(att.preview)}
-                    className="relative group block h-32 max-w-[200px] rounded-lg overflow-hidden border border-exo-border hover:border-exo-gold/40 transition-colors cursor-zoom-in"
+                    className="relative group block h-32 max-w-[200px] rounded-lg overflow-hidden border border-exo-border hover:border-exo-accent/40 transition-colors cursor-zoom-in"
                     title={att.name}
                   >
                     <img src={att.preview} alt={att.name} className="h-full w-full object-cover" />
@@ -155,7 +155,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
           <button
             onClick={() => onEdit && onEdit(msg)}
             disabled={isGenerating}
-            className="p-1.5 text-exo-muted/40 hover:text-exo-gold transition-colors rounded-lg hover:bg-white/5 disabled:opacity-20"
+            className="p-1.5 text-exo-muted/40 hover:text-exo-accent transition-colors rounded-lg hover:bg-white/5 disabled:opacity-20"
             title="编辑并重发"
           >
             <Edit2 size={12} />
@@ -165,7 +165,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
             <button
               onClick={() => onRegenerate && onRegenerate(msg)}
               disabled={isGenerating}
-              className="p-1.5 text-exo-muted/40 hover:text-exo-gold transition-colors rounded-lg hover:bg-white/5 disabled:opacity-20"
+              className="p-1.5 text-exo-muted/40 hover:text-exo-accent transition-colors rounded-lg hover:bg-white/5 disabled:opacity-20"
               title="重新生成"
             >
               <RotateCw size={12} />
@@ -180,7 +180,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
             </button>
             <button
               onClick={openBookmark}
-              className={`p-1.5 transition-colors rounded-lg hover:bg-exo-gold/10 ${showBookmark ? 'text-exo-gold' : 'text-exo-muted/40 hover:text-exo-gold'}`}
+              className={`p-1.5 transition-colors rounded-lg hover:bg-exo-accent/10 ${showBookmark ? 'text-exo-accent' : 'text-exo-muted/40 hover:text-exo-accent'}`}
               title="标记到长期记忆"
             >
               <Bookmark size={12} />
@@ -191,9 +191,9 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
 
       {/* Bookmark panel */}
       {showBookmark && (
-        <div className="w-full mt-2 border border-exo-gold/15 rounded-xl bg-exo-gold/5 overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 border-b border-exo-gold/10 gold-line-top">
-            <span className="label-caps text-exo-gold/60">划线标记到长期记忆</span>
+        <div className="w-full mt-2 border border-exo-accent/15 rounded-xl bg-exo-accent/5 overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-exo-accent/10 accent-line-top">
+            <span className="label-caps text-exo-accent/60">划线标记到长期记忆</span>
             <button onClick={() => setShowBookmark(false)} className="text-exo-muted/50 hover:text-white transition-colors rounded p-0.5">
               <X size={12} />
             </button>
@@ -203,7 +203,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
               value={bookmarkText}
               onChange={e => setBookmarkText(e.target.value)}
               rows={4}
-              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-xs text-exo-text outline-none focus:border-exo-gold/50 resize-y font-mono leading-relaxed"
+              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-xs text-exo-text outline-none focus:border-exo-accent/50 resize-y font-mono leading-relaxed"
               placeholder="选取要标记的内容..."
             />
             <div className="flex justify-end gap-2">
@@ -216,7 +216,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
               <button
                 onClick={handleBookmarkSubmit}
                 disabled={bookmarkStatus === 'saving' || bookmarkStatus === 'done'}
-                className="px-3 py-1 bg-exo-gold/10 text-exo-gold border border-exo-gold/20 rounded-lg text-xs hover:bg-exo-gold hover:text-black transition-all disabled:opacity-50"
+                className="px-3 py-1 bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded-lg text-xs hover:bg-exo-accent hover:text-black transition-all disabled:opacity-50"
               >
                 {bookmarkStatus === 'saving' ? '提交中...'
                   : bookmarkStatus === 'done' ? '✓ 已提交'

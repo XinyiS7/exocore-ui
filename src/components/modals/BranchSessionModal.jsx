@@ -28,13 +28,13 @@ const BranchSessionModal = ({ isOpen, onClose, onConfirm, isSubmitting }) => {
           </p>
           
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-exo-gold/60 uppercase tracking-widest">Session Name (Optional)</label>
+            <label className="text-[10px] font-bold text-exo-accent/60 uppercase tracking-widest">Session Name (Optional)</label>
             <input 
               type="text" 
               value={name} 
               onChange={e => setName(e.target.value)} 
               placeholder="留空则使用默认名称..." 
-              className="w-full bg-black/50 border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text outline-none focus:border-exo-gold/50 transition-colors"
+              className="w-full bg-black/50 border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text outline-none focus:border-exo-accent/50 transition-colors"
               autoFocus
               onKeyDown={e => { if (e.key === 'Enter') onConfirm(name); }}
             />
