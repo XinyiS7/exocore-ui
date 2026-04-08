@@ -19,15 +19,15 @@ export default {
           panel:   '#1A1E29',
           surface: '#232836',
           border:  '#2D3446',
-          accent:  '#FFD700', // Cold Bright Gold
-          accentDim: '#B8860B',
+          accent:  '#edd554', // Cold Bright Gold
+          accentDim: '#cca133',
           text:    '#E0E7FF',
-          muted:   'rgb(162 162 174 / 0.4)',
+          muted:   '#b1b5c8',
         }
       },
       boxShadow: {
-        'glow-sharp': '0 0 2px rgba(255, 215, 0, 0.8), 0 0 8px rgba(255, 215, 0, 0.4), 0 0 16px rgba(255, 215, 0, 0.1)',
-        'glow-subtle': '0 0 2px rgba(255, 215, 0, 0.3), 0 0 4px rgba(255, 215, 0, 0.1)',
+        'glow-sharp': '0 0 1px #fff, 0 0 4px rgba(255, 215, 0, 0.8), 0 0 12px rgba(255, 215, 0, 0.4)',
+        'glow-subtle': '0 0 1px rgba(255, 255, 255, 0.5), 0 0 4px rgba(255, 215, 0, 0.3)',
         'btn-physical': 'inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.5)',
         'btn-physical-active': 'inset 0 1px 2px rgba(0, 0, 0, 0.8), 0 1px 1px rgba(255, 255, 255, 0.05)',
         'glass-inset': 'inset 0 0 10px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(255, 215, 0, 0.05)',
@@ -37,6 +37,10 @@ export default {
           '0%, 100%': { opacity: '0.2' },
           '50%':       { opacity: '1', filter: 'brightness(1.5)' },
         },
+        'pulse-glow': {
+          '0%, 100%': { opacity: '0.5', filter: 'brightness(1)' },
+          '50%':       { opacity: '1', filter: 'brightness(1.8) drop-shadow(0 0 8px #FFD700)' },
+        },
         'fade-in': {
           '0%':   { opacity: '0', transform: 'translateY(4px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
@@ -44,6 +48,7 @@ export default {
       },
       animation: {
         'blink-sharp': 'blink-sharp 1.5s step-end infinite',
+        'pulse-glow': 'pulse-glow 3s ease-in-out infinite',
         'fade-in':   'fade-in 0.2s ease-out',
       },
     },

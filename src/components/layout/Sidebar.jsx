@@ -106,10 +106,10 @@ const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList, isE
           >
             <div className={`p-2 rounded-xl border transition-all shrink-0 ${
               currentTab === 'home' 
-                ? 'border-exo-accent/40 bg-exo-accent/5 text-exo-accent' 
+                ? 'border-exo-accent/40 bg-exo-accent/5 text-exo-accent shadow-[0_0_15px_rgba(255,215,0,0.1)]' 
                 : 'border-white/5 text-exo-accent/40 group-hover/logo:border-exo-accent/30 group-hover/logo:text-exo-accent/70'
             }`}>
-              <Hexagon size={20} className={currentTab === 'home' ? 'animate-blink-sharp' : ''} />
+              <Hexagon size={20} className={currentTab === 'home' ? 'animate-pulse-glow drop-shadow-[0_0_2px_#fff]' : ''} />
             </div>
             <span className={`text-xs font-bold tracking-[0.2em] text-exo-accent uppercase transition-all duration-300 overflow-hidden ${
               isExpanded ? 'opacity-100 w-32' : 'opacity-0 w-0'

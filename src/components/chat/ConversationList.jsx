@@ -10,7 +10,7 @@ import { baseUrl, getCsrfToken } from '../../utils/api';
 const ConversationList = ({ 
   activeSessionId, 
   setActiveSessionId, 
-  projects, 
+  projects = [], 
   refreshKey, 
   setRefreshKey,
   openDestructor, 
@@ -67,6 +67,7 @@ const ConversationList = ({
   const standardSessions = filteredConversations.filter(c => c.agent_type !== 'g045' && c.project === null && !councilInternalIds.has(c.id));
 
   const sortedProjects = useMemo(() => {
+    if (!projects) return [];
     return [...projects].sort((a, b) => {
       const lastA = conversations.find(c => c.project === a.id)?.last_message_at || 0;
       const lastB = conversations.find(c => c.project === b.id)?.last_message_at || 0;

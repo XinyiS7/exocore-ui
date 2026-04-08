@@ -152,6 +152,10 @@ export default function App() {
             setActiveCouncilId={setActiveCouncilId}
             onCreateCouncil={() => setShowCouncilCreate(true)}
             refreshKey={refreshKey}
+            setRefreshKey={setRefreshKey}
+            openDestructor={openDestructor}
+            openNewSession={openNewSession}
+            projects={projects}
             setActiveSessionId={setActiveSessionId}
           />
         );
