@@ -28,10 +28,6 @@ export const completeEntry= (id)       => jsonReq('POST',   `${baseUrl}/api/task
 export const suspendEntry = (id)       => jsonReq('POST',   `${baseUrl}/api/tasks/entries/${id}/suspend/`,  {}).then(r => r.json());
 export const resumeEntry  = (id)       => jsonReq('POST',   `${baseUrl}/api/tasks/entries/${id}/resume/`,   {}).then(r => r.json());
 export const syncGcal     = (id)       => jsonReq('POST',   `${baseUrl}/api/tasks/entries/${id}/gcal/`,     {}).then(r => r.json());
-export const unsyncGcal   = (id)       => fetch(`${baseUrl}/api/tasks/entries/${id}/gcal/`, {
-  method: 'DELETE',
-  headers: { 'X-CSRFToken': getCsrfToken() },
-  credentials: 'include',
-});
+export const unsyncGcal   = (id)       => jsonReq('DELETE', `${baseUrl}/api/tasks/entries/${id}/gcal/`);
 export const fetchCompletions = (entryId) =>
   fetch(`${baseUrl}/api/tasks/completions/?entry=${entryId}`, { credentials: 'include' }).then(r => r.json());
