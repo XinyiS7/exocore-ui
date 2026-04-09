@@ -1,17 +1,19 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@200;300&family=JetBrains+Mono:wght@400&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   body {
-    font-family: 'Outfit', system-ui, sans-serif;
-    font-weight: 200;
+    font-family: 'Outfit', 'HarmonyOS Sans SC', 'MiSans', system-ui, sans-serif;
+    font-weight: 300;
     color: #E0E7FF;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-synthesis: none;
   }
   strong, b, th {
-    font-weight: 300;
+    font-weight: 500;
   }
   code, pre, kbd, samp {
     font-family: 'JetBrains Mono', ui-monospace, monospace;

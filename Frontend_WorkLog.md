@@ -4,6 +4,23 @@
 
 ---
 
+## 2026-04-08
+
+### 硬科幻视觉系统迭代与多态导航重构
+
+**背景**：为了提升视觉的工业质感和交互的逻辑连贯性，将原有的青色系彻底替换为“冷金（#FFD700）”，并引入 Claude 风格的多态布局。同时解决 Council 模块在高容错场景下的崩溃问题。
+
+**主要改动**
+
+| 模块 | 改动内容 |
+|---|---|
+| **视觉系统** | 1. 定义 **Cold Gold (#FFD700)** 为核心品牌色；<br>2. 实现“灯管级”渲染：通过 **白色核心 + 金色光晕** 的多层级阴影（`glow-sharp`）模拟高真实感发光；<br>3. 升级 `index.css` 边框实用类，为 `.accent-indicator` 等增加伪元素光芯，提升视觉精度。 |
+| **多态布局 (Polymorphism)** | 1. 落地 `Home -> Category Launcher -> Active Workspace` 的流转逻辑；<br>2. 重构 `ConversationList` 支持 `isMainView` 模式，作为全屏 Hub 展示；<br>3. 实现**绝对定位覆盖层**列表，确保打开会话列表时不会挤压/抖动主聊天区域。 |
+| **侧边栏 (Sidebar)** | 1. 废弃 Hover 自动展开，改为显式点击切换；<br>2. 优化图标动画：Hexagon Logo 切换为平滑的 **pulse-glow (呼吸灯)** 动效，替代原有的 sharp blink。 |
+| **Bugfix & 鲁棒性** | 1. **修复白屏**: 解决 `ConversationList` 因 `projects` prop 缺失导致的解构崩溃（议会/主视图场景）；<br>2. **状态同步**: 修正移动端 Burger Menu 与侧边栏的交互逻辑，确保窄屏下自动遮罩。 |
+
+---
+
 ## 2026-04-07
 
 ### UI 交互体验升级与核心功能补全
@@ -42,7 +59,7 @@
 | `tailwind.config.js` | 字体族改为 Outfit + JetBrains Mono；颜色系扩充 `exo-metal`/`exo-surface`（深浅层次）；背景/文字色加入蓝调；新增 `animate-pulse-led`/`animate-fade-in` keyframes |
 | `src/index.css` | 引入 Google Fonts（Outfit/JetBrains Mono）；body 基础字重 200；新增工具类 `.gold-line-top`、`.gold-line-bottom`、`.gold-indicator`、`.label-caps` |
 | `src/components/layout/Sidebar.jsx` | 顶部渐变金线；活跃 tab 桌面左侧 2px 金条 / 移动端底部金线；六边形 logo 绑定 `home` tab 跳转 |
-| `src/components/chat/ConversationList.jsx` | 容器背景 `exo-surface`；标题/分组标签改用 `.label-caps`；Council 状态徽章去饱和，改为细边框+低透明度 |
+| `src/components/chat/ConversationList.jsx` | 容器背景 `exo-surface`；标题/分组标签改用 `.label-caps`；Council 状态徽徽章去饱和，改为细边框+低透明度 |
 | `src/components/chat/ChatArea.jsx` | Header 边框减弱；状态指示点改用 `pulse-led`；工具栏选项（model/think/temp）改 `.label-caps`；输入框聚焦增加淡金色 shadow 光晕 |
 | `src/components/chat/MessageBubble.jsx` | 发送者名称改 `.label-caps`；用户气泡背景改 `exo-metal`；Bookmark 面板顶部加金线 |
 

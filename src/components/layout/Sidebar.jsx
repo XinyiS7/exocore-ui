@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   MessageSquare, BrainCircuit, User, Settings, Hexagon, 
-  Camera, Users, PanelLeftOpen, PanelLeftClose, List,
-  LayoutGrid, FolderOpen
+  Camera, PanelLeftOpen, PanelLeftClose, List,
+  LayoutGrid, Calendar
 } from 'lucide-react';
 import { getUserAvatarUrl } from '../../utils/avatar';
 import AvatarCropModal from '../modals/AvatarCropModal';
@@ -132,10 +132,9 @@ const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList, isE
         <div className="flex flex-col items-center w-full gap-1">
           <NavIcon icon={LayoutGrid} title="概览" label="控制中心" isActive={currentTab === 'home'} isExpanded={isExpanded} onClick={() => setCurrentTab('home')} />
           <NavIcon icon={MessageSquare} title="会话" label="即时会话" isActive={currentTab === 'chat'} isExpanded={isExpanded} onClick={() => { setCurrentTab('chat'); setShowConvList(true); }} />
-          <NavIcon icon={FolderOpen} title="项目" label="工程档案" isActive={currentTab === 'project'} isExpanded={isExpanded} onClick={() => { setCurrentTab('project'); setShowConvList(true); }} />
-          <NavIcon icon={Users} title="议会" label="决策议会" isActive={currentTab === 'council'} isExpanded={isExpanded} onClick={() => { setCurrentTab('council'); setShowConvList(true); }} />
           <NavIcon icon={BrainCircuit} title="Agent" label="代理中心" isActive={currentTab === 'agent_hub'} isExpanded={isExpanded} onClick={() => { setCurrentTab('agent_hub'); }} />
-          <NavIcon icon={User} title="档案" label="个人信息" isActive={currentTab === 'profile'} isExpanded={isExpanded} onClick={() => { setCurrentTab('profile'); }} />
+          <NavIcon icon={User} title="时间线" label="时间线" isActive={currentTab === 'profile'} isExpanded={isExpanded} onClick={() => { setCurrentTab('profile'); }} />
+          <NavIcon icon={Calendar} title="日历" label="日历" isActive={currentTab === 'calendar'} isExpanded={isExpanded} onClick={() => setCurrentTab('calendar')} />
           
           {/* List Toggle for Chat/Council Mode */}
           {(['chat', 'council', 'project'].includes(currentTab)) && (

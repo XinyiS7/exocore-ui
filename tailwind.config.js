@@ -15,12 +15,12 @@ export default {
       colors: {
         exo: {
           bg:      '#080A0F',
-          metal:   '#12151D',
+          metal:   '#272a30',
           panel:   '#1A1E29',
           surface: '#232836',
-          border:  '#2D3446',
+          border:  '#838387',
           accent:  '#edd554', // Cold Bright Gold
-          accentDim: '#cca133',
+          accentDim: '#fbc015',
           text:    '#E0E7FF',
           muted:   '#b1b5c8',
         }

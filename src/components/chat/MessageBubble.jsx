@@ -5,6 +5,47 @@ import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { baseUrl, getCsrfToken } from '../../utils/api';
 
+function CodeBlock({ children, className }) {
+  const [copied, setCopied] = useState(false);
+  const lang = (className || '').replace('language-', '') || 'code';
+  const text = typeof children === 'string' ? children : (children?.props?.children ?? '');
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(String(text)).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {});
+  };
+
+  return (
+    <div className="relative group/code my-3">
+      <div className="flex items-center justify-between px-3 py-1.5 bg-black/40 border border-white/5 border-b-0 rounded-t-lg">
+        <span className="text-[10px] text-exo-muted/40 uppercase tracking-widest font-mono">{lang}</span>
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] text-exo-muted/40 hover:text-exo-accent hover:bg-exo-accent/5 transition-all"
+        >
+          {copied ? <Check size={10} className="text-green-400" /> : <Copy size={10} />}
+          <span>{copied ? '已复制' : '复制'}</span>
+        </button>
+      </div>
+      <pre className={`${className ?? ''} !mt-0 !rounded-t-none !border-t-0`}>
+        {children}
+      </pre>
+    </div>
+  );
+}
+
+const MD_COMPONENTS = {
+  pre({ children, ...props }) {
+    const codeEl = React.Children.toArray(children).find(c => c?.type === 'code');
+    if (codeEl) {
+      return <CodeBlock className={codeEl.props?.className}>{codeEl.props?.children}</CodeBlock>;
+    }
+    return <pre {...props}>{children}</pre>;
+  },
+};
+
 const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, userAvatarUrl, onEdit, onRegenerate, onBranch, isGenerating }) => {
   const isUser = msg.role === 'user';
   const [copied, setCopied] = useState(false);
@@ -137,7 +178,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
           : 'w-full prose prose-invert prose-sm max-w-none'}>
           {isUser
             ? msg.content
-            : <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{msg.content}</ReactMarkdown>}
+            : <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]} components={MD_COMPONENTS}>{msg.content}</ReactMarkdown>}
         </div>
       </div>
 

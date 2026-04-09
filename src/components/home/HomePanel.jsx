@@ -1,38 +1,38 @@
 import React from 'react';
 import { 
-  MessageSquare, BrainCircuit, User, Settings, 
-  Plus, Sparkles, LayoutGrid, Users, FolderOpen,
-  ArrowRight
+  MessageSquare, BrainCircuit, User, 
+  ArrowRight, Calendar
 } from 'lucide-react';
+import CalendarWidget from './CalendarWidget';
 
 const QUICK_ACTIONS = [
   {
     tab: 'chat',
     icon: MessageSquare,
-    label: '启动新会话',
+    label: '即时会话',
     desc: '与 AI 节点建立即时链路',
     color: 'text-exo-accent'
   },
   {
-    tab: 'project',
-    icon: FolderOpen,
-    label: '浏览工程项',
-    desc: '查看已归档的知识存储',
-    color: 'text-blue-400'
+    tab: 'agent_hub',
+    icon: BrainCircuit,
+    label: '代理中心',
+    desc: '调整代理预设与认知模型',
+    color: 'text-exo-accent'
   },
   {
-    tab: 'council',
-    icon: Users,
-    label: '召集议会',
-    desc: '启动多代理决策流程',
+    tab: 'profile',
+    icon: User,
+    label: '时间线',
+    desc: '查看节点动态与交互记录',
     color: 'text-purple-400'
   },
   {
-    tab: 'agent_hub',
-    icon: BrainCircuit,
-    label: '配置 Agent',
-    desc: '调整代理预设与认知模型',
-    color: 'text-exo-accent'
+    tab: 'calendar',
+    icon: Calendar,
+    label: '日程管理',
+    desc: '同步任务与时序计划',
+    color: 'text-blue-400'
   },
 ];
 
@@ -86,8 +86,17 @@ export default function HomePanel({ setCurrentTab }) {
           ))}
         </div>
 
+        {/* Calendar Section */}
+        <div id="home-calendar-section" className="space-y-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+          <div className="flex items-center gap-3">
+            <div className="h-px w-8 bg-exo-accent/40" />
+            <div className="label-caps text-exo-accent/60 tracking-[0.4em]">Chronos System</div>
+          </div>
+          <CalendarWidget />
+        </div>
+
         {/* System Stats / Bottom Section */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 py-8 border-t border-white/5 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 py-8 border-t border-white/5 animate-fade-in" style={{ animationDelay: '0.3s' }}>
           <div className="space-y-1">
             <div className="text-[10px] text-exo-muted/40 uppercase tracking-widest">Active Nodes</div>
             <div className="text-2xl font-light font-mono text-exo-accent">12</div>

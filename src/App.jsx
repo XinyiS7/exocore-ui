@@ -80,6 +80,13 @@ export default function App() {
     switch (currentTab) {
       case 'home':
         return <HomePanel setCurrentTab={handleTabChange} />;
+
+      case 'calendar':
+        return (
+          <div className="flex-1 h-full flex items-center justify-center text-exo-muted/40 text-sm tracking-widest uppercase">
+            Task Panel — Coming Soon
+          </div>
+        );
       
       case 'chat':
         if (activeFileProjectId) return <ProjectFilesArea projectId={activeFileProjectId} projects={projects} openDestructor={openDestructor} />;

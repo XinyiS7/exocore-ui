@@ -987,3 +987,137 @@ POST /api/council/sessions/<pk>/finish/
 //      a. 将新会话插入左侧对话列表顶部（或触发列表刷新）
 //      b. 跳转到新会话：使用返回的 session_id 加载 GET /api/agents/chat/<session_id>/
 //   4. 新会话从此独立运作，操作方式与普通对话完全相同
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+21. Tasks API — /api/tasks/
+    日程与习惯追踪（todo / periodic / goal 三种类型）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// ── ScheduleEntry 字段说明 ──────────────────────────────────────────────────
+// entry_type: "todo" | "periodic" | "goal"
+// status:     "active" | "suspended" | "escalated" | "archived"
+// [todo]      due_date
+// [periodic]  interval_unit("day"|"week"|"month"), interval_value, end_type("count"|"date"|"never"),
+//             end_count, end_date, occurrences_done (read-only, server-managed)
+// [goal]      goal_count, goal_period("week"|"month"), cycle_start, cycle_due
+// gcal_event_id / gcal_event_link — read-only，通过 /gcal/ 端点管理
+// current_cycle_completions — computed，当前周期已打卡次数（goal 类型）
+// next_periodic_due         — computed，下次应完成日期（periodic 类型，ISO date string）
+
+// ── GET /api/tasks/entries/ ─────────────────────────────────────────────────
+// 查询参数：?status=active  ?entry_type=goal  ?is_pinned=true
+// 默认排序：is_pinned DESC, due_date ASC, cycle_due ASC, start_date ASC
+// Response 200:
+[
+  {
+    "id": 1,
+    "title": "晨跑",
+    "description": "",
+    "entry_type": "goal",
+    "status": "active",
+    "is_pinned": false,
+    "start_date": "2026-04-09",
+    "tags": ["健康", "运动"],
+    "due_date": null,
+    "interval_unit": null, "interval_value": null,
+    "end_type": null, "end_count": null, "end_date": null,
+    "occurrences_done": 0,
+    "goal_count": 3,
+    "goal_period": "week",
+    "cycle_start": "2026-04-07",
+    "cycle_due": "2026-04-13",
+    "gcal_event_id": "",
+    "gcal_event_link": "",
+    "current_cycle_completions": 1,
+    "next_periodic_due": null,
+    "created_at": "2026-04-09T10:00:00Z",
+    "updated_at": "2026-04-09T10:00:00Z"
+  }
+]
+
+// ── POST /api/tasks/entries/ ────────────────────────────────────────────────
+// 创建条目。entry_type 创建后不可修改。
+// Request Body:
+{
+  "title": "晨跑",
+  "entry_type": "goal",           // required
+  "start_date": "2026-04-09",     // required
+  "goal_count": 3,
+  "goal_period": "week",
+  "cycle_start": "2026-04-07",
+  "cycle_due": "2026-04-13",
+  "tags": ["健康"]
+}
+// Response 201: 同 GET 单条格式
+
+// ── GET /api/tasks/entries/<pk>/ ────────────────────────────────────────────
+// Response 200: 同上
+
+// ── PATCH /api/tasks/entries/<pk>/ ─────────────────────────────────────────
+// 部分更新。entry_type 不可更改。
+// 若条目已关联 GCal（gcal_event_id 非空），自动同步更新 GCal 事件。
+// Response 200: 更新后的完整条目
+
+// ── DELETE /api/tasks/entries/<pk>/ ────────────────────────────────────────
+// 软删除：status → "archived"。若已关联 GCal，自动取消链接。
+// Response 204 No Content
+
+// ── POST /api/tasks/entries/<pk>/complete/ ──────────────────────────────────
+// 打卡。创建 CompletionRecord。
+// periodic 类型：自动递增 occurrences_done，到达 end_count/end_date 时 status → "archived"
+// goal 类型：允许超量打卡（不拦截）
+// Request Body（可选）:
+{ "note": "今天状态很好" }
+// Response 201:
+{
+  "id": 5,
+  "entry": 1,
+  "completed_at": "2026-04-09T08:30:00Z",
+  "cycle_start": "2026-04-07",
+  "note": "今天状态很好"
+}
+
+// ── POST /api/tasks/entries/<pk>/suspend/ ───────────────────────────────────
+// 挂起：status → "suspended"，is_pinned → false
+// Response 200: 更新后的完整条目
+
+// ── POST /api/tasks/entries/<pk>/resume/ ────────────────────────────────────
+// 恢复：status → "active"
+// Response 200: 更新后的完整条目
+
+// ── POST /api/tasks/entries/<pk>/gcal/ ──────────────────────────────────────
+// 推送到 Google Calendar（幂等：已链接则更新，未链接则新建全天事件）
+// Response 200:
+{
+  "gcal_synced": true,
+  "gcal_event_id": "abc123xyz",
+  "gcal_event_link": "https://www.google.com/calendar/event?eid=..."
+}
+// 失败时 Response 502:
+{ "detail": "GCal sync failed: ...", "gcal_synced": false }
+
+// ── DELETE /api/tasks/entries/<pk>/gcal/ ────────────────────────────────────
+// 取消 GCal 链接（从 GCal 删除事件，清空本地 gcal_event_id / gcal_event_link）
+// Response 204 No Content
+
+// ── GET /api/tasks/completions/?entry=<pk> ──────────────────────────────────
+// 查询某条目的所有打卡记录（按时间倒序）
+// Response 200:
+[
+  {
+    "id": 5,
+    "entry": 1,
+    "completed_at": "2026-04-09T08:30:00Z",
+    "cycle_start": "2026-04-07",
+    "note": ""
+  }
+]
+
+// ── 前端处理要点 ─────────────────────────────────────────────────────────────
+// 1. 列表默认展示 status != "archived" 的条目：?status=active 或不传 status 过滤
+// 2. is_pinned=true 且 status="escalated" 的条目应显示在最顶部并标记醒目样式
+// 3. goal 类型显示进度条：current_cycle_completions / goal_count
+// 4. periodic 类型显示下次截止：next_periodic_due
+// 5. gcal_event_link 非空时显示「在 Google Calendar 中查看」外链按钮
+// 6. GCal 推送按钮：POST /gcal/，成功后用响应中的 gcal_event_link 更新本地状态
