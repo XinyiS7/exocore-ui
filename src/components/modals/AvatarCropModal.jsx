@@ -36,8 +36,10 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }) => {
     };
     const onMove = (e) => {
       if (!dragRef.current) return;
-      setPos(p => ({ x: p.x + e.clientX - dragRef.current.x, y: p.y + e.clientY - dragRef.current.y }));
+      const dx = e.clientX - dragRef.current.x;
+      const dy = e.clientY - dragRef.current.y;
       dragRef.current = { x: e.clientX, y: e.clientY };
+      setPos(p => ({ x: p.x + dx, y: p.y + dy }));
     };
     const onUp = () => { dragRef.current = null; };
 
