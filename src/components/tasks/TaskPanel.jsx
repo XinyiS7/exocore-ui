@@ -72,21 +72,21 @@ export default function TaskPanel({ openDestructor }) {
   const goals    = filtered.filter(e => !e.is_pinned && e.entry_type === 'goal');
 
   // ── Mutations ────────────────────────────────────────────────
-  const handleComplete = (id) => completeEntry(id).then(load);
+  const mutate = (fn) => fn().then(load).catch(console.error);
 
-  const handleUpdate = (id, patch) => updateEntry(id, patch).then(load);
+  const handleComplete   = (id) => mutate(() => completeEntry(id));
+  const handleUpdate     = (id, patch) => mutate(() => updateEntry(id, patch));
+  const handleSuspend    = (id) => mutate(() => suspendEntry(id));
+  const handleResume     = (id) => mutate(() => resumeEntry(id));
+  const handleGcalSync   = (id) => mutate(() => syncGcal(id));
+  const handleGcalUnsync = (id) => mutate(() => unsyncGcal(id));
+  const handleEdit       = (entry) => setModalEntry(entry);
 
   const handleDelete = (id) => openDestructor({
     title: '删除任务',
     description: '此操作将归档该任务，无法撤销。',
-    onDelete: () => deleteEntry(id).then(load),
+    onDelete: () => mutate(() => deleteEntry(id)),
   });
-
-  const handleSuspend    = (id) => suspendEntry(id).then(load);
-  const handleResume     = (id) => resumeEntry(id).then(load);
-  const handleGcalSync   = (id) => syncGcal(id).then(load);
-  const handleGcalUnsync = (id) => unsyncGcal(id).then(load);
-  const handleEdit       = (entry) => setModalEntry(entry);
 
   return (
     <div className="flex h-full overflow-hidden">
