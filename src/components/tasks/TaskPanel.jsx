@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus } from 'lucide-react';
 import MiniCalendar from './MiniCalendar';
-import TaskRow from './TaskRow';
 import TaskCreateModal from './TaskCreateModal';
 import {
   fetchEntries, completeEntry, updateEntry, deleteEntry,
