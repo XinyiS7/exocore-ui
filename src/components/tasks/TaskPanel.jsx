@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Plus } from 'lucide-react';
 import MiniCalendar from './MiniCalendar';
 import TaskCreateModal from './TaskCreateModal';
+import TaskRow from './TaskRow';
 import {
   fetchEntries, completeEntry, updateEntry, deleteEntry,
   suspendEntry, resumeEntry, syncGcal, unsyncGcal,
@@ -20,6 +21,14 @@ const STATUS_OPTS = [
   { value: 'active',    label: '进行中' },
   { value: 'suspended', label: '已挂起' },
 ];
+
+function SectionHeader({ label }) {
+  return (
+    <div className="px-4 pt-4 pb-1.5 text-[9px] uppercase tracking-widest text-exo-muted/30 border-b border-white/[0.03]">
+      {label}
+    </div>
+  );
+}
 
 export default function TaskPanel({ openDestructor }) {
   const [entries,      setEntries]      = useState([]);
@@ -41,6 +50,43 @@ export default function TaskPanel({ openDestructor }) {
   useEffect(() => { load(); }, [load]);
 
   const toggleExpand = (id) => setExpandedId(p => p === id ? null : id);
+
+  // ── Filter ──────────────────────────────────────────────────
+  const matchesDate = (e) => {
+    if (e.entry_type === 'todo')     return e.due_date          === selectedDate;
+    if (e.entry_type === 'periodic') return e.next_periodic_due === selectedDate;
+    if (e.entry_type === 'goal') {
+      if (!e.cycle_start) return false;
+      return e.cycle_start <= selectedDate && (!e.cycle_due || selectedDate <= e.cycle_due);
+    }
+    return false;
+  };
+
+  const matchesType = (e) => typeFilter === 'all' || e.entry_type === typeFilter;
+
+  const filtered = entries.filter(e => matchesDate(e) && matchesType(e));
+
+  const pinned   = filtered.filter(e => e.is_pinned);
+  const todos    = filtered.filter(e => !e.is_pinned && e.entry_type === 'todo');
+  const periodic = filtered.filter(e => !e.is_pinned && e.entry_type === 'periodic');
+  const goals    = filtered.filter(e => !e.is_pinned && e.entry_type === 'goal');
+
+  // ── Mutations ────────────────────────────────────────────────
+  const handleComplete = (id) => completeEntry(id).then(load);
+
+  const handleUpdate = (id, patch) => updateEntry(id, patch).then(load);
+
+  const handleDelete = (id) => openDestructor({
+    title: '删除任务',
+    description: '此操作将归档该任务，无法撤销。',
+    onDelete: () => deleteEntry(id).then(load),
+  });
+
+  const handleSuspend    = (id) => suspendEntry(id).then(load);
+  const handleResume     = (id) => resumeEntry(id).then(load);
+  const handleGcalSync   = (id) => syncGcal(id).then(load);
+  const handleGcalUnsync = (id) => unsyncGcal(id).then(load);
+  const handleEdit       = (entry) => setModalEntry(entry);
 
   return (
     <div className="flex h-full overflow-hidden">
@@ -120,10 +166,109 @@ export default function TaskPanel({ openDestructor }) {
               加载中...
             </div>
           )}
-          {!loading && entries.length === 0 && (
+
+          {!loading && filtered.length === 0 && (
             <div className="flex items-center justify-center h-32 text-xs text-exo-muted/20 tracking-widest uppercase">
-              暂无任务
+              {selectedDate} 无任务
             </div>
+          )}
+
+          {!loading && filtered.length > 0 && (
+            <>
+              {/* 📌 Pinned */}
+              {pinned.length > 0 && (
+                <div className="mx-4 mt-4 border border-exo-accent/30 bg-exo-accent/[0.04] rounded-xl overflow-hidden">
+                  <div className="px-4 pt-3 pb-1 text-[9px] uppercase tracking-widest text-exo-accent/50">
+                    📌 置顶 / Escalated
+                  </div>
+                  {pinned.map(e => (
+                    <TaskRow
+                      key={e.id}
+                      entry={e}
+                      isExpanded={expandedId === e.id}
+                      onToggleExpand={toggleExpand}
+                      onEdit={handleEdit}
+                      onComplete={handleComplete}
+                      onUpdate={handleUpdate}
+                      onDelete={handleDelete}
+                      onSuspend={handleSuspend}
+                      onResume={handleResume}
+                      onGcalSync={handleGcalSync}
+                      onGcalUnsync={handleGcalUnsync}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Todo */}
+              {todos.length > 0 && (
+                <div>
+                  <SectionHeader label="Todo" />
+                  {todos.map(e => (
+                    <TaskRow
+                      key={e.id}
+                      entry={e}
+                      isExpanded={expandedId === e.id}
+                      onToggleExpand={toggleExpand}
+                      onEdit={handleEdit}
+                      onComplete={handleComplete}
+                      onUpdate={handleUpdate}
+                      onDelete={handleDelete}
+                      onSuspend={handleSuspend}
+                      onResume={handleResume}
+                      onGcalSync={handleGcalSync}
+                      onGcalUnsync={handleGcalUnsync}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* 周期任务 */}
+              {periodic.length > 0 && (
+                <div>
+                  <SectionHeader label="周期任务" />
+                  {periodic.map(e => (
+                    <TaskRow
+                      key={e.id}
+                      entry={e}
+                      isExpanded={expandedId === e.id}
+                      onToggleExpand={toggleExpand}
+                      onEdit={handleEdit}
+                      onComplete={handleComplete}
+                      onUpdate={handleUpdate}
+                      onDelete={handleDelete}
+                      onSuspend={handleSuspend}
+                      onResume={handleResume}
+                      onGcalSync={handleGcalSync}
+                      onGcalUnsync={handleGcalUnsync}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* 目标 */}
+              {goals.length > 0 && (
+                <div>
+                  <SectionHeader label="目标" />
+                  {goals.map(e => (
+                    <TaskRow
+                      key={e.id}
+                      entry={e}
+                      isExpanded={expandedId === e.id}
+                      onToggleExpand={toggleExpand}
+                      onEdit={handleEdit}
+                      onComplete={handleComplete}
+                      onUpdate={handleUpdate}
+                      onDelete={handleDelete}
+                      onSuspend={handleSuspend}
+                      onResume={handleResume}
+                      onGcalSync={handleGcalSync}
+                      onGcalUnsync={handleGcalUnsync}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
