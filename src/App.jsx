@@ -16,6 +16,7 @@ import CouncilArea from './components/council/CouncilArea';
 import CouncilCreateModal from './components/council/CouncilCreateModal';
 import { listCouncilSessions } from './utils/councilApi';
 import HomePanel from './components/home/HomePanel';
+import TaskPanel from './components/tasks/TaskPanel';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState('home');
@@ -82,11 +83,7 @@ export default function App() {
         return <HomePanel setCurrentTab={handleTabChange} />;
 
       case 'calendar':
-        return (
-          <div className="flex-1 h-full flex items-center justify-center text-exo-muted/40 text-sm tracking-widest uppercase">
-            Task Panel — Coming Soon
-          </div>
-        );
+        return <TaskPanel openDestructor={openDestructor} />;
       
       case 'chat':
         if (activeFileProjectId) return <ProjectFilesArea projectId={activeFileProjectId} projects={projects} openDestructor={openDestructor} />;
