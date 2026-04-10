@@ -104,7 +104,7 @@ export default function MiniCalendar({ selectedDate, onSelectDate, entries = [] 
                 isSelected
                   ? 'bg-exo-accent/20 text-exo-accent'
                   : isToday
-                    ? 'border border-exo-gold/50 text-exo-text/80 hover:bg-white/5'
+                    ? 'border border-exo-accent/50 text-exo-text/80 hover:bg-white/5'
                     : 'text-exo-muted/50 hover:bg-white/5',
               ].join(' ')}
             >

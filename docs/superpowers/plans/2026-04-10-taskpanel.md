@@ -141,7 +141,7 @@ export default function MiniCalendar({ selectedDate, onSelectDate, entries = [] 
                 isSelected
                   ? 'bg-exo-accent/20 text-exo-accent'
                   : isToday
-                    ? 'border border-exo-gold/50 text-exo-text/80 hover:bg-white/5'
+                    ? 'border border-exo-accent/50 text-exo-text/80 hover:bg-white/5'
                     : 'text-exo-muted/50 hover:bg-white/5',
               ].join(' ')}
             >
@@ -447,8 +447,8 @@ Replace the entire contents inside `{/* Task list */}` div (currently the loadin
             <>
               {/* 📌 Pinned */}
               {pinned.length > 0 && (
-                <div className="mx-4 mt-4 border border-exo-gold/30 bg-exo-gold/[0.04] rounded-xl overflow-hidden">
-                  <div className="px-4 pt-3 pb-1 text-[9px] uppercase tracking-widest text-exo-gold/50">
+                <div className="mx-4 mt-4 border border-exo-accent/30 bg-exo-accent/[0.04] rounded-xl overflow-hidden">
+                  <div className="px-4 pt-3 pb-1 text-[9px] uppercase tracking-widest text-exo-accent/50">
                     📌 置顶 / Escalated
                   </div>
                   {pinned.map(e => (
