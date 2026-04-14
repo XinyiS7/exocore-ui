@@ -172,8 +172,7 @@ const ConversationList = ({
         </div>
       </div>
 
-      <div className={`flex-1 overflow-y-auto custom-scrollbar ${isMainView ? 'max-w-4xl mx-auto w-full px-6' : 'px-4'}`}>
-        <div className="pb-10 space-y-6">
+      <div className={`flex-1 flex flex-col overflow-hidden min-h-0 ${isMainView ? 'max-w-4xl mx-auto w-full px-6' : 'px-4'}`}>
           
           {mode === 'chat' && (
             <>
@@ -287,7 +286,6 @@ const ConversationList = ({
               <p className="text-[10px] uppercase tracking-[0.3em] font-light leading-relaxed">No Nodes Found<br/>Check Connection</p>
             </div>
           )}
-        </div>
       </div>
     </div>
   );
