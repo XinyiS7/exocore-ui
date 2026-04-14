@@ -179,7 +179,7 @@ export default function App() {
   };
 
   return (
-    <div className="w-full h-[100dvh] bg-noise text-exo-text font-sans flex overflow-hidden relative">
+    <div className="w-full h-[100dvh] bg-noise text-exo-text font-sans flex overflow-hidden relative selection:bg-exo-accent/30 selection:text-white pt-safe pb-safe">
       
       {/* Modals */}
       <DestructorModal {...destructorConfig} onClose={() => setDestructorConfig(p => ({...p, isOpen: false}))} />
@@ -227,14 +227,22 @@ export default function App() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 relative h-full">
         
-        {/* Mobile Header Toggle */}
-        <div className="md:hidden h-14 border-b border-white/5 flex items-center px-4 shrink-0 bg-[#05060A]/40 backdrop-blur-md justify-between">
+        {/* Mobile Header Toggle (Hidden in standalone mode) */}
+        <div className="md:hidden h-14 border-b border-white/5 flex items-center px-4 shrink-0 bg-[#05060A]/40 backdrop-blur-md justify-between standalone:hidden">
           <button onClick={() => setIsSidebarExpanded(true)} className="p-2 text-exo-muted hover:text-exo-accent transition-colors">
             <Menu size={20} />
           </button>
-          <div className="text-exo-accent font-bold tracking-widest text-xs uppercase">ExoCore</div>
+          <div className="text-exo-accent font-bold tracking-widest text-xs uppercase font-mono">ExoCore</div>
           <div className="w-10" /> {/* Spacer */}
         </div>
+
+        {/* Floating Menu Toggle for Standalone/Clean mode */}
+        <button 
+          onClick={() => setIsSidebarExpanded(true)} 
+          className="md:hidden fixed bottom-6 right-6 z-[100] w-12 h-12 rounded-full bg-exo-accent/10 border border-exo-accent/30 text-exo-accent flex items-center justify-center backdrop-blur-md shadow-[0_0_20px_rgba(212,175,55,0.2)] active:scale-95 transition-all standalone:flex hidden"
+        >
+          <Menu size={24} />
+        </button>
 
         <div className="flex-1 flex flex-row overflow-hidden relative">
           

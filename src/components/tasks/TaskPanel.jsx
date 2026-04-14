@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Filter, X } from 'lucide-react';
 import MiniCalendar from './MiniCalendar';
 import TaskCreateModal from './TaskCreateModal';
 import TaskRow from './TaskRow';
@@ -38,6 +38,7 @@ export default function TaskPanel({ openDestructor }) {
   const [statusFilter, setStatusFilter] = useState('active');
   const [expandedId,   setExpandedId]   = useState(null);
   const [modalEntry,   setModalEntry]   = useState(null); // null=closed, {}=create, entry=edit
+  const [showSidebar,  setShowSidebar]  = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -89,73 +90,101 @@ export default function TaskPanel({ openDestructor }) {
   });
 
   return (
-    <div className="flex h-full overflow-hidden">
-      {/* ── Left sidebar ── */}
-      <div className="w-[220px] flex-shrink-0 bg-exo-panel border-r border-exo-border flex flex-col overflow-y-auto">
-        <MiniCalendar
-          selectedDate={selectedDate}
-          onSelectDate={setSelectedDate}
-          entries={entries}
-        />
+    <div className="flex h-full overflow-hidden relative">
+      {/* Sidebar Overlay for Mobile */}
+      <div 
+        className={`lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] transition-opacity duration-300 ${showSidebar ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        onClick={() => setShowSidebar(false)}
+      />
 
-        {/* Type filter */}
-        <div className="px-4 py-3 border-t border-white/5">
-          <div className="text-[9px] uppercase tracking-widest text-exo-muted/30 mb-2">Type</div>
-          {TYPE_TABS.map(t => (
-            <button
-              key={t.value}
-              onClick={() => setTypeFilter(t.value)}
-              className={[
-                'flex items-center gap-2 w-full text-xs py-1.5 px-2 rounded-lg transition-colors text-left',
-                typeFilter === t.value
-                  ? 'text-exo-accent bg-exo-accent/10'
-                  : 'text-exo-muted/50 hover:text-exo-muted hover:bg-white/5',
-              ].join(' ')}
-            >
-              <span className={[
-                'w-1.5 h-1.5 rounded-full flex-shrink-0',
-                typeFilter === t.value ? 'bg-exo-accent' : 'bg-exo-muted/20',
-              ].join(' ')} />
-              {t.label}
-            </button>
-          ))}
+      {/* ── Left sidebar ── */}
+      <div className={`
+        fixed lg:relative inset-y-0 left-0 w-[260px] lg:w-[220px] bg-exo-panel border-r border-exo-border flex flex-col z-[100] transition-transform duration-300 ease-out
+        ${showSidebar ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        <div className="flex items-center justify-between px-4 py-4 lg:hidden">
+          <span className="text-xs font-bold text-exo-accent tracking-widest uppercase">Filters</span>
+          <button onClick={() => setShowSidebar(false)} className="p-1 text-exo-muted hover:text-white">
+            <X size={18} />
+          </button>
         </div>
 
-        {/* Status filter */}
-        <div className="px-4 py-3 border-t border-white/5">
-          <div className="text-[9px] uppercase tracking-widest text-exo-muted/30 mb-2">Status</div>
-          {STATUS_OPTS.map(s => (
-            <button
-              key={s.value}
-              onClick={() => setStatusFilter(s.value)}
-              className={[
-                'flex items-center gap-2 w-full text-xs py-1.5 px-2 rounded-lg transition-colors text-left',
-                statusFilter === s.value
-                  ? 'text-exo-accent bg-exo-accent/10'
-                  : 'text-exo-muted/50 hover:text-exo-muted hover:bg-white/5',
-              ].join(' ')}
-            >
-              <span className={[
-                'w-1.5 h-1.5 rounded-full flex-shrink-0',
-                statusFilter === s.value ? 'bg-exo-accent' : 'bg-exo-muted/20',
-              ].join(' ')} />
-              {s.label}
-            </button>
-          ))}
+        <div className="flex-1 overflow-y-auto">
+          <MiniCalendar
+            selectedDate={selectedDate}
+            onSelectDate={(date) => { setSelectedDate(date); if(window.innerWidth < 1024) setShowSidebar(false); }}
+            entries={entries}
+          />
+
+          {/* Type filter */}
+          <div className="px-4 py-3 border-t border-white/5">
+            <div className="text-[9px] uppercase tracking-widest text-exo-muted/30 mb-2">Type</div>
+            {TYPE_TABS.map(t => (
+              <button
+                key={t.value}
+                onClick={() => setTypeFilter(t.value)}
+                className={[
+                  'flex items-center gap-2 w-full text-xs py-1.5 px-2 rounded-lg transition-colors text-left',
+                  typeFilter === t.value
+                    ? 'text-exo-accent bg-exo-accent/10'
+                    : 'text-exo-muted/50 hover:text-exo-muted hover:bg-white/5',
+                ].join(' ')}
+              >
+                <span className={[
+                  'w-1.5 h-1.5 rounded-full flex-shrink-0',
+                  typeFilter === t.value ? 'bg-exo-accent' : 'bg-exo-muted/20',
+                ].join(' ')} />
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Status filter */}
+          <div className="px-4 py-3 border-t border-white/5">
+            <div className="text-[9px] uppercase tracking-widest text-exo-muted/30 mb-2">Status</div>
+            {STATUS_OPTS.map(s => (
+              <button
+                key={s.value}
+                onClick={() => setStatusFilter(s.value)}
+                className={[
+                  'flex items-center gap-2 w-full text-xs py-1.5 px-2 rounded-lg transition-colors text-left',
+                  statusFilter === s.value
+                    ? 'text-exo-accent bg-exo-accent/10'
+                    : 'text-exo-muted/50 hover:text-exo-muted hover:bg-white/5',
+                ].join(' ')}
+              >
+                <span className={[
+                  'w-1.5 h-1.5 rounded-full flex-shrink-0',
+                  statusFilter === s.value ? 'bg-exo-accent' : 'bg-exo-muted/20',
+                ].join(' ')} />
+                {s.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* ── Right pane ── */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden bg-noise">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 flex-shrink-0">
-          <span className="text-[10px] uppercase tracking-[0.2em] text-exo-muted/40">· · Chronos System · ·</span>
+        <div className="flex items-center justify-between px-4 lg:px-6 py-4 border-b border-white/5 flex-shrink-0 bg-[#05060A]/40 backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setShowSidebar(true)}
+              className="lg:hidden p-2 -ml-2 text-exo-muted hover:text-exo-accent transition-colors"
+            >
+              <Filter size={18} />
+            </button>
+            <span className="text-[10px] uppercase tracking-[0.2em] text-exo-muted/40 font-mono">· · Chronos System · ·</span>
+          </div>
+          
           <button
             onClick={() => setModalEntry({})}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-exo-border/60 rounded-xl text-exo-muted/50 hover:text-exo-accent hover:border-exo-accent/30 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-exo-border/60 rounded-xl text-exo-muted/50 hover:text-exo-accent hover:border-exo-accent/30 transition-all bg-white/5"
           >
             <Plus size={12} />
-            新建任务
+            <span className="hidden sm:inline">新建任务</span>
+            <span className="sm:hidden">新建</span>
           </button>
         </div>
 
@@ -174,10 +203,10 @@ export default function TaskPanel({ openDestructor }) {
           )}
 
           {!loading && filtered.length > 0 && (
-            <>
+            <div className="pb-20 lg:pb-8">
               {/* 📌 Pinned */}
               {pinned.length > 0 && (
-                <div className="mx-4 mt-4 border border-exo-accent/30 bg-exo-accent/[0.04] rounded-xl overflow-hidden">
+                <div className="mx-4 mt-4 border border-exo-accent/30 bg-exo-accent/[0.04] rounded-xl overflow-hidden shadow-[0_0_20px_rgba(212,175,55,0.05)]">
                   <div className="px-4 pt-3 pb-1 text-[9px] uppercase tracking-widest text-exo-accent/50">
                     📌 置顶 / Escalated
                   </div>
@@ -202,7 +231,7 @@ export default function TaskPanel({ openDestructor }) {
 
               {/* Todo */}
               {todos.length > 0 && (
-                <div>
+                <div className="mt-4">
                   <SectionHeader label="Todo" />
                   {todos.map(e => (
                     <TaskRow
@@ -225,7 +254,7 @@ export default function TaskPanel({ openDestructor }) {
 
               {/* 周期任务 */}
               {periodic.length > 0 && (
-                <div>
+                <div className="mt-4">
                   <SectionHeader label="周期任务" />
                   {periodic.map(e => (
                     <TaskRow
@@ -248,7 +277,7 @@ export default function TaskPanel({ openDestructor }) {
 
               {/* 目标 */}
               {goals.length > 0 && (
-                <div>
+                <div className="mt-4">
                   <SectionHeader label="目标" />
                   {goals.map(e => (
                     <TaskRow
@@ -268,7 +297,7 @@ export default function TaskPanel({ openDestructor }) {
                   ))}
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
       </div>

@@ -30,6 +30,16 @@
     background-size: 150px 150px, 30px 30px, 30px 30px;
     background-position: 0 0, 0 0, 0 0;
   }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .px-safe {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
 }
 
 @layer components {

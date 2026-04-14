@@ -55,5 +55,8 @@ export default {
   },
   plugins: [
     typography,
+    ({ addVariant }) => {
+      addVariant('standalone', '@media (display-mode: standalone)');
+    },
   ],
 }
