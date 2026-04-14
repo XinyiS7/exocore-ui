@@ -188,6 +188,63 @@ const ConversationList = ({
                 </div>
               )}
 
+              {/* Projects Zone */}
+              {sortedProjects.length > 0 && (
+                <div className="flex flex-col overflow-hidden max-h-[40%] shrink-0">
+                  <div className="text-[10px] font-bold text-exo-muted/40 flex items-center gap-2 uppercase tracking-[0.2em] px-2 pt-3 pb-1.5 shrink-0">
+                    <Box size={12} /> Project Repositories
+                  </div>
+                  <div className="overflow-y-auto custom-scrollbar flex-1 min-h-0 pb-2">
+                    <div className="grid gap-2">
+                      {visibleProjects.map(proj => {
+                        const isExpanded = expandedProjects.has(proj.id);
+                        const projSessions = conversations.filter(c => c.project === proj.id);
+                        return (
+                          <div key={proj.id} className="space-y-2">
+                            <div
+                              onClick={() => toggleProject(proj.id)}
+                              className={`flex items-center gap-4 p-3 rounded-2xl cursor-pointer transition-all border ${isExpanded ? 'bg-white/5 border-white/10' : 'border-transparent hover:bg-white/[0.03]'}`}
+                            >
+                              <div className={`p-2 rounded-xl ${isExpanded ? 'bg-blue-500/10 text-blue-400' : 'bg-white/5 text-exo-muted'}`}>
+                                {isExpanded ? <FolderOpen size={18}/> : <Folder size={18}/>}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium truncate">{proj.name}</div>
+                                <div className="text-[10px] opacity-30 uppercase tracking-tighter">{projSessions.length} active nodes</div>
+                              </div>
+                              <ChevronRight size={14} className={`transition-transform opacity-30 ${isExpanded ? 'rotate-90' : ''}`} />
+                            </div>
+                            {isExpanded && (
+                              <div className="pl-6 space-y-1 border-l border-white/5 ml-6 animate-fade-in">
+                                <div
+                                  onClick={() => { setActiveFileProjectId(proj.id); setActiveSessionId(null); onClose(); }}
+                                  className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer text-xs font-bold tracking-tight transition-all ${
+                                    activeFileProjectId === proj.id
+                                      ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                                      : 'text-blue-400/60 hover:bg-blue-500/5 hover:text-blue-400'
+                                  }`}
+                                >
+                                  <Box size={14} /> ARCHIVE FILES
+                                </div>
+                                {projSessions.map(conv => <SessionItem key={conv.id} conv={conv} icon={Hash} />)}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {sortedProjects.length > 2 && (
+                      <button
+                        onClick={() => setShowAllProjects(p => !p)}
+                        className="text-[10px] text-exo-muted/40 hover:text-exo-muted transition-colors px-2 pt-1 pb-1"
+                      >
+                        {showAllProjects ? 'show less ↑' : 'show more projects...'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Standard Sessions */}
               {standardSessions.length > 0 && (
                 <div className="space-y-3">
@@ -234,7 +291,7 @@ const ConversationList = ({
             </div>
           )}
 
-          {(mode === 'project' || (mode === 'chat' && projects.length > 0)) && (
+          {mode === 'project' && (
              <div className="space-y-3">
                 <div className="text-[10px] font-bold text-exo-muted/40 flex items-center gap-2 uppercase tracking-[0.2em]">
                   <Box size={12} /> Project Repositories
