@@ -188,6 +188,11 @@ const ConversationList = ({
                 </div>
               )}
 
+              {/* Divider: G045 → Projects */}
+              {g045Sessions.length > 0 && sortedProjects.length > 0 && (
+                <div className="h-px bg-exo-border shrink-0" />
+              )}
+
               {/* Projects Zone */}
               {sortedProjects.length > 0 && (
                 <div className="flex flex-col overflow-hidden max-h-[40%] shrink-0">
@@ -243,11 +248,6 @@ const ConversationList = ({
                     )}
                   </div>
                 </div>
-              )}
-
-              {/* Divider: G045 → Projects */}
-              {g045Sessions.length > 0 && sortedProjects.length > 0 && (
-                <div className="h-px bg-exo-border shrink-0" />
               )}
 
               {/* Divider: Projects → Standard */}
