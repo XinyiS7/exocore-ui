@@ -178,11 +178,11 @@ const ConversationList = ({
             <>
               {/* G045 cognitively superior */}
               {g045Sessions.length > 0 && (
-                <div className="space-y-3">
-                  <div className="text-[10px] font-bold text-exo-accent/60 flex items-center gap-2 uppercase tracking-[0.2em]">
+                <div className="flex flex-col overflow-hidden max-h-[40%] shrink-0">
+                  <div className="text-[10px] font-bold text-exo-accent/60 flex items-center gap-2 uppercase tracking-[0.2em] px-2 pt-3 pb-1.5 shrink-0">
                     <Sparkles size={12} /> Superior Cognitive
                   </div>
-                  <div className="grid gap-1">
+                  <div className="overflow-y-auto custom-scrollbar grid gap-1 pb-2 min-h-0">
                     {g045Sessions.map(conv => <SessionItem key={conv.id} conv={conv} icon={Cpu} />)}
                   </div>
                 </div>
