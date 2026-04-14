@@ -75,6 +75,8 @@ const ConversationList = ({
     });
   }, [projects, conversations]);
 
+  const visibleProjects = showAllProjects ? sortedProjects : sortedProjects.slice(0, 2);
+
   const SessionItem = ({ conv, icon: Icon }) => (
     <div 
       onClick={() => setActiveSessionId(conv.id)} 
