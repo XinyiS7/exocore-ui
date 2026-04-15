@@ -5,30 +5,39 @@
 @layer base {
   body {
     font-family: 'Outfit', 'HarmonyOS Sans SC', 'MiSans', system-ui, sans-serif;
-    font-weight: 300;
-    color: #E0E7FF;
+    font-weight: 400;
+    color: #ffffff;
+    background-color: #0f0f0f;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     font-synthesis: none;
   }
+  
+  h1, h2, h3, h4, h5, h6 {
+    line-height: 0.87;
+    @apply font-display text-white;
+  }
+
   strong, b, th {
     font-weight: 500;
   }
   code, pre, kbd, samp {
     font-family: 'JetBrains Mono', ui-monospace, monospace;
+    letter-spacing: -0.28px;
   }
 }
 
 @layer utilities {
+  .leading-ultra-tight {
+    line-height: 0.87;
+  }
   .bg-noise {
-    background-color: #080A0F;
+    background-color: #0f0f0f;
     background-image: 
-      url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E"),
-      linear-gradient(rgba(255, 215, 0, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 215, 0, 0.03) 1px, transparent 1px);
-    background-size: 150px 150px, 30px 30px, 30px 30px;
-    background-position: 0 0, 0 0, 0 0;
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E"),
+      radial-gradient(circle at 50% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 70%);
+    background-attachment: fixed;
   }
   .pt-safe {
     padding-top: env(safe-area-inset-top);
@@ -43,95 +52,69 @@
 }
 
 @layer components {
-  /* Accent line top with layered glow */
-  .accent-line-top {
-    position: relative;
-    border-top: 1px solid rgba(255, 215, 0, 0.2);
+  /* Composio-style Containers */
+  .composio-card {
+    @apply bg-exo-pure border border-exo-mist-10 rounded-[4px] transition-all;
   }
-  .accent-line-top::after {
-    content: '';
-    position: absolute;
-    top: -1px; left: 0; right: 0; height: 1px;
-    background: white;
-    box-shadow: 0 0 4px #FFD700, 0 0 8px rgba(255, 215, 0, 0.4);
-    opacity: 0.8;
+  
+  .composio-card-hover {
+    @apply hover:border-exo-mist-20 hover:shadow-brutalist;
   }
 
-  /* Accent line bottom */
-  .accent-line-bottom {
-    position: relative;
-    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+  /* Accent Glows */
+  .glow-gold {
+    @apply relative;
   }
-  .accent-line-bottom::after {
+  .glow-gold::after {
     content: '';
-    position: absolute;
-    bottom: -1px; left: 0; right: 0; height: 1px;
-    background: white;
-    box-shadow: 0 0 4px #FFD700, 0 0 8px rgba(255, 215, 0, 0.4);
-    opacity: 0.8;
+    @apply absolute inset-0 bg-exo-accent opacity-0 blur-xl transition-opacity pointer-events-none;
+    z-index: -1;
+  }
+  .glow-gold:hover::after {
+    @apply opacity-10;
   }
 
-  /* Active indicator - Sharp white core + gold halo */
+  /* Active indicator - Sharp Core */
   .accent-indicator {
-    border-left: 2px solid #FFD700;
-    background: linear-gradient(90deg, rgba(255, 215, 0, 0.1) 0%, transparent 100%);
+    border-left: 2px solid #d4af37;
+    background: linear-gradient(90deg, rgba(212, 175, 55, 0.08) 0%, transparent 100%);
     position: relative;
   }
-  .accent-indicator::before {
-    content: '';
-    position: absolute;
-    left: -2px; top: 0; bottom: 0; width: 1px;
-    background: white;
-    box-shadow: 0 0 6px #FFD700;
-    z-index: 10;
-  }
 
-  /* New light-line utility for borders/lines */
-  .light-line {
-    box-shadow: 0 0 0 1px rgba(255, 215, 0, 0.1), 0 0 0 1.5px rgba(255, 255, 255, 0.7) inset, 0 0 10px rgba(255, 215, 0, 0.3);
-  }
-
-  /* Label Caps */
+  /* Label Caps (Small tags) */
   .label-caps {
-    font-family: 'Outfit', system-ui, sans-serif;
-    letter-spacing: 0.14em;
-    font-size: 0.68rem;
-    text-transform: uppercase;
-    font-weight: 200;
+    @apply font-mono text-[11px] tracking-[0.05em] uppercase font-medium text-exo-muted;
   }
 
   /* Hard Sci-Fi Textures */
   .glass-panel {
-    background-color: rgba(18, 21, 29, 0.6);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(45, 52, 70, 0.8);
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+    @apply bg-exo-pure/80 backdrop-blur-md border border-exo-mist-10;
   }
 
   .lcd-screen {
-    background-color: #05060A;
+    @apply bg-exo-pure border border-exo-mist-10 font-mono;
     background-image: repeating-linear-gradient(
       0deg,
       transparent,
       transparent 1px,
-      rgba(255, 215, 0, 0.02) 1px,
-      rgba(255, 215, 0, 0.02) 2px
+      rgba(212, 175, 55, 0.01) 1px,
+      rgba(212, 175, 55, 0.01) 2px
     );
-    border: 1px solid #1A1E29;
-    box-shadow: inset 0 0 20px rgba(255, 215, 0, 0.03);
-    font-family: 'JetBrains Mono', monospace;
   }
 
-  .btn-physical {
-    background-color: #1A1E29;
-    border: 1px solid #2D3446;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.5);
-    transition: all 0.1s ease;
+  /* Primary Button (White Fill) */
+  .btn-primary {
+    @apply bg-white text-[#111121] px-6 py-2 rounded-[4px] font-medium transition-all hover:opacity-90 active:scale-95;
   }
-  
-  .btn-physical:active {
-    transform: translateY(1px);
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.8), 0 1px 1px rgba(255, 255, 255, 0.05);
+
+  /* Gold Glow Button (Cyan replacement) */
+  .btn-gold-glow {
+    @apply bg-exo-accent/12 text-white border border-exo-accent/40 px-6 py-2 rounded-[4px] transition-all hover:bg-exo-accent/20 hover:shadow-glow-gold;
+  }
+
+  /* Ghost Button */
+  .btn-ghost {
+    @apply bg-transparent text-white border border-exo-mist-20 px-4 py-2 rounded-[4px] transition-all hover:bg-white/5;
   }
 }
 
@@ -146,29 +129,11 @@
 }
 
 ::-webkit-scrollbar-thumb {
-    background: rgba(255, 215, 0, 0.3);
-    border-radius: 0px;
+    @apply bg-exo-mist-20;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 215, 0, 0.6);
-}
-
-::-webkit-scrollbar-button:single-button {
-    background-color: transparent;
-    display: block;
-    height: 8px;
-    width: 4px;
-    background-repeat: no-repeat;
-    background-position: center;
-}
-
-::-webkit-scrollbar-button:single-button:vertical:decrement {
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><path d='M20 70 L50 40 L80 70' fill='none' stroke='rgba(255,215,0,0.3)' stroke-width='10'/></svg>");
-}
-
-::-webkit-scrollbar-button:single-button:vertical:increment {
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><path d='M20 30 L50 60 L80 30' fill='none' stroke='rgba(255,215,0,0.3)' stroke-width='10'/></svg>");
+    @apply bg-exo-accent/40;
 }
 
 .scrollbar-hide::-webkit-scrollbar {

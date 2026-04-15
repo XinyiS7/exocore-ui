@@ -1,21 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Activity } from 'lucide-react';
 import { baseUrl } from '../../utils/api';
 import MessageBubble from '../chat/MessageBubble';
 
 // Read-only conversation view that supports live SSE stream overlays.
-// Props:
-//   conversationId  — the Django conversation ID to fetch history from
-//   streamBuffer    — { content: string, reasoning: string, done: boolean } | null
-//   agentName       — display name for the AI messages
-//   agentAvatarUrl  — avatar URL for the agent
-//   userNick        — display name for user
-//   userAvatarUrl   — avatar URL for user
-//   isStreaming     — boolean, whether a stream is currently active
-//   refetchTrigger  — increment to force re-fetch after stream completes
-
-// assistantOnly — when true, hide user/human messages (used in group chat to avoid repeating the topic)
-// noScroll     — when true, render as a plain block (no overflow-y-auto); parent handles scrolling
 const CouncilStreamView = ({ conversationId, streamBuffer, agentName, agentAvatarUrl, userNick, userAvatarUrl, isStreaming, refetchTrigger, assistantOnly, noScroll }) => {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -57,17 +45,17 @@ const CouncilStreamView = ({ conversationId, streamBuffer, agentName, agentAvata
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center text-exo-muted">
-        <Loader2 size={20} className="animate-spin mr-2" />
-        <span className="text-sm">载入中...</span>
+      <div className="flex flex-col items-center justify-center py-10 opacity-30">
+        <Loader2 size={16} className="animate-spin mb-2" />
+        <span className="text-[10px] font-mono uppercase tracking-widest">Accessing Log Cluster...</span>
       </div>
     );
   }
 
   return (
-    <div ref={noScroll ? undefined : scrollRef} className={noScroll ? 'space-y-4' : 'flex-1 overflow-y-auto px-4 py-4 space-y-4 scrollbar-hide'}>
+    <div ref={noScroll ? undefined : scrollRef} className={noScroll ? 'space-y-6' : 'flex-1 overflow-y-auto px-4 py-8 space-y-8 scrollbar-hide'}>
       {displayMessages.length === 0 && !isStreaming && (
-        <div className="flex items-center justify-center h-full text-exo-muted/40 text-sm">暂无消息</div>
+        <div className="flex items-center justify-center py-6 text-exo-muted/30 font-mono text-[10px] uppercase tracking-widest italic">No neural trace detected</div>
       )}
       {displayMessages.map((msg, idx) => (
         <MessageBubble
@@ -80,9 +68,9 @@ const CouncilStreamView = ({ conversationId, streamBuffer, agentName, agentAvata
         />
       ))}
       {isStreaming && !(streamBuffer?.content) && (
-        <div className="flex items-center gap-2 text-exo-accent/60 text-xs pl-10">
-          <span className="w-1.5 h-1.5 rounded-full bg-exo-accent animate-pulse inline-block" />
-          正在生成...
+        <div className="flex items-center gap-3 text-exo-accent/60 text-[10px] font-mono uppercase tracking-[0.2em] pl-16 animate-pulse">
+          <Activity size={12} />
+          Establishing Output Stream...
         </div>
       )}
       <div ref={messagesEndRef} />

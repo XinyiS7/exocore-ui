@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Activity, Save } from 'lucide-react';
+import { ArrowLeft, Activity, Save, Database, History } from 'lucide-react';
 import { baseUrl, getCsrfToken } from '../../utils/api';
 
 const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack }) => {
@@ -41,80 +41,116 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
         }),
       });
       const json = await res.json();
-      setSaveMsg(json.msg || (res.ok ? '保存成功' : '保存失败'));
+      setSaveMsg(json.msg || (res.ok ? 'SUCCESS' : 'FAILURE'));
     } catch {
-      setSaveMsg('网络错误');
+      setSaveMsg('NETWORK_ERROR');
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center gap-3 p-4 border-b border-exo-border shrink-0">
-        <button onClick={onBack} className="p-1.5 text-exo-muted hover:text-white transition-colors rounded hover:bg-white/5">
-          <ArrowLeft size={16} />
+    <div className="flex flex-col h-full bg-exo-bg bg-noise animate-fade-in">
+      {/* Header */}
+      <div className="flex items-center gap-4 px-6 h-16 border-b border-exo-mist-10 bg-exo-pure/40 backdrop-blur-md shrink-0">
+        <button onClick={onBack} className="p-2 -ml-2 text-exo-muted hover:text-white transition-all hover:bg-white/5 rounded-[2px]">
+          <ArrowLeft size={18} />
         </button>
         <div className="flex flex-col overflow-hidden">
-          <span className="text-sm font-semibold text-exo-text">编辑摘要</span>
-          <span className="text-[10px] text-exo-muted truncate">{conversationName}</span>
+          <div className="flex items-center gap-2">
+            <Database size={14} className="text-exo-accent" />
+            <span className="text-[13px] font-bold text-white uppercase tracking-[0.2em] font-display">Refine Neural Summary / 摘要优化</span>
+          </div>
+          <span className="text-[9px] text-exo-muted font-mono uppercase tracking-widest opacity-40 mt-0.5 truncate">Source: {conversationName}</span>
         </div>
       </div>
+
       <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
-        <div className="flex-1 min-w-0 overflow-y-auto p-4 space-y-4 border-b md:border-b-0 md:border-r border-exo-border">
-          <div>
-            <label className="block text-[10px] font-bold text-exo-muted uppercase tracking-widest mb-1">摘要内容</label>
+        {/* Left: Edit Form */}
+        <div className="flex-1 min-w-0 overflow-y-auto p-6 space-y-8 border-b md:border-b-0 md:border-r border-exo-mist-10 scrollbar-hide">
+          <div className="space-y-3">
+            <label className="label-caps opacity-50">Abstract Content / 摘要内容</label>
             <textarea
-              rows={8}
-              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-accent/50 resize-none transition-colors"
+              rows={10}
+              className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-5 py-4 text-[14px] text-white font-mono focus:border-exo-accent/40 outline-none transition-all resize-none leading-relaxed"
               value={content}
               onChange={e => setContent(e.target.value)}
+              placeholder="INPUT CONSOLIDATED PERSPECTIVE..."
             />
           </div>
-          <div>
-            <label className="block text-[10px] font-bold text-exo-muted uppercase tracking-widest mb-1">关键词（逗号分隔）</label>
+
+          <div className="space-y-3">
+            <label className="label-caps opacity-50">Taxonomy Tags / 关键词 (COMMA SEPARATED)</label>
             <input
-              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-accent/50 transition-colors"
+              className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-5 py-2.5 text-sm text-white font-mono focus:border-exo-accent/40 outline-none transition-all uppercase placeholder:opacity-20"
               value={keywords}
               onChange={e => setKeywords(e.target.value)}
+              placeholder="EG: ARCHITECTURE, DESIGN, VOID..."
             />
-            <div className="mt-2 flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2 pt-1">
               {keywords.split(',').map(k => k.trim()).filter(Boolean).map((kw, i) => (
-                <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-exo-accent/10 border border-exo-accent/20 text-exo-accent/80">{kw}</span>
+                <span key={i} className="text-[9px] font-bold px-2 py-0.5 rounded-[2px] bg-exo-accent/5 border border-exo-accent/20 text-exo-accent/70 uppercase tracking-tighter">{kw}</span>
               ))}
             </div>
           </div>
-          <div className="flex items-center justify-between">
-            {saveMsg ? <span className="text-xs text-exo-accent/80">{saveMsg}</span> : <span />}
+
+          <div className="flex items-center justify-between pt-4 border-t border-exo-mist-6">
+            <div className="flex-1">
+              {saveMsg && (
+                <span className={`text-[10px] font-mono font-bold uppercase tracking-widest ${saveMsg.includes('SUCCESS') ? 'text-exo-accent' : 'text-red-500'}`}>
+                  &gt;&gt; STATUS: {saveMsg}
+                </span>
+              )}
+            </div>
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className="px-5 py-2 bg-exo-accent/10 text-exo-accent hover:bg-exo-accent hover:text-black border border-exo-accent/30 rounded-lg text-sm font-bold flex items-center gap-2 transition-all disabled:opacity-50"
+              className="px-8 py-2 bg-white text-exo-pure rounded-[2px] text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-exo-accent transition-all shadow-brutalist active:scale-95 disabled:opacity-30 flex items-center gap-3"
             >
               {isSaving ? <Activity size={14} className="animate-spin" /> : <Save size={14} />}
-              {isSaving ? 'SAVING...' : 'SAVE'}
+              {isSaving ? 'COMMITTING...' : 'COMMIT TO CORE'}
             </button>
           </div>
         </div>
-        <div className="flex-1 min-w-0 overflow-y-auto p-4">
-          <div className="text-[10px] font-bold text-exo-muted uppercase tracking-widest mb-3">
-            原始消息片段 ({proposal?.start_index ?? '?'} – {proposal?.end_index ?? '?'})
+
+        {/* Right: Original Context */}
+        <div className="flex-1 min-w-0 overflow-y-auto p-6 bg-black/20 scrollbar-hide">
+          <div className="flex items-center gap-2 mb-6 opacity-40">
+            <History size={14} />
+            <h3 className="text-[10px] font-bold text-white uppercase tracking-[0.2em] font-mono">
+              Neural Trace Context ({proposal?.start_index ?? '?'} – {proposal?.end_index ?? '?'})
+            </h3>
           </div>
+
           {isLoadingMsgs ? (
-            <div className="text-center py-8 text-exo-muted text-sm">加载中...</div>
+            <div className="flex flex-col items-center justify-center py-20 opacity-30">
+              <Activity size={24} className="animate-spin mb-4" />
+              <span className="text-[10px] font-mono uppercase tracking-widest">Reconstructing Stream...</span>
+            </div>
           ) : originalMessages?.length ? (
-            <div className="space-y-3">
+            <div className="space-y-6">
               {originalMessages.map((msg, i) => (
-                <div key={i} className={`flex flex-col gap-0.5 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                  <span className="text-[9px] text-exo-muted/60 px-1 uppercase">{msg.role}</span>
-                  <div className={`max-w-[90%] px-3 py-2 rounded-lg text-xs leading-relaxed ${msg.role === 'user' ? 'bg-exo-accent/10 text-exo-text border border-exo-accent/20' : 'bg-white/5 text-exo-muted border border-white/10'}`}>
+                <div key={i} className={`flex flex-col gap-2 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                  <div className="flex items-center gap-2 px-1 opacity-40">
+                    <span className="text-[9px] font-bold uppercase font-mono tracking-tighter">{msg.role}</span>
+                    <div className="w-1 h-1 rounded-full bg-white" />
+                  </div>
+                  <div className={`
+                    max-w-[92%] px-4 py-3 rounded-[2px] text-[13px] font-mono tracking-tight leading-relaxed border
+                    ${msg.role === 'user' 
+                      ? 'bg-white text-exo-pure border-white shadow-brutalist' 
+                      : 'bg-exo-pure text-white/80 border-exo-mist-10'
+                    }
+                  `}>
                     {typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)}
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-exo-muted/50 text-xs">暂无原始消息数据</div>
+            <div className="flex items-center justify-center py-20 opacity-20 italic">
+              <span className="text-[10px] font-mono uppercase tracking-widest">Trace data unavailable</span>
+            </div>
           )}
         </div>
       </div>

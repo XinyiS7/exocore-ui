@@ -40,8 +40,8 @@ const MemoryAnchorTicker = ({ anchors = [] }) => {
 
   if (anchors.length === 0) {
     return (
-      <div className="h-16 flex items-center justify-center border border-dashed border-exo-border rounded-lg bg-black/20 text-xs text-exo-muted font-mono">
-        <Activity size={12} className="mr-2 animate-pulse" /> Scanning Core Memories... [NULL]
+      <div className="h-16 flex items-center justify-center border border-dashed border-exo-mist-10 rounded-[2px] bg-black/20 text-[10px] text-exo-muted/40 font-mono uppercase tracking-widest">
+        <Activity size={12} className="mr-2 animate-pulse" /> Core Memory Scan: [NULL]
       </div>
     );
   }
@@ -51,29 +51,31 @@ const MemoryAnchorTicker = ({ anchors = [] }) => {
   const keywords = cleanPattern.split('|').map(k => k.trim()).filter(Boolean).slice(0, 2);
 
   return (
-    <div className="rounded-lg bg-[#0d0e12] border border-exo-border p-3 shadow-inner">
+    <div className="rounded-[2px] bg-black/40 border border-exo-mist-10 p-4 shadow-inner">
       <div className={`transition-all duration-400 ${isFading ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1'}`}>
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <div className="flex flex-wrap gap-1 flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
             {keywords.map((kw, i) => (
-              <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded font-mono whitespace-nowrap ${
+              <span key={i} className={`text-[9px] px-2 py-0.5 rounded-[2px] font-mono font-bold uppercase tracking-widest whitespace-nowrap ${
                 anchor.is_persistent
-                  ? 'bg-exo-accent/15 text-exo-accent border border-exo-accent/40'
-                  : 'bg-white/5 text-gray-300 border border-white/10'
+                  ? 'bg-exo-accent/15 text-exo-accent border border-exo-accent/30'
+                  : 'bg-white/5 text-exo-muted border border-exo-mist-10'
               }`}>
                 {kw}
               </span>
             ))}
           </div>
-          <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
-            {anchor.is_persistent && <ShieldAlert size={11} className="text-exo-accent" title="Persistent" />}
-            <span className="text-[10px] text-exo-muted font-mono bg-black/60 px-1.5 py-0.5 rounded border border-exo-border">
-              {anchor.current_weight.toFixed(2)}
+          <div className="flex items-center gap-2 shrink-0">
+            {anchor.is_persistent && <ShieldAlert size={10} className="text-exo-accent animate-pulse" title="Persistent Weight" />}
+            <span className="text-[9px] text-exo-muted font-mono bg-black px-1.5 py-0.5 rounded-[2px] border border-exo-mist-10 font-bold">
+              W:{anchor.current_weight.toFixed(2)}
             </span>
           </div>
         </div>
-        <div ref={noteRef} className="h-9 overflow-hidden">
-          <p className="text-[11px] text-gray-400 leading-relaxed">{anchor.essential_note}</p>
+        <div ref={noteRef} className="h-10 overflow-hidden">
+          <p className="text-[11px] text-white/50 leading-relaxed font-mono tracking-tight italic">
+            "{anchor.essential_note}"
+          </p>
         </div>
       </div>
     </div>

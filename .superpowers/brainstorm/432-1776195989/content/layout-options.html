@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>ConversationList 布局方案</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0b0f;
+    color: #e2e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 32px 24px;
+    min-height: 100vh;
+  }
+  h1 { font-size: 14px; letter-spacing: 0.2em; text-transform: uppercase; color: #d4af37; margin-bottom: 6px; }
+  .subtitle { font-size: 12px; color: #818190; margin-bottom: 32px; }
+  .options-row {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .option-wrap {
+    flex: 1;
+    min-width: 220px;
+    max-width: 280px;
+    cursor: pointer;
+    border-radius: 16px;
+    border: 2px solid transparent;
+    padding: 16px;
+    transition: border-color 0.2s, background 0.2s;
+    background: #0f1014;
+  }
+  .option-wrap:hover { border-color: #d4af3740; background: #12131a; }
+  .option-wrap.selected { border-color: #d4af37; background: #d4af370d; }
+  .option-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: #d4af37;
+    margin-bottom: 12px;
+    font-weight: 700;
+  }
+  .option-title {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #e2e8f0;
+  }
+  .option-desc {
+    font-size: 11px;
+    color: #818190;
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+
+  /* Sidebar mockup */
+  .sidebar-mock {
+    width: 100%;
+    height: 520px;
+    border-radius: 12px;
+    border: 1px solid #1f2027;
+    background: #05060A;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    font-size: 11px;
+  }
+  .sb-header {
+    padding: 14px 14px 10px;
+    border-bottom: 1px solid #1f2027;
+    flex-shrink: 0;
+  }
+  .sb-header-title {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #d4af37;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .sb-search {
+    background: #ffffff0d;
+    border: 1px solid #ffffff0d;
+    border-radius: 8px;
+    padding: 5px 10px;
+    color: #818190;
+    font-size: 9px;
+    width: 100%;
+  }
+  /* Section */
+  .sb-section {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .sb-section-label {
+    font-size: 8px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 6px 14px 4px;
+    flex-shrink: 0;
+  }
+  .sb-section-scroll {
+    overflow-y: auto;
+    padding: 0 10px;
+    flex: 1;
+  }
+  .sb-section-scroll::-webkit-scrollbar { width: 3px; }
+  .sb-section-scroll::-webkit-scrollbar-track { background: transparent; }
+  .sb-section-scroll::-webkit-scrollbar-thumb { background: #1f2027; border-radius: 2px; }
+  .sb-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    margin-bottom: 2px;
+    color: #818190;
+    cursor: pointer;
+  }
+  .sb-item:hover { background: #ffffff0a; }
+  .sb-item.active { background: #d4af3715; color: #d4af37; border: 1px solid #d4af3730; }
+  .sb-item .icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    flex-shrink: 0;
+    background: #ffffff0a;
+  }
+  .sb-item.active .icon { background: #d4af3720; color: #d4af37; }
+  .sb-item-name { font-size: 10px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* Gold section */
+  .g045-label { color: #d4af3760; }
+  .g045-item .icon { background: #d4af3712; color: #d4af37; }
+  /* Project section */
+  .proj-label { color: #818190aa; }
+  .proj-item .icon { background: #3b82f610; color: #60a5fa; }
+  .proj-expand { padding-left: 28px; }
+  .proj-expand .sb-item { color: #818190; }
+  /* Standard section */
+  .std-label { color: #818190aa; }
+  /* Divider */
+  .sb-divider {
+    height: 1px;
+    background: #1f2027;
+    margin: 4px 10px;
+    flex-shrink: 0;
+  }
+  /* Show more button */
+  .show-more {
+    font-size: 9px;
+    color: #818190;
+    padding: 4px 14px 6px;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }
+  .show-more:hover { color: #e2e8f0; }
+
+  /* Option A specific: three flex zones stacked */
+  .opt-a .g045-zone {
+    max-height: 40%;
+    flex-shrink: 0;
+  }
+  .opt-a .std-zone {
+    flex: 1;
+    min-height: 0;
+  }
+  .opt-a .proj-zone {
+    max-height: 40%;
+    flex-shrink: 0;
+  }
+
+  /* Option B: G045 + projects stacked, standard below */
+  .opt-b .g045-zone {
+    max-height: 40%;
+    flex-shrink: 0;
+  }
+  .opt-b .proj-zone {
+    max-height: 40%;
+    flex-shrink: 0;
+  }
+  .opt-b .std-zone {
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* Option C: fixed CSS percentages */
+  .opt-c .g045-zone {
+    height: 40%;
+    flex-shrink: 0;
+  }
+  .opt-c .proj-zone {
+    height: 40%;
+    flex-shrink: 0;
+    border-top: 1px solid #1f202780;
+  }
+  .opt-c .std-zone {
+    height: 20%;
+    flex-shrink: 0;
+    border-top: 1px solid #1f202780;
+  }
+
+  /* Zone labels for illustration */
+  .zone-ruler {
+    font-size: 8px;
+    color: #d4af3755;
+    padding: 2px 14px;
+    flex-shrink: 0;
+    background: #d4af3706;
+    border-left: 2px solid #d4af3730;
+    margin: 2px 10px;
+    border-radius: 0 4px 4px 0;
+  }
+
+  /* Selection state */
+  .selection-bar {
+    margin-top: 20px;
+    padding: 10px 14px;
+    background: #d4af3710;
+    border: 1px solid #d4af3730;
+    border-radius: 8px;
+    font-size: 11px;
+    color: #d4af37;
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<h1>Conversation List 布局方案</h1>
+<p class="subtitle">三个区域的空间分配方式 — 点击选择你想要的方案</p>
+
+<div class="options-row">
+
+  <!-- Option A: G045 top, Standard middle (flex), Projects bottom -->
+  <div class="option-wrap" onclick="select('A', this)">
+    <div class="option-label">方案 A</div>
+    <div class="option-title">G045 顶 / 普通中间 / Projects 底部锚定</div>
+    <div class="option-desc">普通会话 flex-1 填充 G045 与 Projects 之间的剩余空间。Projects 底部固定，不随内容变化。</div>
+    <div class="sidebar-mock opt-a">
+      <div class="sb-header">
+        <div class="sb-header-title">⚡ Nodes Hub</div>
+        <div class="sb-search">Search active nodes...</div>
+      </div>
+      <!-- G045 zone max 40% -->
+      <div class="sb-section g045-zone">
+        <div class="sb-section-label g045-label">✦ Superior Cognitive</div>
+        <div class="zone-ruler">max 40% · 内部滚动</div>
+        <div class="sb-section-scroll">
+          <div class="sb-item g045-item active"><div class="icon">G</div><div class="sb-item-name">Athena Core Alpha</div></div>
+          <div class="sb-item g045-item"><div class="icon">G</div><div class="sb-item-name">Prometheus Node</div></div>
+          <div class="sb-item g045-item"><div class="icon">G</div><div class="sb-item-name">Synthesis Engine</div></div>
+          <div class="sb-item g045-item"><div class="icon">G</div><div class="sb-item-name">Deep Reason Core</div></div>
+          <div class="sb-item g045-item"><div class="icon">G</div><div class="sb-item-name">Vector Alpha</div></div>
+        </div>
+      </div>
+      <div class="sb-divider"></div>
+      <!-- Standard: flex-1 -->
+      <div class="sb-section std-zone">
+        <div class="sb-section-label std-label">⋯ Recent Links</div>
+        <div class="sb-section-scroll">
+          <div class="sb-item"><div class="icon">#</div><div class="sb-item-name">Daily Brief</div></div>
+          <div class="sb-item"><div class="icon">#</div><div class="sb-item-name">Research Thread</div></div>
+          <div class="sb-item"><div class="icon">#</div><div class="sb-item-name">Market Analysis</div></div>
+        </div>
+      </div>
+      <div class="sb-divider"></div>
+      <!-- Projects: max 40% bottom -->
+      <div class="sb-section proj-zone">
+        <div class="sb-section-label proj-label">◫ Project Repos</div>
+        <div class="zone-ruler">max 40% · 底部锚定</div>
+        <div class="sb-section-scroll">
+          <div class="sb-item proj-item"><div class="icon">▤</div><div class="sb-item-name">ExoCore UI</div></div>
+          <div class="sb-item proj-item"><div class="icon">▤</div><div class="sb-item-name">Neural Sync</div></div>
+          <div class="show-more">show more projects...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option B: G045 top, Projects second, Standard at bottom -->
+  <div class="option-wrap" onclick="select('B', this)">
+    <div class="option-label">方案 B</div>
+    <div class="option-title">G045 顶 / Projects 紧接 / 普通最下方</div>
+    <div class="option-desc">Projects 紧随 G045 之后（从 40% 处开始），普通会话在最下方 flex-1 填充剩余。</div>
+    <div class="sidebar-mock opt-b">
+      <div class="sb-header">
+        <div class="sb-header-title">⚡ Nodes Hub</div>
+        <div class="sb-search">Search active nodes...</div>
+      </div>
+      <div class="sb-section g045-zone">
+        <div class="sb-section-label g045-label">✦ Superior Cognitive</div>
+        <div class="zone-ruler">max 40% · 内部滚动</div>
+        <div class="sb-section-scroll">
+          <div class="sb-item g045-item active"><div class="icon">G</div><div class="sb-item-name">Athena Core Alpha</div></div>
+          <div class="sb-item g045-item"><div class="icon">G</div><div class="sb-item-name">Prometheus Node</div></div>
+          <div class="sb-item g045-item"><div class="icon">G</div><div class="sb-item-name">Synthesis Engine</div></div>
+          <div class="sb-item g045-item"><div class="icon">G</div><div class="sb-item-name">Deep Reason Core</div></div>
+          <div class="sb-item g045-item"><div class="icon">G</div><div class="sb-item-name">Vector Alpha</div></div>
+        </div>
+      </div>
+      <div class="sb-divider"></div>
+      <div class="sb-section proj-zone">
+        <div class="sb-section-label proj-label">◫ Project Repos</div>
+        <div class="zone-ruler">max 40% · 显示2个，内部滚动</div>
+        <div class="sb-section-scroll">
+          <div class="sb-item proj-item"><div class="icon">▤</div><div class="sb-item-name">ExoCore UI</div></div>
+          <div class="sb-item proj-item"><div class="icon">▤</div><div class="sb-item-name">Neural Sync</div></div>
+          <div class="show-more">show more projects...</div>
+        </div>
+      </div>
+      <div class="sb-divider"></div>
+      <div class="sb-section std-zone">
+        <div class="sb-section-label std-label">⋯ Recent Links</div>
+        <div class="sb-section-scroll">
+          <div class="sb-item"><div class="icon">#</div><div class="sb-item-name">Daily Brief</div></div>
+          <div class="sb-item"><div class="icon">#</div><div class="sb-item-name">Research Thread</div></div>
+          <div class="sb-item"><div class="icon">#</div><div class="sb-item-name">Market Analysis</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option C: Fixed 3-zone split: 40/20/40 -->
+  <div class="option-wrap" onclick="select('C', this)">
+    <div class="option-label">方案 C</div>
+    <div class="option-title">固定三段：40% / 20% / 40%</div>
+    <div class="option-desc">G045 固定占 40%，Projects 固定占底部 40%，普通会话固定在中间 20%（三段均独立滚动）。</div>
+    <div class="sidebar-mock opt-c">
+      <div class="sb-header">
+        <div class="sb-header-title">⚡ Nodes Hub</div>
+        <div class="sb-search">Search active nodes...</div>
+      </div>
+      <div class="sb-section g045-zone">
+        <div class="sb-section-label g045-label">✦ Superior Cognitive</div>
+        <div class="zone-ruler">固定 40%</div>
+        <div class="sb-section-scroll">
+          <div class="sb-item g045-item active"><div class="icon">G</div><div class="sb-item-name">Athena Core Alpha</div></div>
+          <div class="sb-item g045-item"><div class="icon">G</div><div class="sb-item-name">Prometheus Node</div></div>
+          <div class="sb-item g045-item"><div class="icon">G</div><div class="sb-item-name">Synthesis Engine</div></div>
+        </div>
+      </div>
+      <div class="sb-section std-zone">
+        <div class="sb-section-label std-label">⋯ Recent Links</div>
+        <div class="zone-ruler">固定 20%</div>
+        <div class="sb-section-scroll">
+          <div class="sb-item"><div class="icon">#</div><div class="sb-item-name">Daily Brief</div></div>
+          <div class="sb-item"><div class="icon">#</div><div class="sb-item-name">Research Thread</div></div>
+        </div>
+      </div>
+      <div class="sb-section proj-zone">
+        <div class="sb-section-label proj-label">◫ Project Repos</div>
+        <div class="zone-ruler">固定 40%</div>
+        <div class="sb-section-scroll">
+          <div class="sb-item proj-item"><div class="icon">▤</div><div class="sb-item-name">ExoCore UI</div></div>
+          <div class="sb-item proj-item"><div class="icon">▤</div><div class="sb-item-name">Neural Sync</div></div>
+          <div class="show-more">show more projects...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="selection-bar" id="sel-bar">已选择：<span id="sel-text"></span></div>
+
+<script>
+  let selected = null;
+  function select(choice, el) {
+    document.querySelectorAll('.option-wrap').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+    selected = choice;
+    document.getElementById('sel-bar').style.display = 'block';
+    document.getElementById('sel-text').textContent = '方案 ' + choice;
+    // write to events via postMessage for companion
+    if (window.parent) {
+      window.parent.postMessage({type:'choice', choice, text: '方案 ' + choice}, '*');
+    }
+  }
+</script>
+</body>
+</html>

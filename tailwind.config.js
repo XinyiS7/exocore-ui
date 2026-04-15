@@ -11,26 +11,42 @@ export default {
       fontFamily: {
         sans: ['Outfit', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+        display: ['Outfit', 'system-ui', 'sans-serif'],
+      },
+      lineHeight: {
+        'ultra-tight': '0.87',
+        'tight-1': '1.0',
+        'tight-12': '1.2',
       },
       colors: {
         exo: {
-          bg:      '#080A0F',
-          metal:   '#272a30',
-          panel:   '#1A1E29',
-          surface: '#232836',
-          border:  '#838387',
-          accent:  '#edd554', // Cold Bright Gold
-          accentDim: '#fbc015',
-          text:    '#E0E7FF',
-          muted:   '#b1b5c8',
+          bg:      '#0f0f0f', // Void Black
+          pure:    '#000000', // Pure Black
+          metal:   '#1a1a1a',
+          panel:   '#121212',
+          surface: '#181818',
+          border:  'rgba(255, 255, 255, 0.1)', // Border Mist 10
+          mist: {
+            4:  'rgba(255, 255, 255, 0.04)',
+            6:  'rgba(255, 255, 255, 0.06)',
+            8:  'rgba(255, 255, 255, 0.08)',
+            10: 'rgba(255, 255, 255, 0.10)',
+            12: 'rgba(255, 255, 255, 0.12)',
+            20: 'rgba(255, 255, 255, 0.20)',
+          },
+          accent:  '#d4af37', // Exo Gold
+          accentGlow: '#FFD700', // Electric Gold
+          text:    '#ffffff',
+          muted:   'rgba(255, 255, 255, 0.6)', // Ghost White
+          smoke:   '#444444',
         }
       },
       boxShadow: {
-        'glow-sharp': '0 0 1px #fff, 0 0 4px rgba(255, 215, 0, 0.8), 0 0 12px rgba(255, 215, 0, 0.4)',
-        'glow-subtle': '0 0 1px rgba(255, 255, 255, 0.5), 0 0 4px rgba(255, 215, 0, 0.3)',
+        'brutalist': '4px 4px 0px 0px rgba(0, 0, 0, 0.5)',
+        'brutalist-gold': '4px 4px 0px 0px #d4af37',
+        'glow-sharp': '0 0 1px #fff, 0 0 4px rgba(212, 175, 55, 0.8), 0 0 12px rgba(212, 175, 55, 0.4)',
+        'glow-gold': '0 0 20px rgba(212, 175, 55, 0.15)',
         'btn-physical': 'inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.5)',
-        'btn-physical-active': 'inset 0 1px 2px rgba(0, 0, 0, 0.8), 0 1px 1px rgba(255, 255, 255, 0.05)',
-        'glass-inset': 'inset 0 0 10px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(255, 215, 0, 0.05)',
       },
       keyframes: {
         'blink-sharp': {

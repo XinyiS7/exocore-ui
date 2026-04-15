@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Camera, X, Check } from 'lucide-react';
 
 const CROP_SIZE = 220;
 
@@ -120,57 +121,71 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }) => {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+      className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onCancel(); }}
     >
       <div
-        className="bg-exo-panel border border-exo-border rounded-2xl p-6 flex flex-col items-center gap-4"
-        style={{ width: CROP_SIZE + 60 }}
+        className="bg-exo-pure border border-exo-mist-10 rounded-[2px] p-6 flex flex-col items-center gap-6 shadow-[0_0_60px_rgba(0,0,0,0.5)]"
+        style={{ width: CROP_SIZE + 80 }}
         onClick={e => e.stopPropagation()}
       >
-        <div className="text-center">
-          <h3 className="text-sm font-bold text-exo-text uppercase tracking-widest">调整头像</h3>
-          <p className="text-[11px] text-exo-muted/60 mt-1">拖动调整位置 · 滚轮/双指缩放</p>
-        </div>
-
-        <div
-          ref={cropContainerRef}
-          className="relative rounded-full border-2 border-exo-accent/60 overflow-hidden cursor-move select-none bg-black"
-          style={{ width: CROP_SIZE, height: CROP_SIZE, flexShrink: 0, touchAction: 'none' }}
-        >
-          {/* Flex wrapper centers the image so transform: translate+scale works cleanly */}
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-            <img
-              ref={imgRef}
-              src={blobUrl || undefined}
-              onLoad={onImgLoad}
-              draggable={false}
-              style={{
-                display: 'block',
-                maxWidth: 'none',
-                maxHeight: 'none',
-                opacity: ready ? 1 : 0,
-                transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`,
-                transformOrigin: 'center center',
-                userSelect: 'none',
-                pointerEvents: 'none',
-              }}
-            />
+        <div className="w-full flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Camera size={16} className="text-exo-accent" />
+            <h3 className="text-[11px] font-bold text-white uppercase tracking-[0.2em] font-mono">Avatar Calibration</h3>
           </div>
+          <button onClick={onCancel} className="text-exo-muted hover:text-white transition-colors">
+            <X size={16} />
+          </button>
         </div>
 
-        <div className="flex gap-3 w-full">
+        <div className="relative p-1 bg-exo-bg border border-exo-mist-10 rounded-full shadow-inner">
+          <div
+            ref={cropContainerRef}
+            className="relative rounded-full overflow-hidden cursor-move select-none bg-black"
+            style={{ width: CROP_SIZE, height: CROP_SIZE, flexShrink: 0, touchAction: 'none' }}
+          >
+            {/* Flex wrapper centers the image so transform: translate+scale works cleanly */}
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+              <img
+                ref={imgRef}
+                src={blobUrl || undefined}
+                onLoad={onImgLoad}
+                draggable={false}
+                style={{
+                  display: 'block',
+                  maxWidth: 'none',
+                  maxHeight: 'none',
+                  opacity: ready ? 1 : 0,
+                  transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`,
+                  transformOrigin: 'center center',
+                  userSelect: 'none',
+                  pointerEvents: 'none',
+                }}
+              />
+            </div>
+          </div>
+          {/* Static Overlay Circle */}
+          <div className="absolute inset-0 rounded-full border border-exo-accent/40 pointer-events-none shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]" />
+        </div>
+
+        <div className="text-center space-y-1">
+          <p className="text-[10px] text-exo-muted font-mono uppercase tracking-widest opacity-60">Visual Normalization</p>
+          <p className="text-[9px] text-exo-muted/40 font-mono italic">DRAG TO PAN · SCROLL TO SCALE</p>
+        </div>
+
+        <div className="flex gap-3 w-full pt-2">
           <button
             onClick={onCancel}
-            className="flex-1 py-2 text-sm text-exo-muted border border-exo-border rounded-lg hover:border-white/20 transition-colors"
+            className="flex-1 py-2 text-[11px] font-bold uppercase tracking-widest text-exo-muted border border-exo-mist-10 rounded-[2px] hover:text-white hover:bg-white/5 transition-all"
           >
-            取消
+            Abort
           </button>
           <button
             onClick={handleConfirm}
-            className="flex-1 py-2 text-sm font-bold text-black bg-exo-accent rounded-lg hover:bg-yellow-400 transition-colors"
+            className="flex-1 py-2 text-[11px] font-bold text-exo-pure bg-white rounded-[2px] hover:bg-exo-accent transition-all shadow-brutalist active:scale-95 uppercase tracking-widest flex items-center justify-center gap-2"
           >
-            确认
+            <Check size={14} /> Commit
           </button>
         </div>
       </div>

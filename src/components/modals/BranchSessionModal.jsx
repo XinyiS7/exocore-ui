@@ -13,47 +13,53 @@ const BranchSessionModal = ({ isOpen, onClose, onConfirm, isSubmitting }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-exo-panel border border-exo-border rounded-xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
-        <div className="px-6 py-4 border-b border-exo-border flex items-center justify-between bg-black/20">
-          <h3 className="font-bold tracking-widest text-exo-text flex items-center gap-2">
-            <GitFork size={18} className="text-blue-400" /> BRANCH CONVERSATION
-          </h3>
-          <button onClick={onClose} className="text-exo-muted hover:text-white"><X size={18}/></button>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="bg-exo-pure border border-exo-mist-10 rounded-[2px] w-full max-w-md shadow-[0_0_60px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-exo-mist-10 flex items-center justify-between bg-exo-pure/50">
+          <div className="flex flex-col">
+            <h3 className="font-bold tracking-[0.2em] text-white flex items-center gap-2 font-mono text-sm uppercase">
+              <GitFork size={18} className="text-exo-accent" /> Branch Context
+            </h3>
+            <span className="text-[9px] text-exo-muted font-mono uppercase tracking-widest opacity-40 mt-1">Forking Active Neural Stream</span>
+          </div>
+          <button onClick={onClose} className="p-2 text-exo-muted hover:text-white transition-colors"><X size={18}/></button>
         </div>
         
-        <div className="p-6 space-y-4">
-          <p className="text-sm text-exo-muted leading-relaxed">
-            确定要从这条消息开始创建新的分支会话吗？这不会影响当前的对话历史。
+        {/* Content */}
+        <div className="p-6 space-y-6">
+          <p className="text-[12px] text-exo-muted leading-relaxed font-mono italic opacity-70">
+            Determine target entry point. New session branch will inherit previous context weights without affecting the primary stream.
           </p>
           
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-exo-accent/60 uppercase tracking-widest">Session Name (Optional)</label>
+          <div className="space-y-3">
+            <label className="label-caps opacity-50">Branch Alias / 新会话名称</label>
             <input 
               type="text" 
               value={name} 
               onChange={e => setName(e.target.value)} 
-              placeholder="留空则使用默认名称..." 
-              className="w-full bg-black/50 border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text outline-none focus:border-exo-accent/50 transition-colors"
+              placeholder="USE DEFAULT IF NULL..." 
+              className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm text-white font-mono focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20"
               autoFocus
               onKeyDown={e => { if (e.key === 'Enter') onConfirm(name); }}
             />
           </div>
         </div>
 
-        <div className="p-4 border-t border-exo-border flex justify-end gap-3 bg-black/40">
+        {/* Footer */}
+        <div className="p-4 border-t border-exo-mist-10 flex justify-end gap-3 bg-exo-pure/80 backdrop-blur-md">
           <button 
             onClick={onClose} 
-            className="px-4 py-2 rounded-lg text-xs font-medium text-exo-muted hover:text-white transition-colors"
+            className="px-6 py-2 rounded-[2px] text-[11px] font-bold uppercase tracking-widest text-exo-muted hover:text-white transition-colors"
           >
-            取消
+            Abort
           </button>
           <button 
             onClick={() => onConfirm(name)} 
             disabled={isSubmitting} 
-            className="px-6 py-2 rounded-lg text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500 hover:text-white transition-all flex items-center gap-2 disabled:opacity-50"
+            className="px-8 py-2 bg-white text-exo-pure rounded-[2px] text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-exo-accent transition-all shadow-brutalist active:scale-95 disabled:opacity-30 flex items-center gap-3"
           >
-            {isSubmitting ? <Activity size={14} className="animate-spin" /> : <Check size={14} />} 确认分支
+            {isSubmitting ? <Activity size={14} className="animate-spin" /> : <GitFork size={14} />} Confirm Branch
           </button>
         </div>
       </div>

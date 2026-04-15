@@ -179,7 +179,7 @@ export default function App() {
   };
 
   return (
-    <div className="w-full h-[100dvh] bg-noise text-exo-text font-sans flex overflow-hidden relative selection:bg-exo-accent/30 selection:text-white pt-safe pb-safe">
+    <div className="w-full h-[100dvh] bg-exo-bg text-white font-sans flex overflow-hidden relative selection:bg-exo-accent/30 selection:text-white pt-safe pb-safe">
       
       {/* Modals */}
       <DestructorModal {...destructorConfig} onClose={() => setDestructorConfig(p => ({...p, isOpen: false}))} />
@@ -207,7 +207,7 @@ export default function App() {
       />
 
       {/* Sidebar Overlay for Mobile */}
-      <div className={`md:hidden fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm transition-opacity ${isSidebarExpanded ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsSidebarExpanded(false)} />
+      <div className={`md:hidden fixed inset-0 z-[110] bg-black/80 backdrop-blur-sm transition-opacity ${isSidebarExpanded ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsSidebarExpanded(false)} />
 
       {/* Sidebar Container */}
       <div className={`
@@ -228,18 +228,18 @@ export default function App() {
       <div className="flex-1 flex flex-col min-w-0 relative h-full">
         
         {/* Mobile Header Toggle (Hidden in standalone mode) */}
-        <div className="md:hidden h-14 border-b border-white/5 flex items-center px-4 shrink-0 bg-[#05060A]/40 backdrop-blur-md justify-between standalone:hidden">
+        <div className="md:hidden h-14 border-b border-exo-mist-10 flex items-center px-4 shrink-0 bg-exo-pure/60 backdrop-blur-md justify-between standalone:hidden">
           <button onClick={() => setIsSidebarExpanded(true)} className="p-2 text-exo-muted hover:text-exo-accent transition-colors">
             <Menu size={20} />
           </button>
-          <div className="text-exo-accent font-bold tracking-widest text-xs uppercase font-mono">ExoCore</div>
+          <div className="text-exo-accent font-mono font-bold tracking-[0.3em] text-[10px] uppercase">ExoCore // Neural.Link</div>
           <div className="w-10" /> {/* Spacer */}
         </div>
 
         {/* Floating Menu Toggle for Standalone/Clean mode */}
         <button 
           onClick={() => setIsSidebarExpanded(true)} 
-          className="md:hidden fixed bottom-6 right-6 z-[100] w-12 h-12 rounded-full bg-exo-accent/10 border border-exo-accent/30 text-exo-accent flex items-center justify-center backdrop-blur-md shadow-[0_0_20px_rgba(212,175,55,0.2)] active:scale-95 transition-all standalone:flex hidden"
+          className="md:hidden fixed bottom-6 right-6 z-[100] w-12 h-12 rounded-[4px] bg-exo-accent/10 border border-exo-accent/30 text-exo-accent flex items-center justify-center backdrop-blur-md shadow-glow-gold active:scale-95 transition-all standalone:flex hidden"
         >
           <Menu size={24} />
         </button>
@@ -248,7 +248,7 @@ export default function App() {
           
           {/* Side Column List (Visible in chat/council/project if showConvList is true and NOT in main view) */}
           {showConvList && (['chat', 'council', 'project'].includes(currentTab)) && (
-            <div className="absolute inset-y-0 left-0 z-[80] h-full shadow-[20px_0_50px_rgba(0,0,0,0.5)]">
+            <div className="absolute inset-y-0 left-0 z-[80] h-full shadow-[30px_0_60px_rgba(0,0,0,0.8)]">
               <ConversationList
                 mode={currentTab}
                 activeSessionId={activeSessionId}

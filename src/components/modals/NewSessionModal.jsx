@@ -66,73 +66,143 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-exo-panel border border-exo-border rounded-xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
-        <div className="px-6 py-4 border-b border-exo-border flex items-center justify-between bg-black/20">
-          <h3 className="font-bold tracking-widest text-exo-text flex items-center gap-2">
-            <Plus size={18} className="text-exo-accent" /> INITIALIZE NODE
-          </h3>
-          <button onClick={onClose} className="text-exo-muted hover:text-white"><X size={18}/></button>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="bg-exo-pure border border-exo-mist-10 rounded-[2px] w-full max-w-lg shadow-[0_0_60px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-exo-mist-10 flex items-center justify-between bg-exo-pure/50">
+          <div className="flex flex-col">
+            <h3 className="font-bold tracking-[0.2em] text-white flex items-center gap-2 font-mono text-sm uppercase">
+              <Activity size={16} className="text-exo-accent" /> Node Initialization
+            </h3>
+            <span className="text-[9px] text-exo-muted font-mono uppercase tracking-widest opacity-40 mt-1">Establishing Secure Neural Link</span>
+          </div>
+          <button onClick={onClose} className="p-2 text-exo-muted hover:text-white transition-colors"><X size={18}/></button>
         </div>
-        <div className="p-6 space-y-5">
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-exo-muted uppercase">Session Name</label>
-            <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Leave blank for auto-generation..." className="w-full bg-black/50 border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text outline-none focus:border-exo-accent/50" />
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-hide max-h-[70vh]">
+          {/* Alias */}
+          <div className="space-y-3">
+            <label className="label-caps">Session Alias / 会话名称</label>
+            <input 
+              type="text" 
+              value={name} 
+              onChange={e => setName(e.target.value)} 
+              placeholder="AUTO-GENERATED IF NULL..." 
+              className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm text-white font-mono focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20" 
+            />
           </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-exo-muted uppercase">Select Agent Core</label>
+
+          {/* Agent Selection */}
+          <div className="space-y-3">
+            <label className="label-caps">Neural Core / 选择 Agent</label>
             <div className="grid grid-cols-1 gap-2">
-              {sortedPresets.map(preset => (
-                <div key={preset.id} onClick={() => { setSelectedPresetId(preset.id); if (preset.agent_type !== 'g045' && selectedProjectIds.length > 1) setSelectedProjectIds([selectedProjectIds[0]]); }}
-                  className={`p-3 rounded-lg border cursor-pointer flex justify-between ${parseInt(selectedPresetId) === preset.id ? (preset.agent_type === 'g045' ? 'bg-exo-accent/10 border-exo-accent' : 'bg-white/10 border-white/30') : 'bg-black/30 border-exo-border text-exo-muted'}`}>
-                  <div className="flex flex-col">
-                    <span className={`text-sm font-bold ${preset.agent_type === 'g045' ? 'text-exo-accent' : 'text-exo-text'}`}>{preset.name}</span>
-                    <span className="text-[10px] opacity-70 font-mono">{preset.default_model}</span>
+              {sortedPresets.map(preset => {
+                const isSelected = parseInt(selectedPresetId) === preset.id;
+                return (
+                  <div 
+                    key={preset.id} 
+                    onClick={() => { setSelectedPresetId(preset.id); if (preset.agent_type !== 'g045' && selectedProjectIds.length > 1) setSelectedProjectIds([selectedProjectIds[0]]); }}
+                    className={`
+                      group p-4 rounded-[2px] border cursor-pointer flex justify-between items-center transition-all
+                      ${isSelected 
+                        ? (preset.agent_type === 'g045' ? 'bg-exo-accent/10 border-exo-accent/60' : 'bg-white/5 border-white/40 shadow-brutalist') 
+                        : 'bg-black/30 border-exo-mist-10 text-exo-muted hover:border-exo-mist-20'}
+                    `}
+                  >
+                    <div className="flex flex-col gap-1">
+                      <span className={`text-[13px] font-bold uppercase tracking-tight font-display ${isSelected ? (preset.agent_type === 'g045' ? 'text-exo-accent' : 'text-white') : ''}`}>{preset.name}</span>
+                      <span className="text-[10px] opacity-40 font-mono uppercase tracking-widest">{preset.default_model}</span>
+                    </div>
+                    {isSelected ? (
+                      <div className={`p-1 rounded-full ${preset.agent_type === 'g045' ? 'bg-exo-accent text-exo-pure' : 'bg-white text-exo-pure'}`}>
+                        <Check size={12} strokeWidth={3} />
+                      </div>
+                    ) : (
+                      <div className="w-4 h-4 rounded-full border border-exo-mist-10 group-hover:border-exo-mist-20" />
+                    )}
                   </div>
-                  {parseInt(selectedPresetId) === preset.id && <Check size={16} className={preset.agent_type === 'g045' ? 'text-exo-accent' : 'text-white'} />}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-exo-muted uppercase">Session Type</label>
-            <div className="grid grid-cols-2 gap-2">
+
+          {/* Session Type */}
+          <div className="space-y-3">
+            <label className="label-caps">Protocol Mode / 会话模式</label>
+            <div className="grid grid-cols-2 gap-3">
               {[
-                { value: 'chat', label: 'Chat', icon: MessageSquare, desc: 'Conversation mode' },
-                { value: 'code', label: 'Code', icon: Code2,         desc: 'Analytic tools on' },
+                { value: 'chat', label: 'Chat Protocol', icon: MessageSquare, desc: 'Standard interaction' },
+                { value: 'code', label: 'Logic Core',    icon: Code2,         desc: 'Analytical focus' },
               ].map(({ value, label, icon: Icon, desc }) => (
-                <div key={value} onClick={() => setSessionType(value)}
-                  className={`p-3 rounded-lg border cursor-pointer flex items-center gap-2 transition-all ${sessionType === value ? 'bg-exo-accent/10 border-exo-accent text-exo-accent' : 'bg-black/30 border-exo-border text-exo-muted hover:border-exo-border/80'}`}>
-                  <Icon size={14} />
+                <div 
+                  key={value} 
+                  onClick={() => setSessionType(value)}
+                  className={`
+                    p-4 rounded-[2px] border cursor-pointer flex items-center gap-3 transition-all
+                    ${sessionType === value 
+                      ? 'bg-exo-accent/10 border-exo-accent/60 text-white shadow-brutalist-gold' 
+                      : 'bg-black/30 border-exo-mist-10 text-exo-muted hover:border-exo-mist-20'}
+                  `}
+                >
+                  <Icon size={16} className={sessionType === value ? 'text-exo-accent' : ''} />
                   <div className="flex flex-col">
-                    <span className="text-xs font-bold">{label}</span>
-                    <span className="text-[10px] opacity-60">{desc}</span>
+                    <span className="text-[11px] font-bold uppercase tracking-widest">{label}</span>
+                    <span className="text-[9px] opacity-40 font-mono uppercase">{desc}</span>
                   </div>
                 </div>
               ))}
             </div>
           </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-exo-muted uppercase flex justify-between">
-              <span>Bind Projects</span><span className="text-[10px] text-exo-accent/70">{isG045 ? 'Cross-Project Allowed' : 'Single Node Lock'}</span>
+
+          {/* Project Binding */}
+          <div className="space-y-3">
+            <label className="label-caps flex justify-between items-center">
+              <span>Knowledge Context / 关联项目</span>
+              <span className="text-[9px] text-exo-accent font-mono uppercase tracking-tighter opacity-60">
+                {isG045 ? '[Multi-Cluster Sync Enabled]' : '[Single Context Lock]'}
+              </span>
             </label>
-            <div className="max-h-32 overflow-y-auto border border-exo-border rounded-lg bg-black/30 p-1 space-y-1">
+            <div className="max-h-40 overflow-y-auto border border-exo-mist-10 rounded-[2px] bg-black/40 p-2 space-y-1 scrollbar-hide">
+              {projects.length === 0 && (
+                <div className="text-center py-4 text-[10px] font-mono text-exo-muted/30 uppercase italic">No project clusters found</div>
+              )}
               {projects.map(proj => {
                 const isSelected = selectedProjectIds.includes(proj.id);
                 return (
-                  <div key={proj.id} onClick={() => toggleProject(proj.id)} className={`px-3 py-2 rounded text-xs cursor-pointer flex justify-between items-center ${isSelected ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'text-exo-muted border-transparent'}`}>
-                    <div className="flex items-center gap-2"><Folder size={12}/> {proj.name}</div>
-                    {isSelected && <Check size={12}/>}
+                  <div 
+                    key={proj.id} 
+                    onClick={() => toggleProject(proj.id)} 
+                    className={`
+                      px-4 py-2.5 rounded-[2px] text-[11px] font-mono cursor-pointer flex justify-between items-center transition-all
+                      ${isSelected 
+                        ? 'bg-exo-accent/10 text-white border border-exo-accent/20' 
+                        : 'text-exo-muted/60 hover:text-white hover:bg-white/5 border border-transparent'}
+                    `}
+                  >
+                    <div className="flex items-center gap-3"><Folder size={12} className={isSelected ? 'text-exo-accent' : 'opacity-40'}/> {proj.name}</div>
+                    {isSelected && <Check size={12} className="text-exo-accent" />}
                   </div>
                 );
               })}
             </div>
           </div>
         </div>
-        <div className="p-4 border-t border-exo-border flex justify-end gap-3 bg-black/40">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg text-xs font-medium text-exo-muted hover:text-white">CANCEL</button>
-          <button onClick={handleSubmit} disabled={isSubmitting} className="px-6 py-2 rounded-lg text-xs font-bold bg-exo-accent text-black hover:bg-yellow-400 disabled:opacity-50 flex items-center gap-2">
-            {isSubmitting ? <Activity size={14} className="animate-spin" /> : <Plus size={14} />} INITIALIZE
+
+        {/* Footer */}
+        <div className="p-4 border-t border-exo-mist-10 flex justify-end gap-3 bg-exo-pure/80 backdrop-blur-md">
+          <button 
+            onClick={onClose} 
+            className="px-6 py-2 rounded-[2px] text-[11px] font-bold uppercase tracking-widest text-exo-muted hover:text-white transition-colors"
+          >
+            Abort
+          </button>
+          <button 
+            onClick={handleSubmit} 
+            disabled={isSubmitting} 
+            className="px-8 py-2 bg-white text-exo-pure rounded-[2px] text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-exo-accent transition-all shadow-brutalist active:scale-95 disabled:opacity-30 flex items-center gap-3"
+          >
+            {isSubmitting ? <Activity size={14} className="animate-spin" /> : <Plus size={14} />} Commit Link
           </button>
         </div>
       </div>

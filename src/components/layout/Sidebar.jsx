@@ -88,8 +88,7 @@ const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList, isE
       className={`
         h-full flex flex-col items-center justify-between z-[100] transition-all duration-500 ease-out
         ${isExpanded ? 'w-56' : 'w-16'}
-        bg-[#05060A]/80 backdrop-blur-2xl
-        border-r border-white/5
+        bg-exo-pure border-r border-exo-mist-8
         py-6 flex-shrink-0
         relative group
       `}
@@ -104,14 +103,14 @@ const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList, isE
             onClick={() => { setCurrentTab('home'); }}
             className={`flex items-center gap-3 p-2 group/logo transition-all flex-1 min-w-0`}
           >
-            <div className={`p-2 rounded-xl border transition-all shrink-0 ${
+            <div className={`p-2 rounded-[4px] border transition-all shrink-0 ${
               currentTab === 'home' 
-                ? 'border-exo-accent/40 bg-exo-accent/5 text-exo-accent shadow-[0_0_15px_rgba(255,215,0,0.1)]' 
-                : 'border-white/5 text-exo-accent/40 group-hover/logo:border-exo-accent/30 group-hover/logo:text-exo-accent/70'
+                ? 'border-exo-accent/40 bg-exo-accent/5 text-exo-accent shadow-glow-gold' 
+                : 'border-exo-mist-10 text-exo-muted group-hover/logo:border-exo-accent/30 group-hover/logo:text-exo-accent/70'
             }`}>
               <Hexagon size={20} className={currentTab === 'home' ? 'animate-pulse-glow drop-shadow-[0_0_2px_#fff]' : ''} />
             </div>
-            <span className={`text-xs font-bold tracking-[0.2em] text-exo-accent uppercase transition-all duration-300 overflow-hidden ${
+            <span className={`text-[10px] font-bold tracking-[0.3em] text-exo-accent uppercase transition-all duration-300 overflow-hidden ${
               isExpanded ? 'opacity-100 w-32' : 'opacity-0 w-0'
             }`}>
               ExoCore
@@ -127,7 +126,7 @@ const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList, isE
           {isExpanded ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
         </button>
 
-        <div className="w-full h-px bg-white/5 mx-2" />
+        <div className="w-full h-px bg-exo-mist-6 mx-2" />
 
         <div className="flex flex-col items-center w-full gap-1">
           <NavIcon icon={LayoutGrid} title="概览" label="控制中心" isActive={currentTab === 'home'} isExpanded={isExpanded} onClick={() => setCurrentTab('home')} />
@@ -144,7 +143,7 @@ const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList, isE
                 showConvList ? 'text-exo-accent' : 'text-exo-muted hover:text-exo-text'
               }`}
             >
-              <div className={`p-2 rounded-xl transition-all shrink-0 ${
+              <div className={`p-2 rounded-[4px] transition-all shrink-0 ${
                 showConvList ? 'bg-exo-accent/10' : 'group-hover/list:bg-white/5'
               }`}>
                 <List size={20} />
@@ -163,19 +162,19 @@ const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList, isE
         <NavIcon icon={Settings} title="设置" label="系统配置" isActive={currentTab === 'settings'} isExpanded={isExpanded} onClick={() => setCurrentTab('settings')} />
 
         {/* User Profile Section */}
-        <div className="w-full h-px bg-white/5 my-2" />
+        <div className="w-full h-px bg-exo-mist-6 my-2" />
         
         <div
-          className="relative cursor-pointer group/avatar flex items-center gap-3 w-full p-1 rounded-xl transition-all hover:bg-white/5 px-3"
+          className="relative cursor-pointer group/avatar flex items-center gap-3 w-full p-1 rounded-[4px] transition-all hover:bg-white/5 px-3"
           onClick={() => avatarInputRef.current?.click()}
         >
           <div className="relative shrink-0">
             <img 
               src={userAvatarUrl} 
-              className="w-10 h-10 rounded-xl border border-white/10 object-cover bg-black group-hover/avatar:border-exo-accent/30 transition-all" 
+              className="w-10 h-10 rounded-[4px] border border-exo-mist-10 object-cover bg-exo-pure group-hover/avatar:border-exo-accent/30 transition-all" 
               alt="User" 
             />
-            <div className="absolute inset-0 rounded-xl bg-black/60 opacity-0 group-hover/avatar:opacity-100 flex items-center justify-center transition-opacity">
+            <div className="absolute inset-0 rounded-[4px] bg-black/60 opacity-0 group-hover/avatar:opacity-100 flex items-center justify-center transition-opacity">
               <Camera size={14} className="text-white" />
             </div>
           </div>

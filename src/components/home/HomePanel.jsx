@@ -40,78 +40,83 @@ export default function HomePanel({ setCurrentTab }) {
   const userNick = localStorage.getItem('exo_user_nick') || 'Exo User';
 
   return (
-    <div className="flex-1 h-full overflow-y-auto bg-noise">
-      <div className="max-w-5xl mx-auto px-6 md:px-12 py-16 md:py-24 flex flex-col gap-12">
+    <div className="flex-1 h-full overflow-y-auto bg-exo-bg relative scrollbar-hide">
+      {/* Decorative Background Glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-96 bg-exo-accent/5 blur-[120px] pointer-events-none" />
+
+      <div className="max-w-5xl mx-auto px-6 md:px-12 py-16 md:py-24 flex flex-col gap-16 relative z-10">
 
         {/* Hero Section */}
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-8 animate-fade-in">
           <div className="flex items-center gap-3">
             <div className="h-px w-8 bg-exo-accent/40" />
-            <div className="label-caps text-exo-accent/60 tracking-[0.4em]">ExoCore Neural Link</div>
+            <div className="text-[10px] font-mono uppercase tracking-[0.5em] text-exo-accent/60">ExoCore Neural Link // System.Init()</div>
           </div>
           
-          <div className="space-y-2">
-            <h1 className="text-4xl md:text-6xl font-extralight tracking-tight text-exo-text">
-              Welcome back, <span className="text-exo-accent font-normal">{userNick.toUpperCase()}</span>
+          <div className="space-y-4">
+            <h1 className="text-5xl md:text-7xl font-display font-light leading-ultra-tight tracking-tight text-white">
+              Welcome back, <span className="text-exo-accent font-medium">{userNick.toUpperCase()}</span>
             </h1>
-            <p className="text-lg text-exo-muted/60 max-w-2xl font-light leading-relaxed">
-              您的个人 AI 协作中枢已就绪。所有子系统运行正常，链路延迟 2ms。
+            <p className="text-lg text-exo-muted max-w-2xl font-light leading-tight-12">
+              您的个人 AI 协作中枢已就绪。所有子系统运行正常，<span className="text-exo-accent/60 font-mono">链路延迟 2ms</span>。
             </p>
           </div>
         </div>
 
         {/* Main Actions Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>
           {QUICK_ACTIONS.map(({ tab, icon: Icon, label, desc, color }) => (
             <button
               key={tab}
               onClick={() => setCurrentTab(tab)}
-              className="group relative flex items-center gap-6 p-8 bg-white/[0.02] border border-white/5 rounded-2xl hover:bg-exo-accent/[0.03] hover:border-exo-accent/30 transition-all text-left overflow-hidden"
+              className="group relative flex items-center gap-8 p-10 bg-exo-pure border border-exo-mist-10 rounded-[4px] hover:border-exo-accent/40 hover:shadow-brutalist transition-all text-left overflow-hidden"
             >
-              <div className="absolute top-0 right-0 p-8 opacity-0 group-hover:opacity-10 transition-opacity">
-                <Icon size={120} />
+              <div className="absolute -top-4 -right-4 p-8 opacity-0 group-hover:opacity-[0.03] transition-all duration-700 group-hover:scale-150 group-hover:-rotate-12">
+                <Icon size={160} />
               </div>
 
-              <div className={`p-4 rounded-xl bg-white/5 ${color} group-hover:scale-110 transition-transform`}>
-                <Icon size={28} />
+              <div className={`p-4 rounded-[2px] bg-white/[0.03] border border-exo-mist-10 ${color} group-hover:border-exo-accent/40 group-hover:shadow-glow-gold transition-all`}>
+                <Icon size={32} />
               </div>
 
-              <div className="flex-1 space-y-1 relative z-10">
-                <div className="text-xl font-light tracking-wide text-exo-text group-hover:text-exo-accent transition-colors">{label}</div>
-                <div className="text-sm text-exo-muted/50">{desc}</div>
+              <div className="flex-1 space-y-2 relative z-10">
+                <div className="text-2xl font-display font-light tracking-wide text-white group-hover:text-exo-accent transition-colors leading-tight">{label}</div>
+                <div className="text-[11px] font-mono uppercase tracking-widest text-exo-muted group-hover:text-exo-muted/80 transition-colors">{desc}</div>
               </div>
 
-              <ArrowRight className="text-exo-muted/20 group-hover:text-exo-accent transition-colors" size={20} />
+              <ArrowRight className="text-exo-mist-20 group-hover:text-exo-accent transition-colors translate-x-0 group-hover:translate-x-1" size={24} />
             </button>
           ))}
         </div>
 
         {/* Calendar Section */}
-        <div id="home-calendar-section" className="space-y-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+        <div id="home-calendar-section" className="space-y-8 animate-fade-in" style={{ animationDelay: '0.2s' }}>
           <div className="flex items-center gap-3">
             <div className="h-px w-8 bg-exo-accent/40" />
-            <div className="label-caps text-exo-accent/60 tracking-[0.4em]">Chronos System</div>
+            <div className="text-[10px] font-mono uppercase tracking-[0.5em] text-exo-accent/60">Chronos System // Task.Scheduler</div>
           </div>
-          <CalendarWidget />
+          <div className="bg-exo-pure border border-exo-mist-10 rounded-[4px] p-1">
+            <CalendarWidget />
+          </div>
         </div>
 
         {/* System Stats / Bottom Section */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 py-8 border-t border-white/5 animate-fade-in" style={{ animationDelay: '0.3s' }}>
-          <div className="space-y-1">
-            <div className="text-[10px] text-exo-muted/40 uppercase tracking-widest">Active Nodes</div>
-            <div className="text-2xl font-light font-mono text-exo-accent">12</div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 py-10 border-t border-exo-mist-10 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+          <div className="space-y-2">
+            <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-exo-muted">Active Nodes</div>
+            <div className="text-3xl font-light font-mono text-exo-accent">12</div>
           </div>
-          <div className="space-y-1">
-            <div className="text-[10px] text-exo-muted/40 uppercase tracking-widest">Memory Link</div>
-            <div className="text-2xl font-light font-mono text-exo-accent">Stable</div>
+          <div className="space-y-2">
+            <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-exo-muted">Memory Link</div>
+            <div className="text-3xl font-light font-mono text-white tracking-widest uppercase">Stable</div>
           </div>
-          <div className="space-y-1">
-            <div className="text-[10px] text-exo-muted/40 uppercase tracking-widest">Core Version</div>
-            <div className="text-2xl font-light font-mono text-exo-accent">2.1.92</div>
+          <div className="space-y-2">
+            <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-exo-muted">Core Version</div>
+            <div className="text-3xl font-light font-mono text-white">2.1.92</div>
           </div>
-          <div className="space-y-1">
-            <div className="text-[10px] text-exo-muted/40 uppercase tracking-widest">Uptime</div>
-            <div className="text-2xl font-light font-mono text-exo-accent">99.9%</div>
+          <div className="space-y-2">
+            <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-exo-muted">Uptime</div>
+            <div className="text-3xl font-light font-mono text-exo-accent">99.9%</div>
           </div>
         </div>
 

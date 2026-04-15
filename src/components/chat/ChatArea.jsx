@@ -548,23 +548,23 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   }, []);
 
   return (
-    <div className="flex-1 min-w-0 flex flex-col h-full bg-noise relative">
-      <div className="h-14 border-b border-exo-border/50 flex items-center justify-between px-4 md:px-6 bg-exo-panel/40 backdrop-blur-md">
+    <div className="flex-1 min-w-0 flex flex-col h-full bg-exo-bg relative">
+      <div className="h-14 border-b border-exo-mist-10 flex items-center justify-between px-4 md:px-6 bg-exo-pure/40 backdrop-blur-md">
         <div className="flex items-center gap-2 md:gap-3">
           {onBack
-            ? <button onClick={onBack} className="p-1.5 rounded-lg text-exo-muted hover:text-exo-text hover:bg-white/5"><ArrowLeft size={18} /></button>
-            : <button onClick={() => setShowConvList(true)} className="md:hidden p-1.5 rounded-lg text-exo-muted hover:bg-white/5"><Menu size={20} /></button>
+            ? <button onClick={onBack} className="p-1.5 rounded-[4px] text-exo-muted hover:text-exo-text hover:bg-white/5"><ArrowLeft size={18} /></button>
+            : <button onClick={() => setShowConvList(true)} className="md:hidden p-1.5 rounded-[4px] text-exo-muted hover:bg-white/5"><Menu size={20} /></button>
           }
           <div className="flex items-center gap-2 overflow-hidden">
-            <span className="label-caps px-1.5 py-0.5 rounded bg-white/5 border border-exo-accent/15 text-exo-accent/70 shrink-0">{sessionInfo?.session_type || 'CHAT'}</span>
+            <span className="label-caps px-1.5 py-0.5 rounded-[2px] bg-exo-accent/10 border border-exo-accent/20 text-exo-accent shrink-0">{sessionInfo?.session_type || 'CHAT'}</span>
             <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isGenerating ? 'bg-exo-accent animate-blink-sharp' : 'bg-green-500/70'}`}></div>
             <div className="flex flex-col overflow-hidden">
               <div className="flex items-center gap-1.5">
-                <span className="text-sm text-exo-text tracking-wide truncate">{headerTitleOverride || sessionInfo?.name || `Session #${activeSessionId}`}</span>
+                <span className="text-sm font-display font-medium text-white tracking-wide truncate">{headerTitleOverride || sessionInfo?.name || `Session #${activeSessionId}`}</span>
                 <span className="font-mono text-[10px] text-exo-muted/40 shrink-0">#{activeSessionId}</span>
               </div>
               {sessionInfo?.agent_preset_id && presets.find(x => x.id === sessionInfo.agent_preset_id) && (
-                <span className="text-[10px] text-exo-muted/50 truncate leading-tight">{presets.find(x => x.id === sessionInfo.agent_preset_id)?.name}</span>
+                <span className="text-[10px] font-mono text-exo-muted/50 truncate leading-tight uppercase tracking-tighter">{presets.find(x => x.id === sessionInfo.agent_preset_id)?.name}</span>
               )}
             </div>
           </div>
@@ -577,63 +577,63 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
           >
             <Files size={18} />
             {(filteredSessionAttachments.length + filteredPendingAttachments.length) > 0 && (
-              <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-exo-accent" />
+              <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-exo-accent shadow-glow-gold" />
             )}
           </button>
           {showAttachPanel && (
-            <div className="absolute top-full right-0 mt-2 w-80 max-h-[70vh] bg-[#1a1b23] border border-exo-border rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col animate-fade-in">
-              <div className="px-4 py-3 border-b border-exo-border bg-white/5 flex items-center justify-between">
+            <div className="absolute top-full right-0 mt-2 w-80 max-h-[70vh] bg-exo-pure border border-exo-mist-12 rounded-[4px] shadow-2xl z-50 overflow-hidden flex flex-col animate-fade-in">
+              <div className="px-4 py-3 border-b border-exo-mist-10 bg-white/5 flex items-center justify-between">
                 <span className="label-caps text-exo-muted">挂载文档 ({filteredSessionAttachments.length + filteredPendingAttachments.length})</span>
-                <button onClick={() => setShowAttachPanel(false)} className="text-exo-muted hover:text-white"><X size={14} /></button>
+                <button onClick={() => setShowAttachPanel(false)} className="text-exo-muted hover:text-white transition-colors"><X size={14} /></button>
               </div>
-              <div className="flex-1 overflow-y-auto p-2 space-y-1">
+              <div className="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-hide">
                 {filteredSessionAttachments.map(att => (
-                  <div key={att.id} className="flex items-center gap-2 px-2 py-1.5 hover:bg-white/5 rounded-lg group transition-colors">
+                  <div key={att.id} className="flex items-center gap-2 px-2 py-1.5 hover:bg-white/5 rounded-[2px] group transition-colors border border-transparent hover:border-exo-mist-10">
                     <FileText size={14} className="text-blue-400 shrink-0" />
-                    <span className="flex-1 text-xs text-exo-text break-all leading-tight">{att.display_name || att.original_filename}</span>
+                    <span className="flex-1 text-xs text-exo-muted group-hover:text-white break-all leading-tight">{att.display_name || att.original_filename}</span>
                     <button onClick={() => handleRemoveAttachment(att)} className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 transition-all"><X size={12} /></button>
                   </div>
                 ))}
                 {filteredPendingAttachments.map((att, i) => (
-                  <div key={i} className="flex items-center gap-2 px-2 py-1.5 bg-exo-accent/5 rounded-lg group">
+                  <div key={i} className="flex items-center gap-2 px-2 py-1.5 bg-exo-accent/5 rounded-[2px] border border-exo-accent/20 group">
                     <FileText size={14} className="text-exo-accent/50 shrink-0" />
                     <div className="flex-1 min-w-0">
                       <div className="text-xs text-exo-accent/80 break-all leading-tight">{att.display_name || att.original_filename}</div>
-                      <div className="text-[9px] text-exo-accent/40 font-mono">PENDING</div>
+                      <div className="text-[9px] text-exo-accent/40 font-mono tracking-widest uppercase">PENDING</div>
                     </div>
                     <button onClick={() => setPendingAttachments(p => p.filter((_, j) => j !== i))} className="p-1 hover:text-red-400 transition-colors"><X size={12} /></button>
                   </div>
                 ))}
                 {filteredSessionAttachments.length === 0 && filteredPendingAttachments.length === 0 && !isAddingAttach && (
-                  <div className="py-8 text-center text-xs text-exo-muted/30 font-mono italic">
+                  <div className="py-8 text-center text-[10px] text-exo-muted/30 font-mono tracking-widest uppercase">
                     [ 无挂载文档 ]
                   </div>
                 )}
                 {isAddingAttach && (
-                  <div className="p-2 space-y-2 bg-black/40 rounded-lg border border-exo-border/50">
+                  <div className="p-2 space-y-2 bg-exo-pure/40 rounded-[2px] border border-exo-mist-10">
                     <input
                       value={newAttachPath}
                       onChange={e => setNewAttachPath(e.target.value)}
                       placeholder="文件绝对路径..."
                       autoFocus
-                      className="w-full bg-black border border-exo-border rounded px-2 py-1.5 text-xs text-exo-text outline-none focus:border-exo-accent/50 transition-colors font-mono"
+                      className="w-full bg-exo-bg border border-exo-mist-10 rounded-[2px] px-2 py-1.5 text-xs text-white outline-none focus:border-exo-accent/50 transition-colors font-mono"
                     />
                     <input
                       value={newAttachName}
                       onChange={e => setNewAttachName(e.target.value)}
                       placeholder="显示名（可选）"
-                      className="w-full bg-black border border-exo-border rounded px-2 py-1.5 text-xs text-exo-text outline-none focus:border-exo-accent/50 transition-colors"
+                      className="w-full bg-exo-bg border border-exo-mist-10 rounded-[2px] px-2 py-1.5 text-xs text-white outline-none focus:border-exo-accent/50 transition-colors"
                     />
                     <div className="flex justify-end gap-2">
-                      <button onClick={() => { setIsAddingAttach(false); setNewAttachPath(''); setNewAttachName(''); }} className="px-3 py-1 text-exo-muted hover:text-white text-xs">取消</button>
-                      <button onClick={handleAddAttachment} className="px-3 py-1 bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded text-xs hover:bg-exo-accent hover:text-black transition-all">确认</button>
+                      <button onClick={() => { setIsAddingAttach(false); setNewAttachPath(''); setNewAttachName(''); }} className="px-3 py-1 text-exo-muted hover:text-white text-[11px] uppercase tracking-widest">取消</button>
+                      <button onClick={handleAddAttachment} className="px-3 py-1 bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded-[2px] text-[11px] uppercase tracking-widest hover:bg-exo-accent hover:text-black transition-all">确认</button>
                     </div>
                   </div>
                 )}
               </div>
               {!isAddingAttach && (
-                <div className="p-2 border-t border-exo-border bg-white/5">
-                  <button onClick={() => setIsAddingAttach(true)} className="w-full py-2 text-xs text-exo-muted hover:text-white hover:bg-white/5 flex items-center justify-center gap-2 rounded-lg border border-dashed border-exo-border hover:border-exo-muted transition-all">
+                <div className="p-2 border-t border-exo-mist-10 bg-white/5">
+                  <button onClick={() => setIsAddingAttach(true)} className="w-full py-2 text-[11px] uppercase tracking-widest text-exo-muted hover:text-white hover:bg-white/5 flex items-center justify-center gap-2 rounded-[2px] border border-dashed border-exo-mist-10 hover:border-exo-mist-20 transition-all">
                     <Plus size={14} /> 挂载外部路径
                   </button>
                 </div>
@@ -645,11 +645,11 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
         </div>
       </div>
 
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 space-y-6">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 space-y-8 scrollbar-hide">
         <div ref={topSentinelRef} className="h-px" />
         {isLoadingMore && (
           <div className="flex justify-center py-3">
-            <span className="text-xs text-exo-muted flex items-center gap-2 animate-pulse"><RefreshCw size={12} className="animate-spin" /> 加载历史记录...</span>
+            <span className="text-[10px] uppercase tracking-[0.2em] text-exo-muted flex items-center gap-2 animate-pulse"><RefreshCw size={12} className="animate-spin" /> 正在加载历史协议记录...</span>
           </div>
         )}
         {messages.map((msg, idx) => {
@@ -680,88 +680,82 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
         isSubmitting={isBranching}
       />
 
-      <div className="p-4 border-t border-exo-border/50 bg-noise flex flex-col gap-3">
+      <div className="p-4 border-t border-exo-mist-10 bg-exo-pure/80 backdrop-blur-xl flex flex-col gap-3">
         {editingMessageId && (
-          <div className="flex items-center justify-between px-3 py-1.5 bg-exo-accent/10 border border-exo-accent/20 rounded-lg">
-            <div className="flex items-center gap-2 text-exo-accent text-xs">
+          <div className="flex items-center justify-between px-3 py-1.5 bg-exo-accent/10 border border-exo-accent/20 rounded-[2px] animate-fade-in">
+            <div className="flex items-center gap-2 text-exo-accent text-[10px] font-mono uppercase tracking-widest">
               <Edit2 size={12} />
-              <span>正在编辑消息 #{editingMessageId}</span>
+              <span>正在修正通讯协议数据区块 #{editingMessageId}</span>
             </div>
-            <button onClick={() => { setEditingMessageId(null); setInputValue(''); }} className="text-exo-accent/50 hover:text-exo-accent"><X size={14} /></button>
+            <button onClick={() => { setEditingMessageId(null); setInputValue(''); }} className="text-exo-accent/50 hover:text-exo-accent transition-colors"><X size={14} /></button>
           </div>
         )}
-        <div className="flex flex-wrap items-center gap-3 px-1 text-exo-muted">
-          <div className="flex items-center gap-1.5 text-exo-accent/70 bg-exo-accent/5 px-2 py-1 rounded border border-exo-accent/10">
-            <Cpu size={11} />
+        <div className="flex flex-wrap items-center gap-4 px-1 text-exo-muted">
+          <div className="flex items-center gap-2 text-exo-accent/80 bg-exo-accent/5 px-2 py-1 rounded-[2px] border border-exo-accent/10">
+            <Cpu size={12} />
             <select
               value={currentModel}
               onChange={(e) => updatePreference({ model: e.target.value })}
-              className="bg-transparent outline-none text-exo-text cursor-pointer label-caps"
+              className="bg-transparent outline-none text-[11px] font-mono uppercase tracking-widest text-exo-accent cursor-pointer"
             >
               {AVAILABLE_MODELS.map(m => (
-                <option key={m} value={m} className="bg-[#1a1b23]">{m}</option>
+                <option key={m} value={m} className="bg-exo-pure text-white">{m}</option>
               ))}
             </select>
           </div>
 
-          <div className="flex items-center gap-2 bg-white/[0.03] px-2 py-1 rounded border border-white/[0.04]">
-            <span className="label-caps opacity-40">Think</span>
-            <select value={thinkingLevel} onChange={(e) => updatePreference({ thinking_level: e.target.value })} className="bg-transparent outline-none text-exo-text/70 cursor-pointer label-caps">
-              <option value="off" className="bg-[#1a1b23]">Off</option>
-              <option value="auto" className="bg-[#1a1b23]">Auto</option>
-              <option value="low" className="bg-[#1a1b23]">Low</option>
-              <option value="medium" className="bg-[#1a1b23]">Med</option>
-              <option value="high" className="bg-[#1a1b23]">High</option>
+          <div className="flex items-center gap-2 bg-white/[0.04] px-2 py-1 rounded-[2px] border border-white/[0.08]">
+            <span className="text-[10px] font-mono uppercase tracking-tighter opacity-40">Think</span>
+            <select value={thinkingLevel} onChange={(e) => updatePreference({ thinking_level: e.target.value })} className="bg-transparent outline-none text-[11px] font-mono text-white/80 cursor-pointer">
+              <option value="off" className="bg-exo-pure">Off</option>
+              <option value="auto" className="bg-exo-pure">Auto</option>
+              <option value="low" className="bg-exo-pure">Low</option>
+              <option value="medium" className="bg-exo-pure">Med</option>
+              <option value="high" className="bg-exo-pure">High</option>
             </select>
           </div>
 
-          <div className="flex items-center gap-2 bg-white/[0.03] px-2 py-1 rounded border border-white/[0.04]">
-            <span className="label-caps opacity-40">Temp</span>
-            <select value={temperature} onChange={(e) => updatePreference({ temperature: e.target.value })} className="bg-transparent outline-none text-exo-text/70 cursor-pointer label-caps">
-              <option value="1.0" className="bg-[#1a1b23]">Precise</option>
-              <option value="1.3" className="bg-[#1a1b23]">Balanced</option>
-              <option value="1.8" className="bg-[#1a1b23]">Creative</option>
+          <div className="flex items-center gap-2 bg-white/[0.04] px-2 py-1 rounded-[2px] border border-white/[0.08]">
+            <span className="text-[10px] font-mono uppercase tracking-tighter opacity-40">Temp</span>
+            <select value={temperature} onChange={(e) => updatePreference({ temperature: e.target.value })} className="bg-transparent outline-none text-[11px] font-mono text-white/80 cursor-pointer">
+              <option value="1.0" className="bg-exo-pure">Precise</option>
+              <option value="1.3" className="bg-exo-pure">Balanced</option>
+              <option value="1.8" className="bg-exo-pure">Creative</option>
             </select>
           </div>
           {lastTelemetry && (
-            <div className="ml-auto font-mono text-[10px] text-exo-muted/50 tabular-nums tracking-tight">
-              ↑{lastTelemetry.input_chars?.toLocaleString()} | ↓{lastTelemetry.output_chars?.toLocaleString()}
+            <div className="ml-auto font-mono text-[10px] text-exo-muted/40 tabular-nums tracking-widest">
+              TX: {lastTelemetry.input_chars?.toLocaleString()} | RX: {lastTelemetry.output_chars?.toLocaleString()}
             </div>
           )}
         </div>
 
-        <div className="flex flex-col glass-panel rounded-xl focus-within:border-exo-accent/40 focus-within:shadow-[0_0_0_1px_rgba(255,215,0,0.1)] transition-shadow overflow-hidden">
+        <div className="flex flex-col bg-exo-pure border border-exo-mist-10 rounded-[4px] focus-within:border-exo-accent/40 focus-within:shadow-glow-gold transition-all overflow-hidden">
           {attachedFilePreviews.length > 0 && (
-            <div className="flex flex-wrap gap-2 px-3 pt-3 pb-2 border-b border-exo-border/50">
+            <div className="flex flex-wrap gap-2 px-3 pt-3 pb-2 border-b border-exo-mist-10 bg-white/[0.02]">
               {attachedFilePreviews.map((fp, i) => (
                 fp.preview
-                  ? <div key={i} className="relative group h-16 w-16 shrink-0 bg-black/40 rounded-lg overflow-hidden border border-exo-border">
+                  ? <div key={i} className="relative group h-14 w-14 shrink-0 bg-exo-bg rounded-[2px] overflow-hidden border border-exo-mist-10">
                       <img 
                         src={fp.preview} 
                         alt={fp.name} 
-                        title={fp.name} 
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-cover grayscale hover:grayscale-0 transition-all duration-500"
                         onError={(e) => {
                           e.target.onerror = null;
-                          e.target.src = ""; // Clear broken src
-                          e.target.parentElement.classList.add('flex', 'items-center', 'justify-center');
                           e.target.style.display = 'none';
-                          const icon = document.createElement('div');
-                          icon.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" class="text-exo-muted/50"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>';
-                          e.target.parentElement.appendChild(icon.firstChild);
                         }}
                       />
                       <button
                         onClick={() => setAttachedFiles(p => p.filter((_, j) => j !== i))}
-                        className="absolute -top-1.5 -right-1.5 bg-black border border-exo-border/50 rounded-full p-0.5 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                      ><X size={10} /></button>
+                        className="absolute inset-0 bg-exo-pure/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                      ><X size={14} className="text-exo-accent" /></button>
                     </div>
-                  : <div key={i} className="relative group flex items-center gap-1.5 text-[11px] bg-black/50 border border-exo-border rounded-lg pl-2 pr-1.5 py-1.5 text-exo-muted max-w-[180px]">
+                  : <div key={i} className="relative group flex items-center gap-1.5 text-[10px] font-mono bg-exo-bg border border-exo-mist-10 rounded-[2px] pl-2 pr-1.5 py-1.5 text-exo-muted transition-colors hover:border-exo-mist-20">
                       <FileText size={11} className="text-blue-400 shrink-0" />
-                      <span className="truncate">{fp.name}</span>
+                      <span className="truncate uppercase tracking-tighter">{fp.name}</span>
                       <button
                         onClick={() => setAttachedFiles(p => p.filter((_, j) => j !== i))}
-                        className="ml-1 text-exo-muted hover:text-red-400 transition-colors shrink-0"
+                        className="ml-1 text-exo-muted hover:text-exo-accent transition-colors shrink-0"
                       ><X size={10} /></button>
                     </div>
               ))}
@@ -787,37 +781,35 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
                 setAttachedFiles(prev => [...prev, ...imageFiles]);
               }
             }}
-            placeholder="与核心通讯 (Ctrl+Enter 发送)..."
-            className="w-full bg-transparent text-sm text-exo-text outline-none resize-none px-3 pt-3 pb-1 disabled:opacity-50 overflow-y-auto min-h-[2.5rem] md:min-h-[5rem] max-h-[40vh]"
+            placeholder="正在建立加密通讯链路..."
+            className="w-full bg-transparent text-sm text-white/90 outline-none resize-none px-4 pt-4 pb-2 disabled:opacity-50 overflow-y-auto min-h-[2.5rem] md:min-h-[5rem] max-h-[40vh] font-sans font-normal"
             disabled={isGenerating}
           />
-          <div className="flex items-center justify-between px-2 pb-2">
-            <div className="flex items-center gap-0.5">
-              <button onClick={() => imageInputRef.current?.click()} title="上传图片" className="p-1.5 text-exo-muted hover:text-exo-accent transition-colors"><ImageIcon size={16} /></button>
-              <button onClick={() => fileInputRef.current?.click()} title="上传文件" className="p-1.5 text-exo-muted hover:text-exo-accent transition-colors"><Paperclip size={16} /></button>
-              {/* 图片 input：accept="image/*" → 移动端唤起相册/相机 */}
+          <div className="flex items-center justify-between px-3 pb-3">
+            <div className="flex items-center gap-1">
+              <button onClick={() => imageInputRef.current?.click()} title="上传视讯数据" className="p-2 text-exo-muted hover:text-exo-accent transition-colors"><ImageIcon size={16} /></button>
+              <button onClick={() => fileInputRef.current?.click()} title="挂载文档区块" className="p-2 text-exo-muted hover:text-exo-accent transition-colors"><Paperclip size={16} /></button>
               <input type="file" ref={imageInputRef} className="hidden" multiple accept="image/*" onChange={(e) => setAttachedFiles(prev => [...prev, ...Array.from(e.target.files)])} />
-              {/* 文件 input：明确文档类型 → 移动端唤起文件管理器 */}
               <input type="file" ref={fileInputRef} className="hidden" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md,.csv,.json,.zip,.py,.js,.ts,.jsx,.tsx,.html,.css,.xml,.yaml,.yml,.toml,.sh,.log" onChange={(e) => setAttachedFiles(prev => [...prev, ...Array.from(e.target.files)])} />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               {rightExtraButton}
               {isGenerating ? (
                 <button
                   onClick={handleStop}
-                  className="p-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500 hover:text-white transition-all flex items-center gap-2"
-                  title="中止生成"
+                  className="px-4 py-1.5 bg-red-500/10 text-red-500 border border-red-500/30 rounded-[2px] hover:bg-red-500 hover:text-white transition-all flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.2em]"
+                  title="中止上行链路"
                 >
-                  <X size={16} />
-                  <span className="text-xs font-bold md:hidden lg:inline">STOP</span>
+                  <X size={14} />
+                  <span>ABORT</span>
                 </button>
               ) : (
                 <button
                   onClick={() => handleSend(editingMessageId ? { editMessageId: editingMessageId } : {})}
                   disabled={isGenerating || (!inputValue.trim() && attachedFiles.length === 0)}
-                  className="p-2 bg-exo-accent text-black rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition-all shadow-[0_0_10px_rgba(255,215,0,0.2)]"
+                  className="p-2 bg-exo-accent text-exo-pure rounded-[2px] hover:shadow-glow-gold hover:bg-exo-accentGlow disabled:opacity-20 disabled:grayscale transition-all"
                 >
-                  <Send size={16} />
+                  <Send size={18} />
                 </button>
               )}
             </div>

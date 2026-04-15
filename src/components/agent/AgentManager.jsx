@@ -77,48 +77,51 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
         />
       )}
       <div
-        className={`relative flex flex-col p-5 rounded-xl border transition-all hover:bg-white/[0.02] ${
-          isG045
-            ? 'bg-gradient-to-br from-exo-accent/5 to-transparent border-exo-accent/30 shadow-[0_4px_20px_rgba(255,215,0,0.03)]'
-            : 'bg-exo-panel border-exo-border'
-        } ${isDraggingThis ? 'opacity-40 scale-95' : ''} ${isDragOver ? (isG045 ? 'border-exo-accent/80 shadow-[0_0_20px_rgba(255,215,0,0.12)]' : 'border-exo-muted/60') : ''}`}
+        className={`
+          relative flex flex-col p-6 rounded-[2px] border transition-all animate-fade-in
+          ${isG045
+            ? 'bg-exo-accent/[0.03] border-exo-accent/30 shadow-[0_0_30px_rgba(212,175,55,0.05)]'
+            : 'bg-exo-pure border-exo-mist-10 hover:border-exo-mist-20'
+          } 
+          ${isDraggingThis ? 'opacity-40 scale-[0.98]' : ''} 
+          ${isDragOver ? (isG045 ? 'border-exo-accent shadow-glow-sharp' : 'border-white/40 shadow-brutalist') : ''}
+        `}
         draggable
         onDragStart={() => setDragging(preset.id)}
         onDragEnd={() => { setDragging(null); setDragOver(null); }}
         onDragOver={(e) => { e.preventDefault(); setDragOver(preset.id); }}
         onDrop={() => { handleDrop(dragging, preset.id, list); setDragging(null); setDragOver(null); }}
       >
-        {/* 头部：flex-wrap 保证窄卡片上按钮会换行而不溢出 */}
-        <div className="flex flex-wrap items-center gap-3 mb-4">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="cursor-grab text-exo-muted hover:text-white shrink-0"><GripVertical size={16} /></div>
+        <div className="flex flex-wrap items-start gap-4 mb-6">
+          <div className="flex items-center gap-4 flex-1 min-w-0">
+            <div className="cursor-grab text-exo-muted/30 hover:text-exo-accent transition-colors shrink-0"><GripVertical size={18} /></div>
 
-            {/* 头像 + 上传 */}
+            {/* Avatar */}
             <div
-              className="relative shrink-0 cursor-pointer group"
+              className="relative shrink-0 cursor-pointer group/avatar"
               onClick={() => avatarInputRef.current?.click()}
-              title="点击更换头像"
+              title="Calibration / 重调头像"
             >
-              <img src={avatarUrl} className={`w-12 h-12 rounded-lg border bg-black object-cover ${isG045 ? 'border-exo-accent/50' : 'border-exo-border'}`} alt="Avatar" />
-              <div className="absolute inset-0 rounded-lg bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                <Camera size={14} className="text-white" />
+              <img src={avatarUrl} className={`w-14 h-14 rounded-[2px] border object-cover transition-transform group-hover/avatar:scale-105 ${isG045 ? 'border-exo-accent/40 shadow-glow-gold' : 'border-exo-mist-20'}`} alt="Avatar" />
+              <div className="absolute inset-0 rounded-[2px] bg-black/60 opacity-0 group-hover/avatar:opacity-100 flex items-center justify-center transition-opacity">
+                <Camera size={16} className="text-white" />
               </div>
               <input type="file" ref={avatarInputRef} accept="image/*" className="hidden" onChange={handleAvatarChange} />
             </div>
 
-            <div className="min-w-0">
-              <h3 className={`text-base font-bold flex items-center gap-2 ${isG045 ? 'text-exo-accent' : 'text-exo-text'}`}>
+            <div className="min-w-0 space-y-1">
+              <h3 className={`text-lg font-bold flex items-center gap-2 font-display uppercase tracking-tight ${isG045 ? 'text-exo-accent' : 'text-white'}`}>
                 <span className="truncate">{preset.name}</span>
-                {isG045 && <Sparkles size={14} className="text-exo-accent animate-pulse shrink-0" />}
+                {isG045 && <Sparkles size={14} className="text-exo-accent animate-pulse-glow shrink-0" />}
               </h3>
-              <p className="text-xs text-exo-muted font-mono mt-0.5 truncate">{preset.default_model}</p>
+              <p className="text-[10px] text-exo-muted font-mono uppercase tracking-[0.1em] truncate opacity-60">Model: {preset.default_model}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setEditTarget(preset)}
-              className="p-1.5 text-exo-muted hover:text-white bg-black/30 rounded border border-transparent hover:border-exo-border transition-all" title="Edit Core"
+              className="p-2 text-exo-muted hover:text-white border border-exo-mist-10 rounded-[2px] hover:bg-white/5 transition-all" title="Edit Core"
             >
               <Edit3 size={14} />
             </button>
@@ -126,34 +129,39 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
               onClick={() => {
                 openDestructor({
                   title: `Target Core: [${preset.name}]`,
-                  description: "删除预设将阻止未来通过该模板创建新会话。请问是将关联历史会话移入归档，还是连同会话数据一同物理抹除？",
-                  onArchive: () => alert("已触发归档 (API 待对接)"),
-                  onDelete: () => alert("已触发抹除 (API 待对接)")
+                  description: "Decommissioning this core will prevent new session forks. Select archive for history preservation or purge for complete data erasure.",
+                  onArchive: () => alert("Archive protocol initiated."),
+                  onDelete: () => alert("Purge protocol initiated.")
                 });
               }}
-              className="p-1.5 text-red-500/70 hover:text-red-400 bg-red-500/10 rounded border border-transparent hover:border-red-500/30 transition-all" title="Destroy Core"
+              className="p-2 text-red-500/50 hover:text-red-500 border border-red-900/20 rounded-[2px] hover:bg-red-500/10 transition-all" title="Destroy Core"
             >
               <Trash2 size={14} />
             </button>
-            <div className="w-px h-6 bg-exo-border mx-1"></div>
+            <div className="w-px h-8 bg-exo-mist-10 mx-1"></div>
             <button
               onClick={() => {
                 openNewSession({ presetId: preset.id });
                 setCurrentTab('chat');
               }}
-              className="px-3 py-1.5 bg-exo-accent/10 text-exo-accent hover:bg-exo-accent hover:text-black border border-exo-accent/30 rounded flex items-center gap-1 text-xs font-bold transition-all"
+              className="px-4 py-2 bg-white text-exo-pure rounded-[2px] flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest hover:bg-exo-accent transition-all shadow-brutalist active:scale-95"
             >
-              <Play size={12} fill="currentColor" /> INITIATE
+              <Play size={12} fill="currentColor" /> Initiate
             </button>
           </div>
         </div>
 
-        <p className="text-sm text-gray-400 mb-4 line-clamp-2 leading-relaxed">{preset.description}</p>
+        <p className="text-[13px] text-exo-muted/80 mb-6 line-clamp-2 leading-relaxed font-mono tracking-tight italic">
+          {preset.description || "No operational context defined for this node."}
+        </p>
 
         {isG045 && (
-          <div className="mt-auto pt-4 border-t border-exo-accent/10">
-            <div className="text-[10px] font-bold text-exo-accent/70 uppercase tracking-wider mb-2 flex items-center gap-1">
-              <Clock size={12} /> Active Memory Stream
+          <div className="mt-auto pt-4 border-t border-exo-accent/20">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-[10px] font-bold text-exo-accent uppercase tracking-[0.2em] flex items-center gap-2">
+                <Clock size={12} className="animate-pulse" /> Active Neural Trace
+              </div>
+              <span className="text-[9px] font-mono text-exo-accent/40 uppercase tracking-tighter">[L3_SYNC_ACTIVE]</span>
             </div>
             <MemoryAnchorTicker anchors={anchorCache[preset.id] || []} />
           </div>
@@ -164,44 +172,58 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
   };
 
   return (
-    <div className="flex-1 h-full overflow-y-auto bg-noise p-8 scrollbar-hide">
+    <div className="flex-1 h-full overflow-y-auto bg-exo-bg bg-noise p-8 lg:p-12 scrollbar-hide">
       <EditPresetModal
         isOpen={!!editTarget}
         preset={editTarget}
         onClose={() => setEditTarget(null)}
         onSaved={refreshPresets}
       />
-      <div className="max-w-5xl mx-auto space-y-10">
-        <div>
-          <h2 className="text-3xl font-black text-exo-text mb-2 flex items-center gap-3">
-            <BrainCircuit className="text-exo-accent" size={28} /> Central Agent Hub
+      <div className="max-w-6xl mx-auto space-y-16">
+        <div className="space-y-4 animate-fade-in">
+          <div className="flex items-center gap-3">
+            <div className="h-px w-8 bg-exo-accent" />
+            <div className="text-[10px] font-mono uppercase tracking-[0.5em] text-exo-accent">ExoCore Agent Cluster // Management.Console</div>
+          </div>
+          <h2 className="text-4xl font-light text-white font-display uppercase tracking-tight flex items-center gap-4">
+            <BrainCircuit className="text-exo-accent" size={36} /> Central Neural Hub
           </h2>
-          <p className="text-exo-muted text-sm">管理系统代理核心预设。配置模型、提示词，并监控高级核心的记忆活动。</p>
+          <p className="text-exo-muted text-lg max-w-3xl font-light leading-tight-12">
+            Configure system-wide agent protocols. Adjust core weights, model mapping, and monitor active memory synchronizations.
+          </p>
         </div>
 
         {g045Presets.length > 0 && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 border-b border-exo-accent/20 pb-2">
-              <Cpu size={16} className="text-exo-accent" />
-              <h3 className="text-sm font-bold text-exo-accent uppercase tracking-widest">Superior Cores (G045)</h3>
+          <div className="space-y-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+            <div className="flex items-center gap-3 border-b border-exo-accent/30 pb-3">
+              <div className="p-1.5 bg-exo-accent/10 border border-exo-accent/30 rounded-[2px]">
+                <Cpu size={16} className="text-exo-accent" />
+              </div>
+              <h3 className="text-[12px] font-bold text-white uppercase tracking-[0.3em] font-mono">Superior Neural Cores (G045)</h3>
+              <div className="h-px flex-1 bg-gradient-to-r from-exo-accent/20 to-transparent" />
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {g045Presets.map(p => <AgentCard key={p.id} preset={p} isG045={true} list={g045Presets} />)}
             </div>
           </div>
         )}
 
         {standardPresets.length > 0 && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 border-b border-exo-border pb-2 mt-8">
-              <Hash size={16} className="text-exo-muted" />
-              <h3 className="text-sm font-bold text-exo-muted uppercase tracking-widest">Standard Modules</h3>
+          <div className="space-y-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            <div className="flex items-center gap-3 border-b border-exo-mist-10 pb-3">
+              <div className="p-1.5 bg-white/5 border border-exo-mist-10 rounded-[2px]">
+                <Hash size={16} className="text-exo-muted" />
+              </div>
+              <h3 className="text-[12px] font-bold text-white uppercase tracking-[0.3em] font-mono">Subordinate Logical Modules</h3>
+              <div className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {standardPresets.map(p => <AgentCard key={p.id} preset={p} isG045={false} list={standardPresets} />)}
             </div>
           </div>
         )}
+        
+        <div className="h-20" /> {/* Bottom spacer */}
       </div>
     </div>
   );

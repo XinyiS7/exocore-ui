@@ -178,7 +178,7 @@ const UserProfile = ({ presets }) => {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-noise overflow-hidden">
+    <div className="flex-1 flex flex-col h-full bg-exo-bg bg-noise overflow-hidden animate-fade-in">
       {cropFile && (
         <AvatarCropModal
           file={cropFile}
@@ -190,63 +190,67 @@ const UserProfile = ({ presets }) => {
           onCancel={() => setCropFile(null)}
         />
       )}
-      <div className="h-14 border-b border-exo-border flex items-center px-6 bg-exo-panel/50 backdrop-blur-md shrink-0">
-        <span className="font-bold text-sm text-exo-text tracking-widest uppercase">Timeline</span>
+      <div className="h-14 border-b border-exo-mist-10 flex items-center px-8 bg-exo-pure/40 backdrop-blur-md shrink-0">
+        <div className="flex flex-col">
+          <span className="font-bold text-[13px] text-white tracking-[0.2em] uppercase font-display">Neural Timeline</span>
+          <span className="text-[9px] text-exo-muted font-mono uppercase tracking-widest opacity-40">System-wide Event Log</span>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-2xl mx-auto px-4 py-4">
+      <div className="flex-1 overflow-y-auto scrollbar-hide">
+        <div className="max-w-2xl mx-auto px-6 py-8">
 
-          {/* 发帖框 */}
-          <div className="bg-exo-panel border border-exo-border rounded-xl p-4 mb-4">
-            <div className="flex gap-3">
+          {/* Post Box */}
+          <div className="composio-card p-6 mb-10 bg-exo-pure/40">
+            <div className="flex gap-4">
               <div
                 className="relative shrink-0 cursor-pointer group"
                 onClick={() => avatarInputRef.current?.click()}
-                title="点击更换头像"
+                title="Update Link Avatar"
               >
                 <img
                   src={userAvatarUrl}
-                  className="w-10 h-10 rounded-full border border-white/20 bg-black object-cover"
+                  className="w-12 h-12 rounded-full border border-exo-mist-10 bg-black object-cover transition-transform group-hover:scale-105"
                   alt={userNick}
                 />
-                <div className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                  <Camera size={12} className="text-white" />
+                <div className="absolute inset-0 rounded-full bg-exo-accent/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity border border-exo-accent/60 shadow-glow-sharp">
+                  <Camera size={14} className="text-exo-pure" />
                 </div>
                 <input type="file" ref={avatarInputRef} accept="image/*" className="hidden" onChange={handleAvatarChange} />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 space-y-4">
                 <textarea
                   rows={3}
                   value={newPostContent}
                   onChange={e => setNewPostContent(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey && !e.isComposing) { e.preventDefault(); handlePost(); } }}
-                  placeholder="有什么想说的？"
-                  className="w-full bg-transparent text-sm text-exo-text outline-none resize-none placeholder:text-exo-muted/40"
+                  placeholder="Inscribe thought to timeline..."
+                  className="w-full bg-transparent text-[14px] text-white outline-none resize-none placeholder:opacity-20 font-mono leading-relaxed"
                 />
-                <div className="flex justify-end pt-2 border-t border-exo-border/30">
+                <div className="flex justify-between items-center pt-4 border-t border-exo-mist-6">
+                  <span className="text-[9px] text-exo-muted font-mono uppercase tracking-tight opacity-40">Markdown & Links Supported</span>
                   <button
                     onClick={handlePost}
                     disabled={!newPostContent.trim() || isPosting}
-                    className="px-5 py-1.5 bg-exo-accent text-black text-xs font-bold rounded-full hover:bg-yellow-400 disabled:opacity-50 transition-colors flex items-center gap-1.5"
+                    className="px-6 py-2 bg-white text-exo-pure text-[11px] font-bold rounded-[2px] hover:bg-exo-accent transition-all shadow-brutalist active:scale-95 disabled:opacity-30 flex items-center gap-2 uppercase tracking-widest"
                   >
                     {isPosting ? <Activity size={12} className="animate-spin" /> : <Send size={12} />}
-                    发布
+                    Inscribe
                   </button>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* 时间线 */}
+          {/* Timeline */}
           {isLoading ? (
-            <div className="flex items-center justify-center py-20 text-exo-muted text-sm gap-2">
-              <Activity size={16} className="animate-spin" /> 加载中...
+            <div className="flex flex-col items-center justify-center py-20 text-exo-muted font-mono text-[11px] uppercase tracking-[0.3em] gap-4">
+              <Activity size={24} className="animate-spin text-exo-accent" /> Initializing Stream...
             </div>
           ) : tweets.length === 0 ? (
-            <div className="text-center py-20 text-exo-muted/40 text-sm">还没有任何记录</div>
+            <div className="text-center py-20 text-exo-muted/20 font-mono text-[11px] uppercase tracking-widest italic">No log entries found in current epoch</div>
           ) : (
-            <div className="divide-y divide-exo-border/20">
+            <div className="space-y-0 divide-y divide-exo-mist-4">
               {tweets.map(tweet => (
                 <TweetCard
                   key={tweet.id}
@@ -264,17 +268,21 @@ const UserProfile = ({ presets }) => {
             </div>
           )}
 
-          {/* 无限滚动哨兵 */}
+          {/* Sentinel */}
           <div ref={bottomRef} className="h-1" />
 
           {isLoadingMore && (
-            <div className="flex items-center justify-center py-4 text-exo-muted text-xs gap-2">
-              <Activity size={12} className="animate-spin" /> 加载更多...
+            <div className="flex items-center justify-center py-8 text-exo-muted font-mono text-[10px] uppercase tracking-widest gap-2">
+              <Activity size={12} className="animate-spin" /> Fetching Archive...
             </div>
           )}
 
           {!hasMore && tweets.length > 0 && !isLoading && (
-            <p className="text-center py-8 text-exo-muted/40 text-xs">啊噢，已经到底啦~</p>
+            <div className="flex items-center justify-center py-12 opacity-10">
+              <div className="h-px w-20 bg-white" />
+              <span className="mx-4 text-[9px] font-mono uppercase tracking-widest">End of Stream</span>
+              <div className="h-px w-20 bg-white" />
+            </div>
           )}
         </div>
       </div>
@@ -297,42 +305,46 @@ const TweetCard = ({
   const isReplyingHere = replyingToId === tweet.id;
 
   return (
-    <div className={depth > 0 ? 'ml-10 pl-4 border-l-2 border-exo-border/30' : ''}>
-      <div className="flex gap-3 py-3">
-        <img
-          src={avatar}
-          className={`w-9 h-9 rounded-full border shrink-0 bg-black object-cover ${isUser ? 'border-white/20' : 'border-exo-accent/50'}`}
-          alt={name}
-        />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-baseline gap-2 mb-1">
-            <span className={`text-sm font-bold ${isUser ? 'text-exo-text' : 'text-exo-accent'}`}>{name}</span>
-            <span className="text-[10px] text-exo-muted/50 font-mono">{formatTime(tweet.created_at)}</span>
+    <div className={`transition-all ${depth > 0 ? 'ml-8 pl-6 border-l border-exo-mist-10 mt-2' : 'py-6'}`}>
+      <div className="flex gap-4">
+        <div className="relative shrink-0">
+          <img
+            src={avatar}
+            className={`w-10 h-10 rounded-full border bg-black object-cover shadow-sm ${isUser ? 'border-exo-mist-20' : 'border-exo-accent/40'}`}
+            alt={name}
+          />
+          {!isUser && <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-exo-accent rounded-full border-2 border-exo-bg shadow-glow-sharp" title="Neural Agent" />}
+        </div>
+        <div className="flex-1 min-w-0 space-y-1.5">
+          <div className="flex items-baseline gap-3">
+            <span className={`text-[13px] font-bold uppercase tracking-tight font-display ${isUser ? 'text-white' : 'text-exo-accent'}`}>{name}</span>
+            <span className="text-[9px] text-exo-muted font-mono uppercase tracking-tighter opacity-40">[{formatTime(tweet.created_at)}]</span>
           </div>
-          <p className="text-sm text-exo-text/90 leading-relaxed whitespace-pre-wrap break-words">{tweet.content}</p>
+          <p className="text-[14px] text-white/80 leading-relaxed font-mono tracking-tight break-words">{tweet.content}</p>
           <button
             onClick={() => { setReplyingToId(isReplyingHere ? null : tweet.id); setReplyContent(''); }}
-            className="mt-2 text-[11px] text-exo-muted/50 hover:text-exo-accent transition-colors flex items-center gap-1"
+            className="mt-3 text-[10px] font-bold uppercase tracking-widest text-exo-muted/50 hover:text-exo-accent transition-colors flex items-center gap-1.5"
           >
-            <CornerDownLeft size={11} /> 回复
+            <CornerDownLeft size={12} /> Respond
           </button>
+          
           {isReplyingHere && (
-            <div className="mt-3 flex gap-2 items-end">
+            <div className="mt-4 flex gap-3 items-end animate-fade-in">
               <textarea
                 rows={2}
                 value={replyContent}
                 onChange={e => setReplyContent(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey && !e.isComposing) { e.preventDefault(); handleReply(tweet.id); } }}
-                placeholder={`回复 ${name}...`}
+                placeholder={`REPLY TO ${name.toUpperCase()}...`}
                 autoFocus
-                className="flex-1 bg-black/50 border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text outline-none focus:border-exo-accent/50 resize-none transition-colors"
+                className="flex-1 bg-black/40 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm text-white font-mono outline-none focus:border-exo-accent/40 resize-none transition-all placeholder:opacity-20"
               />
               <button
                 onClick={() => handleReply(tweet.id)}
                 disabled={!replyContent.trim() || isSubmittingReply}
-                className="px-3 py-2 bg-exo-accent text-black text-xs font-bold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition-colors flex items-center gap-1 shrink-0"
+                className="px-4 py-2.5 bg-white text-exo-pure rounded-[2px] hover:bg-exo-accent transition-all shadow-brutalist active:scale-95 disabled:opacity-30 shrink-0"
               >
-                <Send size={12} />
+                <Send size={14} />
               </button>
             </div>
           )}

@@ -42,70 +42,76 @@ const EditPresetModal = ({ isOpen, onClose, preset, onSaved }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="bg-exo-panel border border-exo-border rounded-xl w-full max-w-2xl flex flex-col max-h-[90vh]">
-        <div className="flex items-center justify-between p-5 border-b border-exo-border">
-          <div className="flex items-center gap-3">
-            <Edit3 size={18} className="text-exo-accent" />
-            <h2 className="text-base font-bold text-exo-text">
-              Edit Core: <span className="text-exo-accent">{preset?.name}</span>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+      <div className="bg-exo-pure border border-exo-mist-10 rounded-[2px] w-full max-w-2xl flex flex-col max-h-[90vh] shadow-[0_0_60px_rgba(0,0,0,0.5)]">
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 border-b border-exo-mist-10 bg-exo-pure/50">
+          <div className="flex flex-col">
+            <h2 className="text-sm font-bold text-white flex items-center gap-2 font-mono uppercase tracking-[0.2em]">
+              <Edit3 size={16} className="text-exo-accent" /> Core Config / 内核配置
             </h2>
+            <span className="text-[9px] text-exo-muted font-mono uppercase tracking-widest opacity-40 mt-1">Preset Mapping: {preset?.name}</span>
           </div>
-          <button onClick={onClose} className="p-1.5 text-exo-muted hover:text-white transition-colors">
+          <button onClick={onClose} className="p-2 text-exo-muted hover:text-white transition-colors">
             <X size={18} />
           </button>
         </div>
 
-        <div className="overflow-y-auto p-5 space-y-5 flex-1">
-          <div>
-            <label className="block text-[10px] font-bold text-exo-muted uppercase tracking-widest mb-1.5">Name</label>
+        {/* Content */}
+        <div className="overflow-y-auto p-6 space-y-6 flex-1 scrollbar-hide">
+          <div className="space-y-2">
+            <label className="label-caps opacity-50">Alias / 名称</label>
             <input
-              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-accent/50 transition-colors"
+              className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm text-white font-mono focus:border-exo-accent/40 outline-none transition-all"
               value={form.name}
               onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
             />
           </div>
-          <div>
-            <label className="block text-[10px] font-bold text-exo-muted uppercase tracking-widest mb-1.5">Description</label>
+          <div className="space-y-2">
+            <label className="label-caps opacity-50">Operational Context / 描述</label>
             <textarea
               rows={2}
-              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-accent/50 transition-colors resize-none"
+              className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm text-white font-mono focus:border-exo-accent/40 outline-none transition-all resize-none"
               value={form.description}
               onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
             />
           </div>
-          <div>
-            <label className="block text-[10px] font-bold text-exo-muted uppercase tracking-widest mb-1.5">Default Model</label>
+          <div className="space-y-2">
+            <label className="label-caps opacity-50">Default Neural Model / 默认模型</label>
             <select
-              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-accent/50 transition-colors"
+              className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm text-white font-mono focus:border-exo-accent/40 outline-none transition-all cursor-pointer"
               value={form.default_model}
               onChange={e => setForm(p => ({ ...p, default_model: e.target.value }))}
             >
-              {AVAILABLE_MODELS.map(m => <option key={m} value={m}>{m}</option>)}
+              {AVAILABLE_MODELS.map(m => <option key={m} value={m} className="bg-exo-pure">{m}</option>)}
             </select>
           </div>
-          <div>
-            <label className="block text-[10px] font-bold text-exo-muted uppercase tracking-widest mb-1.5">System Prompt</label>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <label className="label-caps opacity-50">System Directives / 系统提示词</label>
+              <span className="text-[9px] font-mono text-exo-accent opacity-40 uppercase tracking-tighter">L3 Access Required</span>
+            </div>
             <textarea
-              rows={12}
-              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-sm text-exo-text focus:outline-none focus:border-exo-accent/50 transition-colors resize-y font-mono leading-relaxed"
+              rows={10}
+              className="w-full bg-black/80 border border-exo-mist-10 rounded-[2px] px-4 py-3 text-[13px] text-white focus:border-exo-accent/40 outline-none transition-all resize-y font-mono leading-relaxed"
               value={form.system_prompt}
               onChange={e => setForm(p => ({ ...p, system_prompt: e.target.value }))}
             />
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-3 p-5 border-t border-exo-border">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-exo-muted hover:text-white transition-colors">
-            Cancel
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 p-5 border-t border-exo-mist-10 bg-exo-pure/80 backdrop-blur-md">
+          <button onClick={onClose} className="px-6 py-2 rounded-[2px] text-[11px] font-bold uppercase tracking-widest text-exo-muted hover:text-white transition-colors">
+            Abort
           </button>
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="px-5 py-2 bg-exo-accent/10 text-exo-accent hover:bg-exo-accent hover:text-black border border-exo-accent/30 rounded-lg text-sm font-bold flex items-center gap-2 transition-all disabled:opacity-50"
+            className="px-8 py-2 bg-white text-exo-pure rounded-[2px] text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-exo-accent transition-all shadow-brutalist active:scale-95 disabled:opacity-30 flex items-center gap-3"
           >
             {isSaving ? <Activity size={14} className="animate-spin" /> : <Save size={14} />}
-            {isSaving ? 'SAVING...' : 'SAVE CORE'}
+            {isSaving ? 'COMMITTING...' : 'COMMIT CHANGES'}
           </button>
         </div>
       </div>

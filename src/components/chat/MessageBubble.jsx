@@ -18,18 +18,18 @@ function CodeBlock({ children, className }) {
   };
 
   return (
-    <div className="relative group/code my-3">
-      <div className="flex items-center justify-between px-3 py-1.5 bg-black/40 border border-white/5 border-b-0 rounded-t-lg">
-        <span className="text-[10px] text-exo-muted/40 uppercase tracking-widest font-mono">{lang}</span>
+    <div className="relative group/code my-4">
+      <div className="flex items-center justify-between px-3 py-1.5 bg-exo-pure border border-exo-mist-10 border-b-0 rounded-t-[4px]">
+        <span className="text-[10px] text-exo-muted font-mono uppercase tracking-[0.2em]">{lang}</span>
         <button
           onClick={handleCopy}
-          className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] text-exo-muted/40 hover:text-exo-accent hover:bg-exo-accent/5 transition-all"
+          className="flex items-center gap-1.5 px-2 py-0.5 rounded-[2px] text-[10px] text-exo-muted hover:text-exo-accent hover:bg-exo-accent/5 transition-all"
         >
           {copied ? <Check size={10} className="text-green-400" /> : <Copy size={10} />}
-          <span>{copied ? '已复制' : '复制'}</span>
+          <span className="uppercase tracking-widest">{copied ? 'COPIED' : 'COPY'}</span>
         </button>
       </div>
-      <pre className={`${className ?? ''} !mt-0 !rounded-t-none !border-t-0`}>
+      <pre className={`${className ?? ''} !mt-0 !rounded-t-none !rounded-b-[4px] !border-exo-mist-10 !bg-exo-bg`}>
         {children}
       </pre>
     </div>
@@ -42,8 +42,15 @@ const MD_COMPONENTS = {
     if (codeEl) {
       return <CodeBlock className={codeEl.props?.className}>{codeEl.props?.children}</CodeBlock>;
     }
-    return <pre {...props}>{children}</pre>;
+    return <pre {...props} className="bg-exo-pure border border-exo-mist-10 p-4 rounded-[4px] my-4">{children}</pre>;
   },
+  code({ children, className, ...props }) {
+    const isInline = !className;
+    if (isInline) {
+      return <code className="bg-white/10 text-exo-accent px-1 py-0.5 rounded-[2px] font-mono text-[0.9em]" {...props}>{children}</code>;
+    }
+    return <code className={className} {...props}>{children}</code>;
+  }
 };
 
 const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, userAvatarUrl, onEdit, onRegenerate, onBranch, isGenerating }) => {
@@ -97,37 +104,37 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
   }, [msg.id, bookmarkText]);
 
   return (
-    <div className={`flex flex-col group ${isUser ? 'items-end' : 'items-start'}`}>
-      <div className={`flex items-center gap-2 mb-1.5 ${isUser ? 'flex-row-reverse' : ''}`}>
+    <div className={`flex flex-col group w-full ${isUser ? 'items-end' : 'items-start'}`}>
+      <div className={`flex items-center gap-3 mb-2 ${isUser ? 'flex-row-reverse' : ''}`}>
         <img
           src={isUser ? userAvatarUrl : agentAvatarUrl}
-          className={`w-7 h-7 rounded-full border bg-black object-cover ${isUser ? 'border-white/20' : 'border-exo-accent/40'}`}
+          className={`w-6 h-6 rounded-[2px] border bg-exo-pure object-cover ${isUser ? 'border-exo-mist-20' : 'border-exo-accent/40 shadow-glow-gold'}`}
           alt={isUser ? (userNick || 'You') : (agentName || 'Core')}
         />
-        <span className={`label-caps ${isUser ? 'text-white/30' : 'text-exo-accent/50'}`}>
+        <span className={`text-[10px] font-mono font-bold tracking-[0.2em] uppercase ${isUser ? 'text-exo-muted' : 'text-exo-accent'}`}>
           {isUser ? (userNick || 'You') : (agentName || 'Core')}
         </span>
       </div>
 
-      <div className={`w-full space-y-2 ${isUser ? 'flex flex-col items-end' : ''}`}>
+      <div className={`w-full space-y-3 ${isUser ? 'flex flex-col items-end' : ''}`}>
         {!isUser && msg.reasoning_steps && msg.reasoning_steps.map((step, sIdx) => (
-          <div key={sIdx} className="text-[11px] text-exo-accent/70 bg-exo-accent/5 px-2 py-1 rounded">{step}</div>
+          <div key={sIdx} className="text-[10px] font-mono uppercase tracking-widest text-exo-accent/70 bg-exo-accent/5 px-2 py-1 rounded-[2px] border border-exo-accent/10">{step}</div>
         ))}
         {!isUser && msg.status_text && (
-          <div className="flex items-center gap-2 text-[11px] text-exo-muted/70 px-2 py-1.5">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-exo-accent/60 animate-pulse shrink-0" />
+          <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-exo-muted/70 px-2 py-1.5">
+            <span className="inline-block w-1 h-1 rounded-full bg-exo-accent animate-blink-sharp shrink-0" />
             <span>{msg.status_text}</span>
           </div>
         )}
         {!isUser && msg.error && (
-          <div className="text-[11px] text-red-400/80 bg-red-500/5 border border-red-500/15 rounded-lg px-3 py-2">
-            {msg.error}
+          <div className="text-[11px] font-mono uppercase tracking-tight text-red-500 bg-red-500/5 border border-red-500/20 rounded-[2px] px-3 py-2">
+            [ ERROR ] {msg.error}
           </div>
         )}
         {!isUser && msg.reasoning_content && (
-          <details className="lcd-screen rounded-lg text-xs text-exo-muted cursor-pointer w-full">
-            <summary className="p-2 flex items-center gap-2 label-caps">Thinking Process</summary>
-            <div className="p-3 border-t border-exo-border bg-black/50 whitespace-pre-wrap font-mono">{msg.reasoning_content}</div>
+          <details className="lcd-screen rounded-[4px] text-xs text-exo-muted cursor-pointer w-full group/think transition-all hover:border-exo-mist-20">
+            <summary className="p-2 flex items-center gap-2 label-caps text-exo-accent/60 group-hover/think:text-exo-accent transition-colors">Thinking Process</summary>
+            <div className="p-4 border-t border-exo-mist-10 bg-exo-pure/50 whitespace-pre-wrap font-mono leading-relaxed text-[11px]">{msg.reasoning_content}</div>
           </details>
         )}
         {isUser && msg.attachments?.length > 0 && (
@@ -137,15 +144,15 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
                 ? <button
                     key={i}
                     onClick={() => setLightboxSrc(att.preview)}
-                    className="relative group block h-32 max-w-[200px] rounded-lg overflow-hidden border border-exo-border hover:border-exo-accent/40 transition-colors cursor-zoom-in"
+                    className="relative group block h-32 max-w-[200px] rounded-[4px] overflow-hidden border border-exo-mist-12 hover:border-exo-accent/40 transition-all cursor-zoom-in"
                     title={att.name}
                   >
-                    <img src={att.preview} alt={att.name} className="h-full w-full object-cover" />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                    <img src={att.preview} alt={att.name} className="h-full w-full object-cover grayscale group-hover:grayscale-0 transition-all" />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-exo-accent/10 transition-colors flex items-center justify-center">
                       <ZoomIn size={20} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </button>
-                : <div key={i} className="flex items-center gap-1.5 text-[11px] bg-black/50 border border-exo-border rounded-lg px-2 py-1.5 text-exo-muted">
+                : <div key={i} className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-tighter bg-exo-pure border border-exo-mist-12 rounded-[4px] px-2 py-1.5 text-exo-muted">
                     <FileText size={11} className="text-blue-400 shrink-0" />
                     <span className="truncate max-w-[160px]">{att.name}</span>
                   </div>
@@ -156,7 +163,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
         {/* 图片 Lightbox */}
         {lightboxSrc && (
           <div
-            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+            className="fixed inset-0 z-[200] bg-exo-bg/95 backdrop-blur-md flex items-center justify-center"
             onClick={() => setLightboxSrc(null)}
           >
             <button
@@ -167,15 +174,15 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
             </button>
             <img
               src={lightboxSrc}
-              className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl"
+              className="max-w-[90vw] max-h-[90vh] object-contain rounded-[4px] border border-exo-mist-20 shadow-2xl"
               onClick={e => e.stopPropagation()}
               alt="preview"
             />
           </div>
         )}
         <div className={isUser
-          ? 'max-w-[88%] bg-exo-metal border border-exo-border/60 rounded-2xl rounded-tr-sm p-4 text-sm text-exo-text whitespace-pre-wrap'
-          : 'w-full prose prose-invert prose-sm max-w-none'}>
+          ? 'max-w-[92%] bg-exo-pure border border-exo-mist-12 rounded-[4px] rounded-tr-none p-4 text-sm text-white/90 whitespace-pre-wrap shadow-brutalist transition-all hover:border-exo-mist-20'
+          : 'w-full prose prose-invert prose-sm max-w-none prose-pre:!bg-transparent prose-pre:!p-0'}>
           {isUser
             ? msg.content
             : <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]} components={MD_COMPONENTS}>{msg.content}</ReactMarkdown>}
@@ -183,10 +190,10 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
       </div>
 
       {/* Action toolbar */}
-      <div className={`flex items-center gap-0.5 mt-1 opacity-0 group-hover:opacity-100 transition-opacity ${isUser ? 'flex-row-reverse mr-2' : 'ml-1'}`}>
+      <div className={`flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity ${isUser ? 'flex-row-reverse mr-2' : 'ml-1'}`}>
         <button
           onClick={handleCopy}
-          className="p-1.5 text-exo-muted/40 hover:text-exo-muted transition-colors rounded-lg hover:bg-white/5"
+          className="p-1.5 text-exo-muted/30 hover:text-exo-accent transition-colors rounded-[2px] border border-transparent hover:border-exo-mist-10 hover:bg-exo-pure"
           title="复制"
         >
           {copied ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
@@ -196,7 +203,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
           <button
             onClick={() => onEdit && onEdit(msg)}
             disabled={isGenerating}
-            className="p-1.5 text-exo-muted/40 hover:text-exo-accent transition-colors rounded-lg hover:bg-white/5 disabled:opacity-20"
+            className="p-1.5 text-exo-muted/30 hover:text-exo-accent transition-colors rounded-[2px] border border-transparent hover:border-exo-mist-10 hover:bg-exo-pure disabled:opacity-20"
             title="编辑并重发"
           >
             <Edit2 size={12} />
@@ -206,7 +213,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
             <button
               onClick={() => onRegenerate && onRegenerate(msg)}
               disabled={isGenerating}
-              className="p-1.5 text-exo-muted/40 hover:text-exo-accent transition-colors rounded-lg hover:bg-white/5 disabled:opacity-20"
+              className="p-1.5 text-exo-muted/30 hover:text-exo-accent transition-colors rounded-[2px] border border-transparent hover:border-exo-mist-10 hover:bg-exo-pure disabled:opacity-20"
               title="重新生成"
             >
               <RotateCw size={12} />
@@ -214,14 +221,14 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
             <button
               onClick={() => onBranch && onBranch(msg.id)}
               disabled={isGenerating}
-              className="p-1.5 text-exo-muted/40 hover:text-blue-400 transition-colors rounded-lg hover:bg-white/5 disabled:opacity-20"
+              className="p-1.5 text-exo-muted/30 hover:text-blue-400 transition-colors rounded-[2px] border border-transparent hover:border-exo-mist-10 hover:bg-exo-pure disabled:opacity-20"
               title="从此分叉"
             >
               <GitFork size={12} />
             </button>
             <button
               onClick={openBookmark}
-              className={`p-1.5 transition-colors rounded-lg hover:bg-exo-accent/10 ${showBookmark ? 'text-exo-accent' : 'text-exo-muted/40 hover:text-exo-accent'}`}
+              className={`p-1.5 transition-colors rounded-[2px] border border-transparent hover:border-exo-mist-10 hover:bg-exo-pure ${showBookmark ? 'text-exo-accent' : 'text-exo-muted/30 hover:text-exo-accent'}`}
               title="标记到长期记忆"
             >
               <Bookmark size={12} />
@@ -232,37 +239,37 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
 
       {/* Bookmark panel */}
       {showBookmark && (
-        <div className="w-full mt-2 border border-exo-accent/15 rounded-xl bg-exo-accent/5 overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 border-b border-exo-accent/10 accent-line-top">
-            <span className="label-caps text-exo-accent/60">划线标记到长期记忆</span>
+        <div className="w-full mt-3 border border-exo-accent/20 rounded-[4px] bg-exo-pure shadow-brutalist overflow-hidden animate-fade-in">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-exo-mist-10 bg-exo-accent/5">
+            <span className="label-caps text-exo-accent/70">ARCHIVE_TO_LONGTERM_MEMORY</span>
             <button onClick={() => setShowBookmark(false)} className="text-exo-muted/50 hover:text-white transition-colors rounded p-0.5">
               <X size={12} />
             </button>
           </div>
-          <div className="p-3 space-y-2">
+          <div className="p-4 space-y-3">
             <textarea
               value={bookmarkText}
               onChange={e => setBookmarkText(e.target.value)}
               rows={4}
-              className="w-full bg-black border border-exo-border rounded-lg px-3 py-2 text-xs text-exo-text outline-none focus:border-exo-accent/50 resize-y font-mono leading-relaxed"
+              className="w-full bg-exo-bg border border-exo-mist-10 rounded-[2px] px-3 py-2 text-xs text-white outline-none focus:border-exo-accent/50 resize-y font-mono leading-relaxed"
               placeholder="选取要标记的内容..."
             />
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowBookmark(false)}
-                className="px-3 py-1 text-exo-muted hover:text-white text-xs transition-colors"
+                className="px-3 py-1 text-[10px] font-mono uppercase tracking-widest text-exo-muted hover:text-white transition-colors"
               >
-                取消
+                CANCEL
               </button>
               <button
                 onClick={handleBookmarkSubmit}
                 disabled={bookmarkStatus === 'saving' || bookmarkStatus === 'done'}
-                className="px-3 py-1 bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded-lg text-xs hover:bg-exo-accent hover:text-black transition-all disabled:opacity-50"
+                className="px-4 py-1.5 bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded-[2px] text-[10px] font-mono uppercase tracking-widest hover:bg-exo-accent hover:text-black transition-all disabled:opacity-50"
               >
-                {bookmarkStatus === 'saving' ? '提交中...'
-                  : bookmarkStatus === 'done' ? '✓ 已提交'
-                  : bookmarkStatus === 'error' ? '失败，重试'
-                  : '发送到记忆'}
+                {bookmarkStatus === 'saving' ? 'UPLOADING...'
+                  : bookmarkStatus === 'done' ? '✓ ARCHIVED'
+                  : bookmarkStatus === 'error' ? 'RETRY'
+                  : 'ARCHIVE_DATA'}
               </button>
             </div>
           </div>
