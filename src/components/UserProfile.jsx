@@ -255,7 +255,6 @@ const UserProfile = ({ presets }) => {
                 <TweetCard
                   key={tweet.id}
                   tweet={tweet}
-                  depth={0}
                   replyingToId={replyingToId}
                   replyContent={replyContent}
                   setReplyContent={setReplyContent}
@@ -292,7 +291,6 @@ const UserProfile = ({ presets }) => {
 
 const TweetCard = ({
   tweet,
-  depth,
   replyingToId,
   replyContent,
   setReplyContent,
@@ -304,8 +302,23 @@ const TweetCard = ({
   const { name, avatar, isUser } = getAuthorInfo(tweet);
   const isReplyingHere = replyingToId === tweet.id;
 
+  const getFlattened = (repliesList, isDirect) => {
+    let flat = [];
+    if (!repliesList) return flat;
+    repliesList.forEach(r => {
+       flat.push({...r, isDirect});
+       if (r.replies?.length) {
+           flat = flat.concat(getFlattened(r.replies, false));
+       }
+    });
+    return flat;
+  };
+  
+  const allReplies = getFlattened(tweet.replies, true);
+  allReplies.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
   return (
-    <div className={`transition-all ${depth > 0 ? 'ml-8 pl-6 border-l border-exo-mist-10 mt-2' : 'py-6'}`}>
+    <div className="py-6">
       <div className="flex gap-4">
         <div className="relative shrink-0">
           <img
@@ -350,20 +363,60 @@ const TweetCard = ({
           )}
         </div>
       </div>
-      {tweet.replies?.map(reply => (
-        <TweetCard
-          key={reply.id}
-          tweet={reply}
-          depth={depth + 1}
-          replyingToId={replyingToId}
-          replyContent={replyContent}
-          setReplyContent={setReplyContent}
-          setReplyingToId={setReplyingToId}
-          isSubmittingReply={isSubmittingReply}
-          handleReply={handleReply}
-          getAuthorInfo={getAuthorInfo}
-        />
-      ))}
+      
+      {allReplies.length > 0 && (
+        <div className="ml-8 pl-6 border-l border-exo-mist-10 mt-3 space-y-4 pt-1">
+          {allReplies.map(reply => {
+            const replyAuthor = getAuthorInfo(reply);
+            const isReplyReplyingHere = replyingToId === reply.id;
+            const prefix = reply.isDirect ? `${replyAuthor.name}:` : `${replyAuthor.name} replied:`;
+            
+            return (
+              <div key={reply.id} className="relative">
+                <div className="text-[14px] leading-relaxed font-mono tracking-tight break-words">
+                  <span className={`text-[13px] font-bold tracking-tight font-display mr-2 ${replyAuthor.isUser ? 'text-white' : 'text-exo-accent'}`}>
+                    {prefix}
+                  </span>
+                  <span className="text-white/80">{reply.content}</span>
+                </div>
+                
+                <div className="flex items-center gap-3 mt-1.5">
+                  <span className="text-[9px] text-exo-muted font-mono uppercase tracking-tighter opacity-40">
+                    [{formatTime(reply.created_at)}]
+                  </span>
+                  <button
+                    onClick={() => { setReplyingToId(isReplyReplyingHere ? null : reply.id); setReplyContent(''); }}
+                    className="text-[10px] font-bold uppercase tracking-widest text-exo-muted/50 hover:text-exo-accent transition-colors flex items-center gap-1.5"
+                  >
+                    <CornerDownLeft size={10} /> Respond
+                  </button>
+                </div>
+                
+                {isReplyReplyingHere && (
+                  <div className="mt-3 flex gap-3 items-end animate-fade-in">
+                    <textarea
+                      rows={2}
+                      value={replyContent}
+                      onChange={e => setReplyContent(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey && !e.isComposing) { e.preventDefault(); handleReply(reply.id); } }}
+                      placeholder={`REPLY TO ${replyAuthor.name.toUpperCase()}...`}
+                      autoFocus
+                      className="flex-1 bg-black/40 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm text-white font-mono outline-none focus:border-exo-accent/40 resize-none transition-all placeholder:opacity-20"
+                    />
+                    <button
+                      onClick={() => handleReply(reply.id)}
+                      disabled={!replyContent.trim() || isSubmittingReply}
+                      className="px-4 py-2.5 bg-white text-exo-pure rounded-[2px] hover:bg-exo-accent transition-all shadow-brutalist active:scale-95 disabled:opacity-30 shrink-0"
+                    >
+                      <Send size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

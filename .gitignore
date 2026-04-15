@@ -25,3 +25,17 @@ dist-ssr
 
 .claude
 SeminarRoom/
+
+# AI/Tooling & Local Config
+.gemini/
+.superpowers/
+
+# Build/Dev temporary files
+dev-dist/
+Neuer Ordner/
+
+# Design Scratches/Temp Assets
+TaskPanel_Layout.txt
+feather_Ale.html
+sidebar.png
+Example/
