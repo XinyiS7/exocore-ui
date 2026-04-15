@@ -10,7 +10,8 @@ import ConversationList from './components/chat/ConversationList';
 import ChatArea from './components/chat/ChatArea';
 import ProjectFilesArea from './components/project/ProjectFilesArea';
 import AgentManager from './components/agent/AgentManager';
-import UserProfile from './components/UserProfile';
+import Timeline from './components/Timeline';
+import UserProfilePanel from './components/UserProfilePanel';
 import SettingsPanel from './components/settings/SettingsPanel';
 import CouncilArea from './components/council/CouncilArea';
 import CouncilCreateModal from './components/council/CouncilCreateModal';
@@ -30,6 +31,9 @@ export default function App() {
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [showConvList, setShowConvList] = useState(false);
   
+  // Profile panel state
+  const [showProfilePanel, setShowProfilePanel] = useState(false);
+
   // Council state
   const [activeCouncilId, setActiveCouncilId] = useState(null);
   const [councilSessions, setCouncilSessions] = useState([]);
@@ -167,8 +171,8 @@ export default function App() {
       case 'agent_hub':
         return <AgentManager openNewSession={openNewSession} openDestructor={openDestructor} setCurrentTab={handleTabChange} presets={presets} refreshPresets={refreshPresets} />;
       
-      case 'profile':
-        return <UserProfile presets={presets} />;
+      case 'timeline':
+        return <Timeline presets={presets} />;
       
       case 'settings':
         return <SettingsPanel projects={projects} presets={presets} />;
@@ -181,6 +185,9 @@ export default function App() {
   return (
     <div className="w-full h-[100dvh] bg-exo-bg text-white font-sans flex overflow-hidden relative selection:bg-exo-accent/30 selection:text-white pt-safe pb-safe">
       
+      {/* User Profile Panel */}
+      <UserProfilePanel isOpen={showProfilePanel} onClose={() => setShowProfilePanel(false)} />
+
       {/* Modals */}
       <DestructorModal {...destructorConfig} onClose={() => setDestructorConfig(p => ({...p, isOpen: false}))} />
       <CouncilCreateModal
@@ -214,13 +221,14 @@ export default function App() {
         fixed md:relative inset-y-0 left-0 z-[120] md:z-auto transition-transform duration-500 ease-out
         ${isSidebarExpanded ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
-        <Sidebar 
-          currentTab={currentTab} 
-          setCurrentTab={handleTabChange} 
-          showConvList={showConvList} 
+        <Sidebar
+          currentTab={currentTab}
+          setCurrentTab={handleTabChange}
+          showConvList={showConvList}
           setShowConvList={setShowConvList}
           isExpanded={isSidebarExpanded}
           setIsExpanded={setIsSidebarExpanded}
+          onOpenProfile={() => setShowProfilePanel(true)}
         />
       </div>
 

@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Activity, CornerDownLeft, Camera } from 'lucide-react';
+import { Send, Activity, CornerDownLeft } from 'lucide-react';
 import { baseUrl, getCsrfToken } from '../utils/api';
 import { getUserAvatarUrl, getAgentAvatarUrl } from '../utils/avatar';
-import AvatarCropModal from './modals/AvatarCropModal';
 
 const formatTime = (dateStr) => {
   if (!dateStr) return '';
-  // 回复层级可能只返回 "HH:MM:SS"，直接展示
   if (/^\d{2}:\d{2}/.test(dateStr)) return dateStr.slice(0, 5);
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return dateStr;
@@ -21,7 +19,7 @@ const formatTime = (dateStr) => {
   return date.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
 };
 
-const UserProfile = ({ presets }) => {
+const Timeline = ({ presets }) => {
   const [tweets, setTweets] = useState([]);
   const [hasMore, setHasMore] = useState(false);
   const [nextBeforeId, setNextBeforeId] = useState(null);
@@ -32,37 +30,26 @@ const UserProfile = ({ presets }) => {
   const [replyingToId, setReplyingToId] = useState(null);
   const [replyContent, setReplyContent] = useState('');
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
-  const bottomRef = useRef(null);
-  const avatarInputRef = useRef(null);
   const [userAvatarUrl, setUserAvatarUrl] = useState(() => getUserAvatarUrl());
-  const [cropFile, setCropFile] = useState(null);
+  const bottomRef = useRef(null);
 
   const userNick = localStorage.getItem('exo_user_nick') || 'You';
 
-  const handleAvatarChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setCropFile(file);
-    e.target.value = '';
-  };
+  // Keep avatar in sync if updated from UserProfilePanel
+  useEffect(() => {
+    const handler = () => setUserAvatarUrl(getUserAvatarUrl());
+    window.addEventListener('user-avatar-updated', handler);
+    return () => window.removeEventListener('user-avatar-updated', handler);
+  }, []);
 
   const getAuthorInfo = (tweet) => {
     if (tweet.author === 'user') {
-      return {
-        name: userNick,
-        avatar: userAvatarUrl,
-        isUser: true,
-      };
+      return { name: userNick, avatar: userAvatarUrl, isUser: true };
     }
-    // author 格式："agent:{preset_id}"，如 "agent:1"
     const presetId = parseInt(tweet.author.split(':')[1]);
     const preset = presets?.find(p => p.id === presetId);
     const name = preset?.name || 'G045';
-    return {
-      name,
-      avatar: getAgentAvatarUrl(presetId, name),
-      isUser: false,
-    };
+    return { name, avatar: getAgentAvatarUrl(presetId, name), isUser: false };
   };
 
   const fetchTweets = async () => {
@@ -96,12 +83,8 @@ const UserProfile = ({ presets }) => {
     }
   }, [nextBeforeId, isLoadingMore, hasMore]);
 
-  // 进入分页时拉取一次
-  useEffect(() => {
-    fetchTweets();
-  }, []);
+  useEffect(() => { fetchTweets(); }, []);
 
-  // 滚到底部时触发加载
   useEffect(() => {
     const sentinel = bottomRef.current;
     if (!sentinel) return;
@@ -183,17 +166,6 @@ const UserProfile = ({ presets }) => {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-exo-bg bg-noise overflow-hidden animate-fade-in">
-      {cropFile && (
-        <AvatarCropModal
-          file={cropFile}
-          onConfirm={(dataUrl) => {
-            localStorage.setItem('exo_user_avatar_url', dataUrl);
-            setUserAvatarUrl(dataUrl);
-            setCropFile(null);
-          }}
-          onCancel={() => setCropFile(null)}
-        />
-      )}
       <div className="h-14 border-b border-exo-mist-10 flex items-center px-8 bg-exo-pure/40 backdrop-blur-md shrink-0">
         <div className="flex flex-col">
           <span className="font-bold text-[13px] text-white tracking-[0.2em] uppercase font-display">Neural Timeline</span>
@@ -207,21 +179,11 @@ const UserProfile = ({ presets }) => {
           {/* Post Box */}
           <div className="composio-card p-6 mb-10 bg-exo-pure/40">
             <div className="flex gap-4">
-              <div
-                className="relative shrink-0 cursor-pointer group"
-                onClick={() => avatarInputRef.current?.click()}
-                title="Update Link Avatar"
-              >
-                <img
-                  src={userAvatarUrl}
-                  className="w-12 h-12 rounded-full border border-exo-mist-10 bg-black object-cover transition-transform group-hover:scale-105"
-                  alt={userNick}
-                />
-                <div className="absolute inset-0 rounded-full bg-exo-accent/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity border border-exo-accent/60 shadow-glow-sharp">
-                  <Camera size={14} className="text-exo-pure" />
-                </div>
-                <input type="file" ref={avatarInputRef} accept="image/*" className="hidden" onChange={handleAvatarChange} />
-              </div>
+              <img
+                src={userAvatarUrl}
+                className="w-12 h-12 rounded-full border border-exo-mist-10 bg-black object-cover shrink-0"
+                alt={userNick}
+              />
               <div className="flex-1 space-y-4">
                 <textarea
                   rows={3}
@@ -271,7 +233,6 @@ const UserProfile = ({ presets }) => {
             </div>
           )}
 
-          {/* Sentinel */}
           <div ref={bottomRef} className="h-1" />
 
           {isLoadingMore && (
@@ -310,14 +271,12 @@ const TweetCard = ({
     let flat = [];
     if (!repliesList) return flat;
     repliesList.forEach(r => {
-       flat.push({...r, isDirect});
-       if (r.replies?.length) {
-           flat = flat.concat(getFlattened(r.replies, false));
-       }
+      flat.push({ ...r, isDirect });
+      if (r.replies?.length) flat = flat.concat(getFlattened(r.replies, false));
     });
     return flat;
   };
-  
+
   const allReplies = getFlattened(tweet.replies, true);
   allReplies.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
@@ -344,7 +303,7 @@ const TweetCard = ({
           >
             <CornerDownLeft size={12} /> Respond
           </button>
-          
+
           {isReplyingHere && (
             <div className="mt-4 flex gap-3 items-end animate-fade-in">
               <textarea
@@ -367,14 +326,13 @@ const TweetCard = ({
           )}
         </div>
       </div>
-      
+
       {allReplies.length > 0 && (
         <div className="ml-8 pl-6 border-l border-exo-mist-10 mt-3 space-y-4 pt-1">
           {allReplies.map(reply => {
             const replyAuthor = getAuthorInfo(reply);
             const isReplyReplyingHere = replyingToId === reply.id;
             const prefix = reply.isDirect ? `${replyAuthor.name}:` : `${replyAuthor.name} replied:`;
-            
             return (
               <div key={reply.id} className="relative">
                 <div className="text-[14px] leading-relaxed font-mono tracking-tight break-words">
@@ -383,7 +341,6 @@ const TweetCard = ({
                   </span>
                   <span className="text-white/80">{reply.content}</span>
                 </div>
-                
                 <div className="flex items-center gap-3 mt-1.5">
                   <span className="text-[9px] text-exo-muted font-mono uppercase tracking-tighter opacity-40">
                     [{formatTime(reply.created_at)}]
@@ -395,7 +352,6 @@ const TweetCard = ({
                     <CornerDownLeft size={10} /> Respond
                   </button>
                 </div>
-                
                 {isReplyReplyingHere && (
                   <div className="mt-3 flex gap-3 items-end animate-fade-in">
                     <textarea
@@ -425,4 +381,4 @@ const TweetCard = ({
   );
 };
 
-export default UserProfile;
+export default Timeline;

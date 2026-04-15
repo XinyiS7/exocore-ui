@@ -1,11 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { 
-  MessageSquare, BrainCircuit, User, Settings, Hexagon, 
-  Camera, PanelLeftOpen, PanelLeftClose, List,
+import React, { useState, useEffect } from 'react';
+import {
+  MessageSquare, BrainCircuit, ScrollText, Settings, Hexagon,
+  PanelLeftOpen, PanelLeftClose, List,
   LayoutGrid, Calendar
 } from 'lucide-react';
 import { getUserAvatarUrl } from '../../utils/avatar';
-import AvatarCropModal from '../modals/AvatarCropModal';
 
 const NavIcon = ({ icon: Icon, isActive, onClick, title, label, isExpanded, showLabel = true }) => (
   <button
@@ -45,45 +44,25 @@ const NavIcon = ({ icon: Icon, isActive, onClick, title, label, isExpanded, show
   </button>
 );
 
-const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList, isExpanded, setIsExpanded }) => {
+const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList, isExpanded, setIsExpanded, onOpenProfile }) => {
   const [userAvatarUrl, setUserAvatarUrl] = useState(() => getUserAvatarUrl());
-  const [cropFile, setCropFile] = useState(null);
-  const avatarInputRef = useRef(null);
   const [userNick, setUserNick] = useState(() => localStorage.getItem('exo_user_nick') || 'Exo User');
 
   useEffect(() => {
-    const handleStorage = () => {
-      setUserNick(localStorage.getItem('exo_user_nick') || 'Exo User');
-    };
-    window.addEventListener('storage', handleStorage);
-    window.addEventListener('user-nick-updated', handleStorage);
+    const handleNick = () => setUserNick(localStorage.getItem('exo_user_nick') || 'Exo User');
+    const handleAvatar = () => setUserAvatarUrl(getUserAvatarUrl());
+    window.addEventListener('storage', handleNick);
+    window.addEventListener('user-nick-updated', handleNick);
+    window.addEventListener('user-avatar-updated', handleAvatar);
     return () => {
-      window.removeEventListener('storage', handleStorage);
-      window.removeEventListener('user-nick-updated', handleStorage);
+      window.removeEventListener('storage', handleNick);
+      window.removeEventListener('user-nick-updated', handleNick);
+      window.removeEventListener('user-avatar-updated', handleAvatar);
     };
   }, []);
 
-  const handleAvatarChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setCropFile(file);
-    e.target.value = '';
-  };
-
   return (
     <>
-    {cropFile && (
-      <AvatarCropModal
-        file={cropFile}
-        onConfirm={(dataUrl) => {
-          localStorage.setItem('exo_user_avatar_url', dataUrl);
-          setUserAvatarUrl(dataUrl);
-          setCropFile(null);
-        }}
-        onCancel={() => setCropFile(null)}
-      />
-    )}
-    
     <div 
       className={`
         h-full flex flex-col items-center justify-between z-[100] transition-all duration-500 ease-out
@@ -132,7 +111,7 @@ const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList, isE
           <NavIcon icon={LayoutGrid} title="概览" label="控制中心" isActive={currentTab === 'home'} isExpanded={isExpanded} onClick={() => setCurrentTab('home')} />
           <NavIcon icon={MessageSquare} title="会话" label="即时会话" isActive={currentTab === 'chat'} isExpanded={isExpanded} onClick={() => { setCurrentTab('chat'); setShowConvList(true); }} />
           <NavIcon icon={BrainCircuit} title="Agent" label="代理中心" isActive={currentTab === 'agent_hub'} isExpanded={isExpanded} onClick={() => { setCurrentTab('agent_hub'); }} />
-          <NavIcon icon={User} title="时间线" label="时间线" isActive={currentTab === 'profile'} isExpanded={isExpanded} onClick={() => { setCurrentTab('profile'); }} />
+          <NavIcon icon={ScrollText} title="时间线" label="时间线" isActive={currentTab === 'timeline'} isExpanded={isExpanded} onClick={() => { setCurrentTab('timeline'); }} />
           <NavIcon icon={Calendar} title="日历" label="日历" isActive={currentTab === 'calendar'} isExpanded={isExpanded} onClick={() => setCurrentTab('calendar')} />
           
           {/* List Toggle for Chat/Council Mode */}
@@ -166,27 +145,22 @@ const Sidebar = ({ currentTab, setCurrentTab, showConvList, setShowConvList, isE
         
         <div
           className="relative cursor-pointer group/avatar flex items-center gap-3 w-full p-1 rounded-[4px] transition-all hover:bg-white/5 px-3"
-          onClick={() => avatarInputRef.current?.click()}
+          onClick={onOpenProfile}
         >
           <div className="relative shrink-0">
-            <img 
-              src={userAvatarUrl} 
-              className="w-10 h-10 rounded-[4px] border border-exo-mist-10 object-cover bg-exo-pure group-hover/avatar:border-exo-accent/30 transition-all" 
-              alt="User" 
+            <img
+              src={userAvatarUrl}
+              className="w-10 h-10 rounded-[4px] border border-exo-mist-10 object-cover bg-exo-pure group-hover/avatar:border-exo-accent/30 transition-all"
+              alt="User"
             />
-            <div className="absolute inset-0 rounded-[4px] bg-black/60 opacity-0 group-hover/avatar:opacity-100 flex items-center justify-center transition-opacity">
-              <Camera size={14} className="text-white" />
-            </div>
           </div>
-          
+
           <div className={`transition-all duration-300 overflow-hidden ${
             isExpanded ? 'opacity-100 w-32' : 'opacity-0 w-0'
           }`}>
             <p className="text-xs font-bold text-exo-accent/80 truncate">{userNick}</p>
             <p className="text-[10px] text-exo-muted truncate tracking-tighter opacity-70">EXO-CORE AUTH</p>
           </div>
-          
-          <input type="file" ref={avatarInputRef} accept="image/*" className="hidden" onChange={handleAvatarChange} />
         </div>
       </div>
     </div>

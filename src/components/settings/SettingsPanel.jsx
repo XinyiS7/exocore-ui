@@ -63,9 +63,9 @@ const SettingsPanel = ({ projects, presets }) => {
       next.add(cid);
       if (!convProposals[cid]) {
         setLoadingConvs(lc => new Set([...lc, cid]));
-        fetch(`${baseUrl}/api/agents/conversations/${cid}/proposals/`, { credentials: 'include' })
+        fetch(`${baseUrl}/api/agents/conversations/${cid}/history_chunks/`, { credentials: 'include' })
           .then(res => res.json())
-          .then(data => setConvProposals(cp => ({ ...cp, [cid]: Array.isArray(data.proposals) ? data.proposals : [] })))
+          .then(data => setConvProposals(cp => ({ ...cp, [cid]: Array.isArray(data.history_chunks) ? data.history_chunks : [] })))
           .catch(err => console.error('Proposals 加载失败', err))
           .finally(() => setLoadingConvs(lc => { const n = new Set(lc); n.delete(cid); return n; }));
       }
@@ -238,10 +238,15 @@ const SettingsPanel = ({ projects, presets }) => {
                                     className="w-full flex items-start gap-4 px-6 py-4 hover:bg-exo-accent/[0.03] transition-colors text-left group border-t border-exo-mist-4 first:border-t-0"
                                   >
                                     <div className="flex flex-col flex-1 overflow-hidden gap-1">
-                                      <span className="text-[9px] text-exo-accent/40 font-mono uppercase tracking-widest">
-                                        {proposal.created_at ? new Date(proposal.created_at).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }) : 'TIMESTAMP MISSING'}
-                                      </span>
-                                      <span className="text-[12px] text-exo-text/80 group-hover:text-exo-text line-clamp-2 leading-snug font-mono tracking-tight">{proposal.content || 'NULL_CONTENT'}</span>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[9px] text-exo-accent/40 font-mono uppercase tracking-widest">
+                                          {proposal.created_at ? new Date(proposal.created_at).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }) : 'TIMESTAMP MISSING'}
+                                        </span>
+                                        {proposal.topic && (
+                                          <span className="text-[9px] px-1.5 py-0.5 bg-exo-accent/5 border border-exo-accent/20 text-exo-accent/60 font-mono uppercase tracking-tighter rounded-[2px]">{proposal.topic}</span>
+                                        )}
+                                      </div>
+                                      <span className="text-[12px] text-exo-text/80 group-hover:text-exo-text line-clamp-2 leading-snug font-mono tracking-tight">{proposal.summary || 'NULL_CONTENT'}</span>
                                     </div>
                                     <Edit3 size={12} className="text-exo-accent opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-1" />
                                   </button>

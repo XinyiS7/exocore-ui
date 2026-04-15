@@ -3,7 +3,7 @@ import { ArrowLeft, Activity, Save, Database, History } from 'lucide-react';
 import { baseUrl, getCsrfToken } from '../../utils/api';
 
 const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack }) => {
-  const [content, setContent] = useState(proposal?.content || '');
+  const [content, setContent] = useState(proposal?.summary || '');
   const [keywords, setKeywords] = useState(
     Array.isArray(proposal?.keywords) ? proposal.keywords.join(', ') : (proposal?.keywords || '')
   );
@@ -11,6 +11,18 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
   const [saveMsg, setSaveMsg] = useState('');
   const [originalMessages, setOriginalMessages] = useState(null);
   const [isLoadingMsgs, setIsLoadingMsgs] = useState(false);
+
+  // 拉取 history_chunk 详情以获取 raw_text（比列表里的 summary 更完整）
+  useEffect(() => {
+    if (!proposal?.id) return;
+    fetch(`${baseUrl}/api/memory/history_chunks/${proposal.id}/`, { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => {
+        if (data.raw_text) setContent(data.raw_text);
+        if (data.keywords) setKeywords(Array.isArray(data.keywords) ? data.keywords.join(', ') : data.keywords);
+      })
+      .catch(err => console.error('history_chunk 详情加载失败', err));
+  }, [proposal?.id]);
 
   useEffect(() => {
     if (!proposal || conversationId == null) return;
@@ -31,12 +43,12 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
     setIsSaving(true);
     setSaveMsg('');
     try {
-      const res = await fetch(`${baseUrl}/api/memory/proposals/${proposal.id}/`, {
+      const res = await fetch(`${baseUrl}/api/memory/history_chunks/${proposal.id}/`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
         credentials: 'include',
         body: JSON.stringify({
-          content,
+          raw_text: content,
           keywords: keywords.split(',').map(k => k.trim()).filter(Boolean),
         }),
       });
@@ -61,7 +73,9 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
             <Database size={14} className="text-exo-accent" />
             <span className="text-[13px] font-bold text-white uppercase tracking-[0.2em] font-display">Refine Neural Summary / 摘要优化</span>
           </div>
-          <span className="text-[9px] text-exo-muted font-mono uppercase tracking-widest opacity-40 mt-0.5 truncate">Source: {conversationName}</span>
+          <span className="text-[9px] text-exo-muted font-mono uppercase tracking-widest opacity-40 mt-0.5 truncate">
+            Source: {conversationName}{proposal?.topic ? ` · ${proposal.topic}` : ''}
+          </span>
         </div>
       </div>
 

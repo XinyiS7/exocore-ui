@@ -1,6 +1,6 @@
 ========================================================
   ExoCore — React 前端接口数据格式速查表
-  最后更新：2026-03-29
+  最后更新：2026-04-15 (SAI-G045 Alessandro)
 ========================================================
 
 
@@ -39,11 +39,6 @@
   ...
 ]
 
-// 前端分组逻辑：
-//   g045 组   → filter(c => c.agent_type === 'g045')
-//   project 抽屉 → filter(c => c.agent_type !== 'g045' && c.project !== null)  按 project 聚合
-//   无项目组  → filter(c => c.agent_type !== 'g045' && c.project === null)
-
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 2. GET /api/agents/chat/<session_id>/
@@ -54,167 +49,22 @@
 [
   {
     "id": 101,
-    "role": "user",                               // "user" | "assistant"
+    "role": "user",
     "content": "量子纠缠是什么？",
-    "reasoning_content": null,                    // 仅 assistant 消息可能有值（CoT 内容）
-    "platform": "gemini-3.1-pro-preview",         // 生成该消息的模型
-    "created_at": "2026-03-10T14:23:01Z",
-    "index_in_session": 0                         // 会话内序号，与 Proposal.start/end_index 对应
-  },
-  {
-    "id": 102,
-    "role": "assistant",
-    "content": "量子纠缠是...",
-    "reasoning_content": "用户问的是基础物理概念，不需要 RAG...",
+    "reasoning_content": null,
     "platform": "gemini-3.1-pro-preview",
-    "created_at": "2026-03-10T14:23:08Z",
-    "index_in_session": 1
-  }
+    "created_at": "2026-03-10T14:23:01Z",
+    "index_in_session": 0                         // 与 HistoryChunk.start/end_index 对应
+  },
+  ...
 ]
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 3. POST /api/agents/chat/<session_id>/   (SSE 流式响应)
-   Content-Type: text/event-stream
    用途：发送消息并接收流式回复
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-// ── 请求体（multipart/form-data 或 JSON）────────────────
-// content              string   用户消息正文（regenerate_message_id 模式下可省略）
-// thinking_level       string   "off"|"auto"|"low"|"medium"|"high"，默认 "medium"
-// temperature          float    0.0~2.0，默认 1.0
-// model                string?  模型名称覆盖（可省，使用 preset 默认值）
-// pending_attachments  array?   本地文件 pending 元数据列表
-// files                File[]?  直接上传的图片/文件（multipart）
-//
-// ── 消息编辑 / 重生成（三者互斥）────────────────────────
-// regenerate           bool     重生成最后一条 AI 消息（旧接口，已修复：会真正删除旧 AI 消息）
-// edit_message_id      int?     覆盖指定用户消息（id）并重新生成；后端自动删除该消息之后的所有消息
-// regenerate_message_id int?    重新生成指定 AI 消息（id）；后端自动删除该消息及其之后的所有消息
-//
-// 前端处理逻辑：
-//   普通发送：{ content: "..." }
-//   编辑用户消息并重发：{ content: "修改后的内容", edit_message_id: 101 }
-//     → 后端覆盖消息 101 内容，删除 index > 101.index 的所有消息，重新生成 AI 回复
-//   重生成指定 AI 消息：{ regenerate_message_id: 102 }
-//     → 后端删除消息 102 及之后的所有消息，基于前驱 user 消息重新生成
-//   重生成最后一条：{ regenerate: true, content: "<上一条用户消息>" }
-//     （推荐改用 regenerate_message_id 精确指定）
-//
-// 注意：
-//   - edit_message_id / regenerate_message_id 触发后，前端应清除本地对应位置之后的所有消息
-//   - Stop（中止流式）：使用 AbortController.abort()，后端无消息入库（持久化在流结束后）
-
-// 每个 SSE 块格式：
-//   event: <event_type>
-//   data: <JSON string>
-//
-// 事件类型与 data 格式：
-
-event: reasoning
-data: "正在分析输入意图并扫描本地权限库..."    // string，RAG 判定阶段的进度提示（可能多条）
-
-event: reasoning
-data: "记忆锚点命中 2 条"
-
-event: thinking
-data: "用户问的是..."                          // string，模型 CoT 思考流（逐 chunk，拼接展示）
-
-event: content
-data: "量子纠缠是两个粒子..."                  // string，正文回复流（逐 chunk，拼接展示）
-
-event: anchor_created
-data: {"pattern": "量子纠缠"}                  // G045 function call 创建了新记忆锚点时触发
-
-event: status
-data: "正在搜索…"                              // string，工具调用前的状态提示（阻塞操作期间显示）
-// 可能的值：
-//   "正在搜索…"              — web_search 开始前
-//   "正在检索记忆…"          — history_backtracking 开始前
-//   "正在读取目录…"          — ls_local
-//   "正在读取文件…"          — cat_local
-//   "正在写入文件…"          — write_local
-//   "正在修改文件…"          — fileinput_local
-//   "正在执行命令…"          — execute_bash
-//   "正在启动子代理…"        — spawn_sub_agent
-//   "正在获取子代理结果…"    — get_sub_agent_result
-//   "正在读取日历…"          — calendar_list_events
-//   "正在创建日历事件…"      — calendar_create_event
-//   "正在删除日历事件…"      — calendar_delete_event
-// 前端：在 status 事件到来时显示加载指示器；收到下一个 content 或 done 时清除
-
-event: telemetry
-data: {
-  "platform": "gemini",
-  "model_name": "gemini-1.5-pro",
-  "input_chars": 15820,
-  "output_chars": 950,
-  "tool_calls_in_turn": 2
-}
-
-event: error
-data: {
-  "code": "rate_limit",    // 错误代码（见下）
-  "message": "API 配额已用尽，请稍后重试"
-}
-// code 枚举值：
-//   "rate_limit"   — API 配额耗尽 / 限速 (429)
-//   "server_busy"  — 服务器繁忙 (503 / overloaded)
-//   "server_error" — 服务器内部错误 (500)
-//   "timeout"      — 请求超时
-//   "network"      — 网络连接中断
-//   "auth"         — API 密钥无效或未配置
-//   "stream_error" — 其他流式传输中断
-
-event: done
-data: "[DONE]"                                 // 流结束标志
-
-// 前端处理示例：
-//   const es = new EventSource(...)  ← 或用 fetch + ReadableStream
-//   es.addEventListener('content', e => fullText += e.data)
-//   es.addEventListener('thinking', e => thinkingText += e.data)
-//   es.addEventListener('reasoning', e => reasoningSteps.push(e.data))
-//   es.addEventListener('telemetry', e => displayUsage(JSON.parse(e.data)))
-//   es.addEventListener('done', () => es.close())
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-4. GET /api/agents/presets/
-   返回：Array<AgentPreset>
-   用途：Agent 管理页，列出所有可见预设（is_visible=true）
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-[
-  {
-    "id": 1,
-    "name": "G045 Superior Agent",
-    "description": "高权限跨项目助手",
-    "agent_type": "g045",                         // "g045" | "standard"
-    "default_model": "gemini-3.1-pro-preview",
-    "system_prompt": "你将扮演...",
-    "is_visible": true                            // 永远为 true（Archived 预设被 queryset 过滤掉）
-  }
-]
-
-// platform 判断逻辑（后端无独立字段，从 default_model 推断）：
-//   'gemini' in model.toLowerCase()  → 'Gemini'
-//   否则                             → 'DeepSeek'
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-5. GET /api/core/projects/
-   返回：Array<Project>
-   用途：项目列表（已排除 Archived Project）
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-[
-  {
-    "id": 3,
-    "name": "Grand-Archives",
-    "description": "知识整理项目",
-    "created_at": "2026-01-05T09:00:00Z"
-  }
-]
+// 事件类型与 data 格式见主文档，无变动。
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -222,902 +72,125 @@ data: "[DONE]"                                 // 流结束标志
    返回：Array<ProjectFile | ObsidianSyncEntry>
    用途：项目文件列表（含 web 上传 + Obsidian 同步两类）
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-[
-  // web 上传的文件
-  {
-    "id": 42,                                     // number
-    "name": "设计文档.pdf",
-    "file_type": "application/pdf",
-    "type": "application/pdf",                    // 同 file_type，前端用 image/* 判断预览
-    "size": 204800,                               // bytes
-    "file": "/media/projects/3/设计文档.pdf",     // 相对路径
-    "url": "http://localhost:8000/media/projects/3/设计文档.pdf",
-    "preview_url": "http://localhost:8000/media/projects/3/设计文档.pdf",
-    "created_at": "2026-03-01T10:00:00Z",
-    "source": "web_upload"
-  },
-  // Obsidian 同步的 .md 文件
-  {
-    "id": "kf_88",                                // string，格式 "kf_<KnowledgeFragment.id>"
-    "name": "量子力学笔记.md",
-    "file_type": "text/markdown",
-    "type": "text/markdown",
-    "size": 0,
-    "file": null,
-    "url": null,
-    "preview_url": null,
-    "created_at": "2026-02-20T08:30:00Z",
-    "source": "obsidian_sync"
-  }
-]
-
-// 注意：删除时 id 为 number → DELETE /api/core/projects/<pk>/files/<id>/
-//             id 为 "kf_*" → DELETE /api/core/projects/<pk>/files/kf_<n>/
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-7. POST /api/agents/sessions/init/
-   用途：创建新会话
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-// Request body:
-{
-  "preset_id": 1,
-  "name": "新会话 2026-03-13",                   // 可选，默认 "新会话 <today>"
-  "project_ids": [3, 7],                         // 可选，standard agent 传 [单个id]，G045 传多个
-  "session_type": "chat",                        // 可选，默认 "chat"，可传 "code"
-  "thinking_level": "auto",                      // 可选，默认 "auto"
-  "temperature": 1.0                             // 可选，默认 1.0
-}
-
-// Response (201):
-{
-  "msg": "G045 会话已建立，权限已锁定。",
-  "data": {
-    "session_id": 12,                            // = Conversation.id，聊天接口用这个
-    "agent_session_id": 5,
-    "session_name": "新会话 2026-03-13"
-  }
-}
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-8. PATCH /api/agents/conversations/<pk>/
-   用途：会话重命名 / 即时保存偏好设置（无需发消息）
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-// Request body（所有字段可选，只传需要修改的）:
-{
-  "name": "新名称",
-  "thinking_level": "high",
-  "temperature": 1.0
-}
-
-// Response (200): 返回完整的 Conversation 对象（同 GET /conversations/ 的单条格式）
-
-// 注意：thinking_level / temperature 也会在每次 POST /chat/<id>/ 发消息后自动写回，
-//       所以大部分时候不需要手动 PATCH，只有「用户主动切换但尚未发消息」时才需要。
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-9. GET /api/agents/presets/<preset_id>/anchors/snapshot/
-   返回：Array<MemoryAnchor>
-   用途：G045 个人主页只读展示，高分活跃锚点快照
-   筛选：is_active=true AND current_weight >= 0.5，随机排序取前 15
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-[
-  {
-    "trigger_id": "a3f2c1d0-...",               // UUID，唯一标识
-    "pattern": "(温度|temperature|高熵)",         // 触发关键词，正则表达式，需要你只取前二
-    "essential_note": "用户对量子力学有浓厚兴趣，提及时可深入展开...",
-    "current_weight": 0.92,                      // 0.0 ~ 1.0，越高越活跃
-    "is_persistent": false                       // true = 恒定锚点（永不衰减），给前端加特殊视效
-  },
-  {
-    "trigger_id": "b7e4a2c1-...",
-    "pattern": "深夜",
-    "essential_note": "用户在深夜工作时情绪偏向沉静内省，回应节奏放慢...",
-    "current_weight": 1.0,
-    "is_persistent": true                        // ← 满权两周后自动晋升，前端可加光晕/金边等效果
-  }
-]
-
-// is_persistent 视效建议：
-//   false → 普通卡片样式
-//   true  → 金色边框 / 发光效果 / 特殊徽章
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-10. GET /api/telemetry/daily/
-    返回：Object（按日期 → 平台 → 模型聚合）
-    用途：Rechnung 账单页，展示历史用量统计
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-{
-  "2026-03-16": {
-    "gemini": {
-      "gemini-3-flash-preview": {
-        "input_chars": 128400,
-        "output_chars": 21300,
-        "tool_calls": 15,
-        "turns": 8           // 本日该模型被调用的完整轮次数
-      },
-      "gemini-3.1-pro-preview": {
-        "input_chars": 45200,
-        "output_chars": 8900,
-        "tool_calls": 3,
-        "turns": 2
-      }
-    },
-    "deepseek": {
-      "deepseek-chat": {
-        "input_chars": 9800,
-        "output_chars": 3100,
-        "tool_calls": 0,
-        "turns": 1
-      }
-    }
-  },
-  "2026-03-15": { ... }
-}
-
-// 日期键为 ISO 8601 格式 "YYYY-MM-DD"，降序排列（最新在前）
-// 无数据时返回 {}
+// 格式见主文档，无变动。
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 11. GET  /api/memory/knowledge/<pk>/
-    返回：KnowledgeFragment 详情（摘要 + 关键词，供前端编辑）
     PATCH /api/memory/knowledge/<pk>/
-    用途：用户手动修改摘要或关键词
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-// GET 返回：
-{
-  "id": 88,
-  "uid": "kf_88",
-  "title": "量子力学笔记",
-  "topic": "Physics",
-  "tags": ["量子", "波函数"],
-  "keywords": ["薛定谔方程", "叠加态"],   // 用户维护的 L2 关键词（可 PATCH 修改）
-  "abstract": "本文介绍量子力学基本原理...",
-  "status": "active",
-  "source_type": "obsidian_md",
-  "project": 3
-}
-
-// PATCH 请求体（所有字段可选）：
-{
-  "abstract": "修改后的摘要内容",    // 修改此字段 → 后台异步触发重向量化（pgvector）
-  "keywords": ["新关键词1", "新关键词2"]  // 修改此字段 → 同步入库，无需重向量化
-}
-
-// PATCH 响应 (200)：
-{ "msg": "已保存，摘要重向量化已在后台启动。", "updated": ["abstract", "keywords"] }
-// 或（仅改了 keywords）：
-{ "msg": "已保存。", "updated": ["keywords"] }
-
-// 检索行为说明（前端可在 tooltip 或帮助文本中展示）：
-//   title（文章标题）= L1 关键词：命中时必定召回，默认返回摘要，
-//                      若向量相似度同时 ≥ 0.75 则升级为全文
-//   keywords 字段    = L2 关键词：用户自定义，命中时必定召回并返回全文
-//   向量检索         = 基于 abstract 的语义召回，相似度 < 0.52 时过滤
+// 格式见主文档，无变动。
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-12. GET /api/agents/conversations/<pk>/proposals/
-    返回：该会话所有 Proposal（长期记忆片段），按时间顺序排列
+12. GET /api/agents/conversations/<pk>/history_chunks/
+    返回：该会话所有 HistoryChunk（长期记忆片段），按时间顺序排列
     用途：记忆管理页，展示一个会话的全部压实历史
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 {
   "conversation_id": 12,
   "session_name": "关于量子纠缠的讨论",
-  "session_type": "chat",              // "chat" | "code" | "cli"
-  "proposals": [
+  "session_type": "chat",
+  "history_chunks": [
     {
       "id": 7,
-      "start_index": 0,                // 对应原始消息的 index_in_session 起始（含）
-      "end_index": 9,                  // 对应原始消息的 index_in_session 结束（含）
-      "content": "用户询问了量子纠缠的基本原理...",
+      "start_index": 0,                // 对应原始消息的 index_in_session 起始
+      "end_index": 9,                  // 对应原始消息的 index_in_session 结束
+      "topic": "量子纠缠基本原理",       // LLM 提炼的话题标签
+      "summary": "用户询问了量子纠缠的基本原理...", // LLM 生成的陈述性摘要
       "keywords": ["量子纠缠", "EPR"],
-      "created_at": "2026-03-10T15:00:00+00:00"
-    },
-    {
-      "id": 8,
-      "start_index": 10,
-      "end_index": 19,
-      "content": "对话转向了薛定谔方程...",
-      "keywords": ["薛定谔方程", "叠加态"],
-      "created_at": "2026-03-10T16:30:00+00:00"
+      "unresolved": false,             // 是否包含未竟事宜
+      "created_at": "2026-03-10T15:00:00Z"
     }
   ]
 }
 
-// 联动原始消息（只读展示）：
-//   使用 GET /api/agents/chat/<conversation_id>/ 拉取该会话全部消息，
-//   前端按 index_in_session ∈ [start_index, end_index] 过滤即可展示对应原始片段。
-//   注意：消息列表按 index_in_session 升序返回，可直接切片。
+// 注意：原 /proposals/ 接口已重定向至此，但建议前端切换至 /history_chunks/
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-13. GET  /api/memory/proposals/<pk>/
-    返回：Proposal 详情（含所属会话信息，供编辑页回显）
-    PATCH /api/memory/proposals/<pk>/
-    用途：用户手动修改 Proposal 内容或关键词
+13. GET  /api/memory/history_chunks/<pk>/
+    返回：HistoryChunk 详情
+    PATCH /api/memory/history_chunks/<pk>/
+    用途：用户手动修改 HistoryChunk 内容或关键词
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-// GET 返回（扁平化，含会话上下文）：
+// GET 返回：
 {
   "id": 7,
-  "conversation_id": 12,              // 所属会话 id（用于跳转或拉取原始消息）
+  "conversation": 12,
   "session_name": "关于量子纠缠的讨论",
   "session_type": "chat",
   "start_index": 0,
   "end_index": 9,
-  "content": "用户询问了量子纠缠的基本原理...",
-  "keywords": ["量子纠缠", "EPR"],
-  "created_at": "2026-03-10T15:00:00+00:00"
+  "raw_text": "...",                 // 摘要原文/脱水后的文本
+  "topic": "量子纠缠基本原理",
+  "summary": "...",
+  "metadata_json": { "topic_label": "...", "summary": "...", "entities": [...] },
+  "keywords": ["量子纠缠"],
+  "unresolved": false,
+  "created_at": "2026-03-10T15:00:00Z"
 }
 
-// PATCH 请求体（所有字段可选）：
+// PATCH 请求体：
 {
-  "content": "修改后的摘要内容",   // 修改此字段 → 后台异步触发重向量化（pgvector）
-  "keywords": ["新关键词1", "新关键词2"]  // 修改此字段 → 同步入库，无需重向量化
+  "raw_text": "修改后的文本",       // 修改此字段 → 后台异步触发重向量化
+  "keywords": ["新关键词"],
+  "metadata_json": { ... }          // 可选，微调结构化数据
 }
 
-// PATCH 响应 (200)：
-{ "msg": "已保存，Proposal 重向量化已在后台启动。", "updated": ["content", "keywords"] }
-// 或（仅改了 keywords）：
-{ "msg": "已保存。", "updated": ["keywords"] }
-
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-14. GET  /api/memory/entries/?preset_id=<id>[&scope=][&source=][&is_processed=]
-    POST /api/memory/entries/
-    用途：长期记忆条目列表 / 创建（划线 or 用户手动）
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-// GET 查询参数（preset_id 必填，其余可选）：
-// preset_id    — AgentPreset.id（必填）
-// scope        — work | life | hobby | emotion
-// source       — highlight | g045_tool | user_manual
-// is_processed — true | false
-
-// MemoryEntry 对象结构（GET list / POST response 共用）：
-{
-  "id":             1,
-  "source":         "highlight",       // "highlight" | "g045_tool" | "user_manual"
-  "raw_text":       "选中的文字片段",
-  "scope":          "work",            // null 表示还未处理（LLM 将异步补全）
-  "tags":           ["效率", "工作流"],
-  "is_processed":   true,
-  "preset_id":      1,
-  "conversation_id": 42,               // user_manual 时为 null
-  "message_id":     137,               // highlight 时有值，其余为 null
-  "created_at":     "2026-03-27T10:00:00+00:00",
-  "updated_at":     "2026-03-27T10:01:00+00:00"
-}
-
-// POST 路径 A — 划线笔记（highlight，消息来源）：
-{ "message_id": 137, "raw_text": "选中的文字片段" }
-// → source="highlight"，preset/conversation 自动从 message 派生，LLM 异步补全 scope/tags
-
-// POST 路径 B — 用户手动新增（user_manual，无消息来源）：
-{
-  "preset_id": 1,
-  "raw_text":  "用户自己写的长期记忆内容",
-  "scope":     "work",               // 可选，"work"|"life"|"hobby"|"emotion"
-  "tags":      ["效率", "工作流"]    // 可选，string[]
-}
-// → source="user_manual"；若已提供 scope → is_processed=true（跳过 LLM）；
-//   若未提供 scope → LLM 异步补全（同 highlight）
-
-// 注意：message_id 与 preset_id 互斥，同时传 → 400
-
-// Response (201)：上方 MemoryEntry 对象
-// 错误 (400)：{ "error": "message_id 与 preset_id 互斥，只能传其一" }
-//           | { "error": "message_id 或 preset_id 至少提供一个" }
-//           | { "error": "raw_text 不能为空" }
-//           | { "error": "scope 值无效，可选：..." }
-//           | { "error": "该消息所属会话未绑定 AgentPreset，无法创建记忆条目" }
-// 错误 (404)：{ "error": "消息不存在" } | { "error": "AgentPreset 不存在" }
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-14b. GET    /api/memory/entries/<pk>/
-     PATCH  /api/memory/entries/<pk>/
-     DELETE /api/memory/entries/<pk>/
-     用途：单条记忆条目查看 / 编辑 / 删除
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-// GET：无请求体，返回 MemoryEntry 对象
-// PATCH 请求体（所有字段可选）：
-{
-  "raw_text": "修改后的文字",
-  "scope":    "life",               // "work"|"life"|"hobby"|"emotion"|null
-  "tags":     ["新标签"]
-}
-// PATCH Response (200)：更新后的 MemoryEntry 对象
-// 错误 (400)：{ "error": "raw_text 不能为空" }
-//           | { "error": "tags 必须是数组" }
-//           | { "error": "scope 值无效，可选：..." }
-// DELETE Response (204)：无响应体
-// 错误 (404)：{ "error": "条目不存在" }
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-14c. GET /api/memory/entries/tags/?preset_id=<id>
-     用途：获取该 preset 下所有已有 tag 值（用于前端 autocomplete）
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-// preset_id 必填
-// Response (200)：string[] — 去重、升序排列
-["工作流", "效率", "量子纠缠"]
-
-// scope 固定枚举（前端直接硬编码，无需接口）：
-// "work"    → 工作
-// "life"    → 生活
-// "hobby"   → 爱好
-// "emotion" → 情感
-// 错误 (400)：{ "error": "preset_id 为必填参数" }
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-15. POST /api/memory/compact/<session_id>/
-    用途：手动触发指定会话的记忆压实（生成新 Proposal）
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-// 无请求体，session_id = Conversation.id
-
-// Response (200)：
-{ "msg": "记忆压实已完成，长期记忆已更新。" }
-// 或（消息量不足）：
-{ "msg": "当前记忆量不足以生成摘要，或已是最新的。" }
-// 或 (500)：
-{ "error": "记忆压实失败: ..." }
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-15. GET /api/userprofile/tweets/
+15. GET /api/core/tweets/
     返回：分页推文列表（根推文 + 嵌套回复，最多2层）
     用途：时间线首屏及无限滚动加载
-    分页：游标分页（before_id），避免新帖插入导致 offset 漂移
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-// 首次请求（无参数）：
-GET /api/userprofile/tweets/
-
-// 继续加载更早内容（上次响应 next_before_id 传入）：
-GET /api/userprofile/tweets/?before_id=38
+// 首次请求：GET /api/core/tweets/
+// 翻页请求：GET /api/core/tweets/?before_id=38
 
 // Response (200)：
 {
   "tweets": [
     {
       "id": 42,
-      "author": "user",                          // "user" | "agent:{preset_id}"（如 "agent:1"）
+      "author": "user",                          // "user" | "agent:{id}"
       "content": "今天写代码好累...",
       "parent": null,
-      "created_at": "2026-03-21T14:30:00Z",
+      "created_at": "2026-03-21T14:30:00Z",      // 后端已自动转换为本地时间字符串
       "replies": [
         {
           "id": 43,
           "author": "agent:1",
           "content": "要注意休息哦～",
           "parent": 42,
-          "created_at": "2026-03-21T14:45:00Z",
-          "replies": [
-            {
-              "id": 44,
-              "author": "user",
-              "content": "我知道我知道",
-              "parent": 43,
-              "created_at": "2026-03-21T15:00:00Z",
-              "replies": []                      // 第2层 replies 固定为 []，不再深挖
-            }
-          ]
+          "created_at": "14:45:00",              // 回复层级可能仅返回时分
+          "replies": [...]
         }
       ]
     }
   ],
-  "has_more": true,                              // false = 已到最早记录
-  "next_before_id": 22                           // has_more=false 时为 null；下次请求传此值
+  "has_more": true,
+  "next_before_id": 22
 }
-
-// 前端无限滚动逻辑：
-//   初始加载：GET /tweets/，存储 next_before_id
-//   滚动到底：GET /tweets/?before_id=<next_before_id>，将新数据 append 到列表末尾
-//   has_more=false → 隐藏"加载更多"触发器
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-16. POST /api/userprofile/tweets/
+16. POST /api/core/tweets/
     用途：用户发新推文（根帖）
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-// Request body：
 { "content": "今天天气不错" }
 
-// Response (201)：完整 Tweet 对象（replies 为 []，parent 为 null）
-{
-  "id": 50,
-  "author": "user",
-  "content": "今天天气不错",
-  "parent": null,
-  "created_at": "2026-03-21T16:00:00Z",
-  "replies": []
-}
-
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-17. POST /api/userprofile/tweets/<id>/reply/
-    用途：用户回复某条推文（可以是根帖，也可以是回复的回复）
+17. POST /api/core/tweets/<id>/reply/
+    用途：用户回复某条推文
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-// <id> = 被回复的 Tweet.id（任意层级均可）
-
-// Request body：
 { "content": "我也觉得！" }
-
-// Response (201)：新建的 Tweet 对象，parent 为被回复帖的 id
-{
-  "id": 51,
-  "author": "user",
-  "content": "我也觉得！",
-  "parent": 50,
-  "created_at": "2026-03-21T16:05:00Z",
-  "replies": []
-}
-
-// 注意：G045 通过后台 mimic_interact 任务自动发帖/回复，不经过此接口。
-// 前端只需处理 author 字段区分展示样式：
-//   author === "user"          → 用户样式
-//   author.startsWith("agent:") → agent 样式（可从中提取 preset_id）
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-18. SessionAttachment — 会话持久化文档
-    用途：用户主动挂载到某个会话的文档（小说设定、学习资料等），
-          每轮对话自动注入给模型，显式移除才消失。与 RAG 自动检索完全分离。
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-// ── 18a. 准备附件元数据（不上传到平台）──────────────────────
-POST /api/agents/conversations/<pk>/attachments/
-
-// Request body：
-{ "storage_path": "/absolute/path/to/file.pdf", "display_name": "角色设定" }   // display_name 可选
-
-// Response (200)：返回 pending_attachment 元数据，前端暂存，随下次发消息一起提交
-{
-  "storage_path":      "/absolute/path/to/file.pdf",
-  "display_name":      "角色设定",
-  "original_filename": "file.pdf",
-  "mime_type":         "application/pdf",
-  "file_size":         204800
-}
-
-// Response (400)：文件路径不存在或不可读
-{ "error": "文件不存在或不可读: /path/..." }
-
-
-// ── 18b. 发消息时携带 pending attachments ──────────────────────
-// 在 POST /api/agents/chat/<session_id>/ 的 request body 中增加：
-{
-  "content": "帮我写第三章",
-  "pending_attachments": [
-    {
-      "storage_path":      "/absolute/path/to/file.pdf",
-      "display_name":      "角色设定",
-      "original_filename": "file.pdf",
-      "mime_type":         "application/pdf",
-      "file_size":         204800
-    }
-  ]
-  // 其余字段同原 chat 接口
-}
-
-// 后端在收到成功的 LLM 响应后将附件写入 DB。
-// 后续轮次无需再传 pending_attachments，后端自动从 DB 读取并注入。
-
-
-// ── 18c. 列出已确认附件 ──────────────────────────────────────
-GET /api/agents/conversations/<pk>/attachments/
-
-// Response (200)：
-[
-  {
-    "id":                1,
-    "display_name":      "角色设定",
-    "original_filename": "file.pdf",
-    "storage_path":      "/absolute/path/to/file.pdf",
-    "mime_type":         "application/pdf",
-    "file_size":         204800,
-    "created_at":        "2026-03-24T18:00:00Z"
-  }
-]
-
-
-// ── 18d. 移除附件 ────────────────────────────────────────────
-DELETE /api/agents/conversations/<pk>/attachments/<att_id>/
-
-// Response (204)：无 body
-// 仅解除 DB 关联，不删除本地文件，不调用平台 delete API（平台文件 48h 后自动过期）
-
-
-// ── 平台兼容说明 ─────────────────────────────────────────────
-// 附件同时支持 Gemini 和 DeepSeek 平台：
-//   Gemini  → Files API，file_uri，48h TTL
-//   DeepSeek → Files API（OpenAI compatible），file_id，72h TTL（后端统一按 48h 保守值管理）
-// 切换模型平台时后端自动重新上传，前端无需感知。
-// 上传失败的附件本轮静默跳过，不影响对话流程。
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-19. LLM Council 议会系统
-    路由前缀：/api/council/
-    状态机：pre_alignment → dispatched → cross_exam → synthesizing → synthesis_done → finished
-                ↑                                                          |
-                └──────────────────── 继续分发（round+1）──────────────────┘
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-// ── 核心数据类型 ─────────────────────────────────────────────
-
-// CouncilParticipant
-{
-  "id":              1,
-  "preset_id":       5,
-  "preset_name":     "写作助手",
-  "conversation_id": 38,           // 该参与者专属对话 ID
-  "phase_status":    "idle"        // "idle" | "generating" | "done"
-}
-
-// CouncilSession（详情）
-{
-  "id":                        1,
-  "topic":                     "AI监管：政府主导还是行业自律？",
-  "status":                    "finished",   // 状态机见上方
-  "round_number":              1,
-  "arbitrator_preset_id":      1,
-  "arbitrator_preset_name":    "Alessandro",
-  "phase0_conversation_id":    37,           // 仲裁者的主对话（对接现有 chat 接口）
-  "synthesis_conversation_id": 40,           // 综合结论专属对话（首次 dispatch 后创建）
-  "participants": [                          // CouncilParticipant 数组
-    { "id": 1, "preset_id": 5, "preset_name": "写作助手", "conversation_id": 38, "phase_status": "done" },
-    { "id": 2, "preset_id": 6, "preset_name": "骆白萧",   "conversation_id": 39, "phase_status": "done" }
-  ],
-  "created_at": "2026-03-29T10:00:00Z"
-}
-
-
-// ── 19a. 创建议会会话 ────────────────────────────────────────
-POST /api/council/sessions/
-
-// Request body：
-{
-  "name":                    "AI监管讨论",     // 可选，phase0 对话名称
-  "arbitrator_preset_id":    1,               // 仲裁者 AgentPreset ID（通常为 G045）
-  "participant_preset_ids":  [5, 6]           // 参与者 AgentPreset ID 列表（≥2）
-}
-
-// Response (201)：CouncilSession（详情格式，synthesis_conversation_id 此时为 null）
-{
-  "id": 1,
-  "topic": "",
-  "status": "pre_alignment",
-  "round_number": 0,
-  "arbitrator_preset_id": 1,
-  "arbitrator_preset_name": "Alessandro",
-  "phase0_conversation_id": 37,
-  "synthesis_conversation_id": null,
-  "participants": [ ... ],
-  "created_at": "2026-03-29T10:00:00Z"
-}
-
-
-// ── 19b. 获取议会会话详情 ─────────────────────────────────────
-GET /api/council/sessions/<pk>/
-
-// Response (200)：CouncilSession（详情格式）
-// 前端通过 3s 轮询此接口，监控 participants[*].phase_status 和 session.status
-
-
-// ── 19c. 分发议题（Dispatch）──────────────────────────────────
-POST /api/council/sessions/<pk>/dispatch/
-
-// Request body：
-{
-  "topic": "AI监管：政府主导还是行业自律？"  // 可选；缺省则用 session 现有 topic
-}
-
-// Response (200)：
-{
-  "stream_urls": [
-    { "participant_id": 1, "url": "/api/council/sessions/1/stream/participant/1/" },
-    { "participant_id": 2, "url": "/api/council/sessions/1/stream/participant/2/" }
-  ]
-}
-
-// 副作用：
-//   - session.status → "dispatched"，round_number += 1
-//   - 首次 dispatch：自动创建 synthesis_conversation
-//   - 每个 participant.conversation 写入 user 消息（内容=topic）
-//   - participant.phase_status 全部重置为 "idle"
-// 允许状态：pre_alignment、finished 或 synthesis_done（继续分发，round+1）
-
-
-// ── 19d. 参与者 SSE 流 ───────────────────────────────────────
-GET /api/council/sessions/<pk>/stream/participant/<pa_id>/
-
-// SSE 事件格式（与主 chat 接口一致）：
-event: thinking
-data: "推理过程..."
-
-event: content
-data: "正文内容片段..."
-
-event: done
-data: "[DONE]"
-
-event: error
-data: "错误信息"
-
-// 防重入：participant.phase_status 为 "generating" 时返回 409
-// HTTP 409 Response: { "error": "该参与者正在生成中，请勿重复请求" }
-// 流结束后：participant.phase_status → "done"，消息持久化到 participant.conversation
-
-
-// ── 19e. 开始互审（Cross-Exam）───────────────────────────────
-POST /api/council/sessions/<pk>/cross_exam/
-
-// Request body：无（空 {} 或不传）
-
-// Response (200)：
-{
-  "stream_urls": [
-    { "participant_id": 1, "url": "/api/council/sessions/1/stream/participant/1/" },
-    { "participant_id": 2, "url": "/api/council/sessions/1/stream/participant/2/" }
-  ]
-}
-
-// 副作用：
-//   - session.status → "cross_exam"
-//   - 轮换配对：participant[i] 审阅 participant[(i+1)%n] 的最新回复
-//   - 每个 reviewer.conversation 写入 reviewee 最新 assistant 消息（作为新的 user 消息）
-//   - 创建 CouncilCrossExam 记录
-// 前置条件：session.status == "dispatched" 且所有 participant.phase_status == "done"
-
-
-// ── 19f. 触发综合（Synthesize）──────────────────────────────
-POST /api/council/sessions/<pk>/synthesize/
-
-// Request body：
-{
-  "user_opinion": "我认为两种方式应该并行"  // 可选，用户追加意见
-}
-
-// Response (200)：
-{
-  "stream_url": "/api/council/sessions/1/stream/synthesis/"
-}
-
-// 副作用：
-//   - session.status → "synthesizing"
-//   - 自动组装各参与者初稿+修正案+用户意见 → 写入 synthesis_conversation 作为 user 消息
-//   - 同时向 phase0_conversation 注入 user 消息（"开始综合讨论" [+ 用户追加意见]，platform="council-synthesize"）
-// 前置条件：session.status == "dispatched" 或 "cross_exam"
-
-
-// ── 19g. 综合 SSE 流 ─────────────────────────────────────────
-GET /api/council/sessions/<pk>/stream/synthesis/
-
-// SSE 事件格式同参与者流（thinking / content / done / error）
-// 流结束后：
-//   - 结论持久化到 synthesis_conversation（可通过 GET /api/agents/chat/<synthesis_conversation_id>/ 读取）
-//   - 结论同步注入 phase0_conversation（作为 assistant 消息，model 与 arbitrator 一致）
-//   - session.status → "synthesis_done"
-//   - 前端应打开 sub rosa 面板（phase0_conversation 末尾即为综合结论，可正常继续对话）
-// 前置条件：session.status == "synthesizing"
-
-
-// ── 19h. 结束议会 ────────────────────────────────────────────
-POST /api/council/sessions/<pk>/finish/
-
-// Request body：无
-// Response (204)：无 body
-// 副作用：session.status → "finished"
-// finished 状态下可再次调用 dispatch 开启下一轮
-
-
-// ── 前端状态机按钮逻辑 ───────────────────────────────────────
-// status=pre_alignment                → 显示"分发议题"按钮
-// status=dispatched, 未全部 done      → 等待（禁用所有操作按钮）
-// status=dispatched, 全部 done        → 显示"开始互审"和"直接综合"两个按钮
-// status=cross_exam, 未全部 done      → 等待
-// status=cross_exam, 全部 done        → 显示"进入综合"按钮
-// status=synthesizing, 流进行中       → 等待
-// status=synthesis_done               → 打开 sub rosa 面板；显示"结束议会"和"继续分发"两个按钮
-// status=finished                     → 显示"继续分发"按钮
-
-// allParticipantsDone = participants.every(p => p.phase_status === "done")
-
-// ── 注意事项 ─────────────────────────────────────────────────
-// 1. phase0_conversation 有 AgentSession，走现有 /api/agents/chat/ 接口（议题预对齐阶段）
-// 2. participant.conversation 和 synthesis_conversation 不出现在主会话列表（已在后端过滤）
-// 3. 综合结论历史：
-//    - synthesis_conversation：GET /api/agents/chat/<synthesis_conversation_id>/
-//    - phase0_conversation 综合后：末尾含综合结论，可通过 /api/agents/chat/<phase0_conversation_id>/ 继续对话
-// 4. SSE 并行订阅：dispatch/cross_exam 返回的 stream_urls 应同时 fetch，不要串行
-// 5. 动态参与者选择：创建会话前用 GET /api/agents/presets/ 获取可用 preset 列表；
-//    arbitrator 选 1 个，participants 选 ≥2 个，不可重复
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-20. POST /api/agents/conversations/<pk>/branch/
-    用途：从指定 AI 消息处分叉，复制历史消息生成新的独立对话（Branch Here）
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-// Request Body（JSON）：
-{
-  "branch_from_message_id": 102   // 分叉点 AI 消息的 id（必须属于该 conversation 且 role="assistant"）
-}
-
-// Response（201 Created）：
-{
-  "session_id":      15,                        // 新建 AgentSession.id（用于后续 chat 接口）
-  "conversation_id": 28,                        // 新建 Conversation.id
-  "name":            "Branch from 量子纠缠讨论"  // 自动生成的名称
-}
-
-// 分叉规则：
-//   - 复制从对话开始到 branch_from_message_id 所在位置的消息（含），最多取末尾 21 条
-//   - 确保首条为 user 消息、末条为 assistant 消息
-//   - 新对话继承：project / agent_preset / session_type / thinking_level / temperature
-//   - 新对话重置：last_summarized_index=0 / active_tool_groups=[] / Proposal 不复制
-//   - 附件关联不复制（attachment_ids=[]），消息文本正文完整保留
-//   - parent_conversation 指向原会话（可用于溯源，前端无需处理）
-
-// 前端处理逻辑：
-//   1. 用户点击 AI 消息上的「Branch Here」按钮
-//   2. POST /api/agents/conversations/<current_conv_id>/branch/
-//      Body: { "branch_from_message_id": <该 AI 消息的 id> }
-//   3. 成功后：
-//      a. 将新会话插入左侧对话列表顶部（或触发列表刷新）
-//      b. 跳转到新会话：使用返回的 session_id 加载 GET /api/agents/chat/<session_id>/
-//   4. 新会话从此独立运作，操作方式与普通对话完全相同
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 21. Tasks API — /api/tasks/
-    日程与习惯追踪（todo / periodic / goal 三种类型）
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-// ── ScheduleEntry 字段说明 ──────────────────────────────────────────────────
-// entry_type: "todo" | "periodic" | "goal"
-// status:     "active" | "suspended" | "escalated" | "archived"
-// [todo]      due_date
-// [periodic]  interval_unit("day"|"week"|"month"), interval_value, end_type("count"|"date"|"never"),
-//             end_count, end_date, occurrences_done (read-only, server-managed)
-// [goal]      goal_count, goal_period("week"|"month"), cycle_start, cycle_due
-// gcal_event_id / gcal_event_link — read-only，通过 /gcal/ 端点管理
-// current_cycle_completions — computed，当前周期已打卡次数（goal 类型）
-// next_periodic_due         — computed，下次应完成日期（periodic 类型，ISO date string）
-
-// ── GET /api/tasks/entries/ ─────────────────────────────────────────────────
-// 查询参数：?status=active  ?entry_type=goal  ?is_pinned=true
-// 默认排序：is_pinned DESC, due_date ASC, cycle_due ASC, start_date ASC
-// Response 200:
-[
-  {
-    "id": 1,
-    "title": "晨跑",
-    "description": "",
-    "entry_type": "goal",
-    "status": "active",
-    "is_pinned": false,
-    "start_date": "2026-04-09",
-    "tags": ["健康", "运动"],
-    "due_date": null,
-    "interval_unit": null, "interval_value": null,
-    "end_type": null, "end_count": null, "end_date": null,
-    "occurrences_done": 0,
-    "goal_count": 3,
-    "goal_period": "week",
-    "cycle_start": "2026-04-07",
-    "cycle_due": "2026-04-13",
-    "gcal_event_id": "",
-    "gcal_event_link": "",
-    "current_cycle_completions": 1,
-    "next_periodic_due": null,
-    "created_at": "2026-04-09T10:00:00Z",
-    "updated_at": "2026-04-09T10:00:00Z"
-  }
-]
-
-// ── POST /api/tasks/entries/ ────────────────────────────────────────────────
-// 创建条目。entry_type 创建后不可修改。
-// Request Body:
-{
-  "title": "晨跑",
-  "entry_type": "goal",           // required
-  "start_date": "2026-04-09",     // required
-  "goal_count": 3,
-  "goal_period": "week",
-  "cycle_start": "2026-04-07",
-  "cycle_due": "2026-04-13",
-  "tags": ["健康"]
-}
-// Response 201: 同 GET 单条格式
-
-// ── GET /api/tasks/entries/<pk>/ ────────────────────────────────────────────
-// Response 200: 同上
-
-// ── PATCH /api/tasks/entries/<pk>/ ─────────────────────────────────────────
-// 部分更新。entry_type 不可更改。
-// 若条目已关联 GCal（gcal_event_id 非空），自动同步更新 GCal 事件。
-// Response 200: 更新后的完整条目
-
-// ── DELETE /api/tasks/entries/<pk>/ ────────────────────────────────────────
-// 软删除：status → "archived"。若已关联 GCal，自动取消链接。
-// Response 204 No Content
-
-// ── POST /api/tasks/entries/<pk>/complete/ ──────────────────────────────────
-// 打卡。创建 CompletionRecord。
-// periodic 类型：自动递增 occurrences_done，到达 end_count/end_date 时 status → "archived"
-// goal 类型：允许超量打卡（不拦截）
-// Request Body（可选）:
-{ "note": "今天状态很好" }
-// Response 201:
-{
-  "id": 5,
-  "entry": 1,
-  "completed_at": "2026-04-09T08:30:00Z",
-  "cycle_start": "2026-04-07",
-  "note": "今天状态很好"
-}
-
-// ── POST /api/tasks/entries/<pk>/suspend/ ───────────────────────────────────
-// 挂起：status → "suspended"，is_pinned → false
-// Response 200: 更新后的完整条目
-
-// ── POST /api/tasks/entries/<pk>/resume/ ────────────────────────────────────
-// 恢复：status → "active"
-// Response 200: 更新后的完整条目
-
-// ── POST /api/tasks/entries/<pk>/gcal/ ──────────────────────────────────────
-// 推送到 Google Calendar（幂等：已链接则更新，未链接则新建全天事件）
-// Response 200:
-{
-  "gcal_synced": true,
-  "gcal_event_id": "abc123xyz",
-  "gcal_event_link": "https://www.google.com/calendar/event?eid=..."
-}
-// 失败时 Response 502:
-{ "detail": "GCal sync failed: ...", "gcal_synced": false }
-
-// ── DELETE /api/tasks/entries/<pk>/gcal/ ────────────────────────────────────
-// 取消 GCal 链接（从 GCal 删除事件，清空本地 gcal_event_id / gcal_event_link）
-// Response 204 No Content
-
-// ── GET /api/tasks/completions/?entry=<pk> ──────────────────────────────────
-// 查询某条目的所有打卡记录（按时间倒序）
-// Response 200:
-[
-  {
-    "id": 5,
-    "entry": 1,
-    "completed_at": "2026-04-09T08:30:00Z",
-    "cycle_start": "2026-04-07",
-    "note": ""
-  }
-]
-
-// ── 前端处理要点 ─────────────────────────────────────────────────────────────
-// 1. 列表默认展示 status != "archived" 的条目：?status=active 或不传 status 过滤
-// 2. is_pinned=true 且 status="escalated" 的条目应显示在最顶部并标记醒目样式
-// 3. goal 类型显示进度条：current_cycle_completions / goal_count
-// 4. periodic 类型显示下次截止：next_periodic_due
-// 5. gcal_event_link 非空时显示「在 Google Calendar 中查看」外链按钮
-// 6. GCal 推送按钮：POST /gcal/，成功后用响应中的 gcal_event_link 更新本地状态
+// 详见主文档，无变动。

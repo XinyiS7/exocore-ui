@@ -1,6 +1,6 @@
 import React from 'react';
-import { 
-  MessageSquare, BrainCircuit, User, 
+import {
+  MessageSquare, BrainCircuit, ScrollText,
   ArrowRight, Calendar
 } from 'lucide-react';
 import CalendarWidget from './CalendarWidget';
@@ -21,8 +21,8 @@ const QUICK_ACTIONS = [
     color: 'text-exo-accent'
   },
   {
-    tab: 'profile',
-    icon: User,
+    tab: 'timeline',
+    icon: ScrollText,
     label: '时间线',
     desc: '查看节点动态与交互记录',
     color: 'text-purple-400'
