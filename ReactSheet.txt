@@ -113,7 +113,8 @@
 13. GET  /api/memory/history_chunks/<pk>/
     返回：HistoryChunk 详情
     PATCH /api/memory/history_chunks/<pk>/
-    用途：用户手动修改 HistoryChunk 内容或关键词
+    用途：用户手动维护 HistoryChunk 元数据（话题标签/关键词/未竟状态）
+    原始聊天记录通过 start_index/end_index 只读展示，不在此处传输
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 // GET 返回：
@@ -122,23 +123,34 @@
   "conversation": 12,
   "session_name": "关于量子纠缠的讨论",
   "session_type": "chat",
-  "start_index": 0,
-  "end_index": 9,
-  "raw_text": "...",                 // 摘要原文/脱水后的文本
-  "topic": "量子纠缠基本原理",
-  "summary": "...",
-  "metadata_json": { "topic_label": "...", "summary": "...", "entities": [...] },
-  "keywords": ["量子纠缠"],
-  "unresolved": false,
+  "start_index": 0,       // 对应 Message.index_in_session 起始（用于加载原始消息）
+  "end_index": 9,         // 对应 Message.index_in_session 结束
+
+  // 可编辑字段（来源：metadata_json / DB 字段双写）
+  "topic_label": "量子纠缠基本原理",   // LLM 提炼的主题标签，用户可修改
+  "keywords": ["量子纠缠", "EPR"],     // 检索关键词，用户可修改
+  "unresolved": false,                 // 是否有未竟事宜，用户可 toggle
+
+  // 只读上下文（来源：metadata_json，LLM 推断）
+  "time_ref": "3月某个下午",           // 时间背景
+  "emotion": "好奇/探索",              // 情感基调
+  "entities": ["量子纠缠", "EPR悖论"], // 涉及的实体
+  "importance": 0.8,                   // 重要度评分 0.0-1.0
+
   "created_at": "2026-03-10T15:00:00Z"
 }
 
-// PATCH 请求体：
+// PATCH 请求体（只允许以下三个字段）：
 {
-  "raw_text": "修改后的文本",       // 修改此字段 → 后台异步触发重向量化
-  "keywords": ["新关键词"],
-  "metadata_json": { ... }          // 可选，微调结构化数据
+  "topic_label": "新的话题标签",   // 同步写入 metadata_json.topic_label
+  "keywords": ["新关键词"],        // 同步写入 keywords 字段 + metadata_json.keywords
+  "unresolved": true               // 同步写入 unresolved 字段 + metadata_json.unresolved
 }
+
+// PATCH 响应（updated 列表反映实际写入的 DB 字段）：
+// 仅改 topic_label → { "msg": "已保存。", "updated": ["metadata_json"] }
+// 改 keywords     → { "msg": "已保存。", "updated": ["keywords", "metadata_json"] }
+// 改 unresolved   → { "msg": "已保存。", "updated": ["unresolved", "metadata_json"] }
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
