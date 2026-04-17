@@ -207,10 +207,14 @@ const SettingsPanel = ({ projects, presets }) => {
                       <div className="text-center py-24 text-exo-muted font-mono text-[11px] uppercase tracking-widest animate-pulse">Retrieving communications...</div>
                     ) : conversations.length === 0 ? (
                       <div className="text-center py-24 text-exo-muted font-mono text-[11px] uppercase tracking-widest opacity-30">No session logs found</div>
-                    ) : conversations.map(conv => {
+                    ) : conversations.slice().sort((a, b) => {
+                        const ta = a.last_message_at || a.created_at || '';
+                        const tb = b.last_message_at || b.created_at || '';
+                        return tb.localeCompare(ta);
+                      }).map(conv => {
                       const isExpanded = expandedConvs.has(conv.id);
-                      const proposals = convProposals[conv.id];
-                      const isLoadingProposals = loadingConvs.has(conv.id);
+                      const chunks = convProposals[conv.id];
+                      const isLoadingChunks = loadingConvs.has(conv.id);
                       return (
                         <div key={conv.id} className="composio-card overflow-hidden">
                           <button
@@ -220,33 +224,51 @@ const SettingsPanel = ({ projects, presets }) => {
                             <div className="flex items-center gap-3 overflow-hidden">
                               <MessageSquare size={14} className={isExpanded ? 'text-exo-accent' : 'text-exo-muted opacity-40'} />
                               <span className="text-[13px] font-medium text-exo-text truncate font-display uppercase tracking-tight">{conv.name || `SESSION LOG #${conv.id}`}</span>
-                              {proposals && <span className="text-[10px] text-exo-muted font-mono opacity-50">[{proposals.length}]</span>}
+                              {chunks && <span className="text-[10px] text-exo-muted font-mono opacity-50">[{chunks.length}]</span>}
                             </div>
                             {isExpanded ? <ChevronDown size={14} className="text-exo-muted" /> : <ChevronRight size={14} className="text-exo-muted" />}
                           </button>
                           {isExpanded && (
                             <div className="bg-exo-pure border-t border-exo-mist-6">
-                              {isLoadingProposals ? (
+                              {isLoadingChunks ? (
                                 <div className="px-4 py-6 text-[10px] text-exo-muted text-center font-mono animate-pulse">Extracting memories...</div>
-                              ) : !proposals || proposals.length === 0 ? (
-                                <div className="px-4 py-6 text-[10px] text-exo-muted/40 text-center font-mono">No memory proposals in this link</div>
+                              ) : !chunks || chunks.length === 0 ? (
+                                <div className="px-4 py-6 text-[10px] text-exo-muted/40 text-center font-mono">No history chunks in this session</div>
                               ) : (
-                                proposals.slice().reverse().map(proposal => (
+                                chunks.slice().sort((a, b) => b.id - a.id).map(chunk => (
                                   <button
-                                    key={proposal.id}
-                                    onClick={() => setEditingProposal({ proposal, conversationName: conv.name || `Session #${conv.id}`, conversationId: conv.id })}
+                                    key={chunk.id}
+                                    onClick={() => setEditingProposal({ proposal: chunk, conversationName: conv.name || `Session #${conv.id}`, conversationId: conv.id })}
                                     className="w-full flex items-start gap-4 px-6 py-4 hover:bg-exo-accent/[0.03] transition-colors text-left group border-t border-exo-mist-4 first:border-t-0"
                                   >
-                                    <div className="flex flex-col flex-1 overflow-hidden gap-1">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-[9px] text-exo-accent/40 font-mono uppercase tracking-widest">
-                                          {proposal.created_at ? new Date(proposal.created_at).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }) : 'TIMESTAMP MISSING'}
+                                    <div className="flex flex-col flex-1 overflow-hidden gap-1.5">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="text-[9px] text-exo-muted/50 font-mono">
+                                          #{chunk.id} · idx {chunk.start_index}–{chunk.end_index}
                                         </span>
-                                        {proposal.topic && (
-                                          <span className="text-[9px] px-1.5 py-0.5 bg-exo-accent/5 border border-exo-accent/20 text-exo-accent/60 font-mono uppercase tracking-tighter rounded-[2px]">{proposal.topic}</span>
+                                        {chunk.unresolved && (
+                                          <span className="text-[8px] px-1.5 py-0.5 bg-exo-accent/10 border border-exo-accent/30 text-exo-accent font-mono uppercase tracking-tighter rounded-[2px]">
+                                            Unresolved
+                                          </span>
+                                        )}
+                                        {chunk.topic && (
+                                          <span className="text-[9px] px-1.5 py-0.5 bg-white/5 border border-exo-mist-10 text-exo-text/50 font-mono tracking-tighter rounded-[2px]">
+                                            {chunk.topic}
+                                          </span>
                                         )}
                                       </div>
-                                      <span className="text-[12px] text-exo-text/80 group-hover:text-exo-text line-clamp-2 leading-snug font-mono tracking-tight">{proposal.summary || 'NULL_CONTENT'}</span>
+                                      <span className="text-[12px] text-exo-text/80 group-hover:text-exo-text line-clamp-2 leading-snug font-mono tracking-tight">
+                                        {chunk.summary || 'NULL_CONTENT'}
+                                      </span>
+                                      {Array.isArray(chunk.keywords) && chunk.keywords.length > 0 && (
+                                        <div className="flex flex-wrap gap-1 mt-0.5">
+                                          {chunk.keywords.slice(0, 4).map((kw, ki) => (
+                                            <span key={ki} className="text-[8px] font-mono px-1.5 py-0.5 rounded-[2px] bg-exo-accent/5 border border-exo-accent/15 text-exo-accent/60 uppercase">
+                                              {kw}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )}
                                     </div>
                                     <Edit3 size={12} className="text-exo-accent opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-1" />
                                   </button>
