@@ -24,8 +24,6 @@ npm run preview   # Preview production build
 
 There are no tests in this project.
 
-**Known build issue**: `npm run build` currently fails due to a pre-existing `lightningcss` minification error. The cause is dynamic Tailwind class names constructed via template literals in `ConversationList.jsx` (e.g., `` `bg-${colorClass}/10` ``). Development via `npm run dev` is unaffected.
-
 ## Architecture
 
 **ExoCore UI** is a React + Vite SPA — the frontend for an AI agent system backed by a Django API server (port 8000). The Vite dev server proxies `/api` and `/media` to `http://127.0.0.1:8000`.
@@ -68,13 +66,13 @@ The chat send flow (`ChatArea.jsx`) uses **SSE streaming**: POST to `/api/agents
 
 `SettingsPanel` has two top-level tabs (left sidebar):
 - **历史管理** (`activeSettingsTab === 'memory'`) — sub-tabs: **文件库** (Obsidian-synced knowledge files, opens `KnowledgeEditModal`) and **会话摘要** (conversation proposals, opens `ProposalEditPanel`)
-- **记忆管理** (`activeSettingsTab === 'memory_mgmt'`) — `MemoryManager` component: lists `/api/memory/entries/?preset_id=<id>` with scope/source/is_processed filters, inline edit of `raw_text` + tags (PATCH), and delete
+- **记忆管理** (`activeSettingsTab === 'memory_mgmt'`) — `MemoryManager` component: lists `/api/memory/entries/?preset_id=<id>` with scope/source/is_processed filters, inline edit of `content` + tags (PATCH), and delete
 
 ### Message actions
 
 `MessageBubble` renders a small toolbar below each message:
 - **Copy** button — copies `msg.content` to clipboard, flashes ✓ for 2 s
-- **Bookmark** button (AI messages only) — expands an inline panel pre-filled with the full message text; user can edit to any substring, then POST to `/api/memory/entries/` with `{ message_id, raw_text }`. The same message can be bookmarked multiple times with different selections; deduplication is handled server-side.
+- **Bookmark** button (AI messages only) — expands an inline panel pre-filled with the full message text; user can edit to any substring, then POST to `/api/memory/entries/` with `{ message_id, content }`. The same message can be bookmarked multiple times with different selections; deduplication is handled server-side.
 
 ### Destructive operations pattern
 

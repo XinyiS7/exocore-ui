@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Tag, Edit3, Trash2, RefreshCw, ChevronDown, ChevronUp, Plus } from 'lucide-react';
+import { Tag, Edit3, Trash2, RefreshCw, ChevronDown, ChevronUp, Plus, Brain } from 'lucide-react';
 import { baseUrl, getCsrfToken } from '../../utils/api';
 import { sortPresets } from '../../utils/presets';
 
-const MemoryManager = ({ presets }) => {
+const MemoryManager = ({ presets, openDestructor }) => {
   const sortedPresets = useMemo(() => sortPresets(presets), [presets]);
   const [selectedPresetId, setSelectedPresetId] = useState(sortedPresets[0]?.id ?? '');
 
@@ -60,7 +60,7 @@ const MemoryManager = ({ presets }) => {
 
   const handleEdit = (entry) => {
     setEditingId(entry.id);
-    setEditText(entry.raw_text || '');
+    setEditText(entry.content || '');
     setEditScope(entry.scope || 'work');
     const tags = Array.isArray(entry.tags) ? entry.tags : (entry.tags ? String(entry.tags).split(',') : []);
     setEditTags(tags.join(', '));
@@ -74,7 +74,7 @@ const MemoryManager = ({ presets }) => {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
         credentials: 'include',
-        body: JSON.stringify({ raw_text: editText, tags, scope: editScope }),
+        body: JSON.stringify({ content: editText, tags, scope: editScope }),
       });
       if (res.ok) {
         const updated = await res.json();
@@ -99,8 +99,8 @@ const MemoryManager = ({ presets }) => {
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
         credentials: 'include',
         body: JSON.stringify({ 
-          preset_id: selectedPresetId, 
-          raw_text: newText, 
+          preset_id: selectedPresetId,
+          content: newText,
           tags, 
           scope: newScope 
         }),
@@ -120,20 +120,25 @@ const MemoryManager = ({ presets }) => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('确定要删除这条记忆条目吗？')) return;
-    try {
-      const res = await fetch(`${baseUrl}/api/memory/entries/${id}/`, {
-        method: 'DELETE',
-        headers: { 'X-CSRFToken': getCsrfToken() },
-        credentials: 'include',
-      });
-      if (res.ok || res.status === 204) {
-        setEntries(prev => prev.filter(e => e.id !== id));
-      }
-    } catch (err) {
-      console.error('删除失败', err);
-    }
+  const handleDelete = (id) => {
+    openDestructor({
+      title: 'Delete Memory Entry',
+      description: 'This neural fragment will be permanently erased. This action cannot be undone.',
+      onDelete: async () => {
+        try {
+          const res = await fetch(`${baseUrl}/api/memory/entries/${id}/`, {
+            method: 'DELETE',
+            headers: { 'X-CSRFToken': getCsrfToken() },
+            credentials: 'include',
+          });
+          if (res.ok || res.status === 204) {
+            setEntries(prev => prev.filter(e => e.id !== id));
+          }
+        } catch (err) {
+          console.error('删除失败', err);
+        }
+      },
+    });
   };
 
   const tagsArray = (entry) => {
@@ -362,8 +367,8 @@ const MemoryManager = ({ presets }) => {
                 </div>
               ) : (
                 <>
-                  <p className={`text-[13px] text-exo-text/90 leading-relaxed mb-3 font-mono tracking-tight whitespace-pre-wrap ${expandedId === entry.id ? '' : 'line-clamp-4'}`}>{entry.raw_text}</p>
-                  {entry.raw_text?.length > 200 && (
+                  <p className={`text-[13px] text-exo-text/90 leading-relaxed mb-3 font-mono tracking-tight whitespace-pre-wrap ${expandedId === entry.id ? '' : 'line-clamp-4'}`}>{entry.content}</p>
+                  {entry.content?.length > 200 && (
                     <button
                       onClick={() => setExpandedId(id => id === entry.id ? null : entry.id)}
                       className="flex items-center gap-1.5 text-[10px] text-exo-accent/60 hover:text-exo-accent transition-colors mb-3 font-bold uppercase tracking-widest"

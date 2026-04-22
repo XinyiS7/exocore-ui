@@ -206,3 +206,70 @@
 21. Tasks API — /api/tasks/
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 详见主文档，无变动。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+22. MemoryEntry API — /api/memory/entries/
+    长期记忆条目（用户可查看并编辑 content / scope / tags）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// ── 22a. GET /api/memory/entries/?preset_id=<id>
+//        可附加过滤参数：&scope=work &source=highlight &is_processed=false
+// 返回：Array<MemoryEntry>
+
+[
+  {
+    "id": 3,
+    "preset": 1,
+    "conversation": 12,          // null = user_manual（非会话来源）
+    "message": 101,              // null = 非划线来源
+    "source": "highlight",       // "highlight" | "g045_tool" | "user_manual"
+    "content": "量子纠缠是两个粒子…",
+    "scope": "work",             // null（Ollama 处理中或用户已清除）
+                                 // | "work" | "life" | "hobby" | "emotion"
+    "tags": ["量子纠缠", "物理"],
+    "is_processed": true,        // false = Ollama 分类中，scope/tags 暂为空
+    "created_at": "2026-04-21T14:23:00Z",
+    "updated_at": "2026-04-21T14:25:00Z"
+  }
+]
+
+
+// ── 22b. GET /api/memory/entries/tags/?preset_id=<id>
+//        返回该 preset 下所有已有 tag（去重、排序），供 autocomplete 使用
+// 注意：此路由必须在 /entries/<pk>/ 之前匹配
+
+["爱好", "物理", "量子纠缠"]
+
+
+// ── 22c. POST /api/memory/entries/   — 用户手动新增（user_manual）
+// Request（preset_id 与 message_id 互斥，只能传其一）：
+{ "preset_id": 1, "content": "我喜欢读科幻小说", "scope": "hobby", "tags": ["科幻"] }
+// 若省略 scope：后台触发 Ollama 异步分类（is_processed: false → true）
+// 若提供 scope：直接写入，is_processed=true，跳过 Ollama
+
+// ── 22d. POST /api/memory/entries/   — 划线笔记（highlight）
+{ "message_id": 101, "content": "量子纠缠是两个粒子…" }
+// preset / conversation 自动从 message 所属会话派生
+// 始终触发 Ollama 异步分类
+
+
+// ── 22e. PATCH /api/memory/entries/<pk>/
+//        可编辑字段：content / scope / tags（三者可单独或组合）
+//        - scope 设有效值（"work"|"life"|"hobby"|"emotion"）→ 写入并置 is_processed=true
+//        - scope 传 null → 清除 scope，is_processed 保持不变（不重触 Ollama）
+//        - content / tags 修改不影响 is_processed
+
+// Request 示例（增改 scope）：
+{ "scope": "life" }
+
+// Request 示例（清除 scope）：
+{ "scope": null }
+
+// Request 示例（同时编辑三个字段）：
+{ "content": "修改后的内容", "scope": "work", "tags": ["新标签"] }
+
+// Response：返回完整更新后的 MemoryEntry 对象（同 22a 单条格式）
+
+
+// ── 22f. DELETE /api/memory/entries/<pk>/  → 204 No Content

@@ -175,7 +175,7 @@ export default function App() {
         return <Timeline presets={presets} />;
       
       case 'settings':
-        return <SettingsPanel projects={projects} presets={presets} />;
+        return <SettingsPanel projects={projects} presets={presets} openDestructor={openDestructor} />;
       
       default:
         return <HomePanel setCurrentTab={handleTabChange} />;

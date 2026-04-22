@@ -8,7 +8,7 @@ import KnowledgeEditModal from '../modals/KnowledgeEditModal';
 import ProposalEditPanel from '../memory/ProposalEditPanel';
 import MemoryManager from './MemoryManager';
 
-const SettingsPanel = ({ projects, presets }) => {
+const SettingsPanel = ({ projects, presets, openDestructor }) => {
   const [activeSettingsTab, setActiveSettingsTab] = useState('memory');
   const [memSubTab, setMemSubTab] = useState('files');
   const [isCollapsedDesktop, setIsCollapsedDesktop] = useState(false);
@@ -287,7 +287,7 @@ const SettingsPanel = ({ projects, presets }) => {
         )}
 
         {activeSettingsTab === 'memory_mgmt' && (
-          <MemoryManager presets={presets} />
+          <MemoryManager presets={presets} openDestructor={openDestructor} />
         )}
 
         {activeSettingsTab === 'account' && (

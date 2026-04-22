@@ -90,7 +90,7 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
         credentials: 'include',
-        body: JSON.stringify({ message_id: msg.id, raw_text: bookmarkText.trim() }),
+        body: JSON.stringify({ message_id: msg.id, content: bookmarkText.trim() }),
       });
       if (res.ok) {
         setBookmarkStatus('done');
