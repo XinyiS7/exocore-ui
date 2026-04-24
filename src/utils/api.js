@@ -14,4 +14,3 @@ export const MODEL_REGISTRY = [
 ];
 
 export const AVAILABLE_MODELS = MODEL_REGISTRY.map(m => m.id);
-\

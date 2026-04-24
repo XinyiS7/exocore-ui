@@ -2,11 +2,13 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+const isWatch = process.argv.includes('--watch');
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
-    VitePWA({
+    !isWatch && VitePWA({
       registerType: 'autoUpdate',
       devOptions: { enabled: false },  // dev 模式禁用 SW，防止 HMR 触发 SW 更新导致手机刷新
       workbox: {
@@ -51,7 +53,7 @@ export default defineConfig({
         ],
       },
     }),
-  ],
+  ].filter(Boolean),
   server: {
     host: '0.0.0.0',
     port: 5173,
