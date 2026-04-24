@@ -6,30 +6,20 @@ import {
 } from 'recharts';
 import { getUserAvatarUrl } from '../utils/avatar';
 import AvatarCropModal from './modals/AvatarCropModal';
-import { baseUrl } from '../utils/api';
+import { baseUrl, MODEL_REGISTRY } from '../utils/api';
 
-// ─── Colors per model ────────────────────────────────────────────────────────
-const MODEL_COLORS = {
-  'gemini-3-flash-preview':      '#34d399',
-  'gemini-3.1-pro-preview':      '#60a5fa',
-  'gemini-3.1-flash-lite-preview': '#a78bfa',
-  'deepseek-reasoner':           '#f59e0b',
-  'deepseek-chat':               '#fb923c',
-};
+// ─── Derived from MODEL_REGISTRY — edit models in src/utils/api.js ───────────
+const MODEL_COLOR_MAP = Object.fromEntries(MODEL_REGISTRY.map(m => [m.id, m.color]));
 const DEFAULT_COLOR = '#94a3b8';
+const modelColor = (model) => MODEL_COLOR_MAP[model] ?? DEFAULT_COLOR;
 
-const modelColor = (model) => MODEL_COLORS[model] ?? DEFAULT_COLOR;
-
-// ─── Platform groups ──────────────────────────────────────────────────────────
-const PLATFORMS = [
-  { key: 'all',      label: '全部' },
-  { key: 'gemini',   label: 'Gemini' },
-  { key: 'deepseek', label: 'DeepSeek' },
-];
+const PLATFORM_KEYS = ['all', ...new Set(MODEL_REGISTRY.map(m => m.platform))];
+const PLATFORM_LABELS = { all: '全部', gemini: 'Gemini', deepseek: 'DeepSeek' };
+const PLATFORMS = PLATFORM_KEYS.map(key => ({ key, label: PLATFORM_LABELS[key] ?? key }));
 
 const modelMatchesPlatform = (model, platform) => {
   if (platform === 'all') return true;
-  return model.toLowerCase().startsWith(platform);
+  return MODEL_REGISTRY.find(m => m.id === model)?.platform === platform;
 };
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
