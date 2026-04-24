@@ -2,7 +2,9 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { FileText, Copy, Bookmark, Check, X, ZoomIn, Edit2, RotateCw, GitFork } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
 import rehypeHighlight from 'rehype-highlight';
+import rehypeKatex from 'rehype-katex';
 import { baseUrl, getCsrfToken } from '../../utils/api';
 
 function CodeBlock({ children, className }) {
@@ -180,13 +182,15 @@ const MessageBubble = React.memo(({ msg, agentName, agentAvatarUrl, userNick, us
             />
           </div>
         )}
-        <div className={isUser
-          ? 'max-w-[92%] bg-exo-pure border border-exo-mist-12 rounded-[4px] rounded-tr-none p-4 text-sm text-white/90 whitespace-pre-wrap shadow-brutalist transition-all hover:border-exo-mist-20'
-          : 'w-full prose prose-invert prose-sm max-w-none prose-pre:!bg-transparent prose-pre:!p-0'}>
-          {isUser
-            ? msg.content
-            : <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]} components={MD_COMPONENTS}>{msg.content}</ReactMarkdown>}
-        </div>
+        {isUser ? (
+          <div className="max-w-[92%] bg-exo-pure border border-exo-mist-12 rounded-[4px] rounded-tr-none p-4 text-sm shadow-brutalist transition-all hover:border-exo-mist-20 prose prose-invert prose-sm prose-pre:!bg-transparent prose-pre:!p-0 text-white/90">
+            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeHighlight, rehypeKatex]} components={MD_COMPONENTS}>{msg.content}</ReactMarkdown>
+          </div>
+        ) : (
+          <div className="w-full prose prose-invert prose-sm max-w-none prose-pre:!bg-transparent prose-pre:!p-0">
+            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeHighlight, rehypeKatex]} components={MD_COMPONENTS}>{msg.content}</ReactMarkdown>
+          </div>
+        )}
       </div>
 
       {/* Action toolbar */}

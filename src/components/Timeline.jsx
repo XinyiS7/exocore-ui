@@ -296,7 +296,7 @@ const TweetCard = ({
             <span className={`text-[13px] font-bold uppercase tracking-tight font-display ${isUser ? 'text-white' : 'text-exo-accent'}`}>{name}</span>
             <span className="text-[9px] text-exo-muted font-mono uppercase tracking-tighter opacity-40">[{formatTime(tweet.created_at)}]</span>
           </div>
-          <p className="text-[14px] text-white/80 leading-relaxed font-mono tracking-tight break-words">{tweet.content}</p>
+          <p className="text-[14px] text-white/80 leading-relaxed font-mono tracking-tight break-words whitespace-pre-wrap">{tweet.content}</p>
           <button
             onClick={() => { setReplyingToId(isReplyingHere ? null : tweet.id); setReplyContent(''); }}
             className="mt-3 text-[10px] font-bold uppercase tracking-widest text-exo-muted/50 hover:text-exo-accent transition-colors flex items-center gap-1.5"
@@ -339,7 +339,7 @@ const TweetCard = ({
                   <span className={`text-[13px] font-bold tracking-tight font-display mr-2 ${replyAuthor.isUser ? 'text-white' : 'text-exo-accent'}`}>
                     {prefix}
                   </span>
-                  <span className="text-white/80">{reply.content}</span>
+                  <span className="text-white/80 whitespace-pre-wrap">{reply.content}</span>
                 </div>
                 <div className="flex items-center gap-3 mt-1.5">
                   <span className="text-[9px] text-exo-muted font-mono uppercase tracking-tighter opacity-40">
