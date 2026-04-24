@@ -28,6 +28,7 @@ const MemoryManager = ({ presets, openDestructor }) => {
   const [newTags, setNewTags] = useState('');
   const [newScope, setNewScope] = useState('work');
   const [creating, setCreating] = useState(false);
+  const [patchingScopeId, setPatchingScopeId] = useState(null);
 
   const [availableTags, setAvailableTags] = useState([]);
 
@@ -64,6 +65,27 @@ const MemoryManager = ({ presets, openDestructor }) => {
     setEditScope(entry.scope || 'work');
     const tags = Array.isArray(entry.tags) ? entry.tags : (entry.tags ? String(entry.tags).split(',') : []);
     setEditTags(tags.join(', '));
+  };
+
+  const handleScopeChange = async (entry, newScope) => {
+    if (newScope === entry.scope) return;
+    setPatchingScopeId(entry.id);
+    try {
+      const res = await fetch(`${baseUrl}/api/memory/entries/${entry.id}/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+        credentials: 'include',
+        body: JSON.stringify({ scope: newScope }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setEntries(prev => prev.map(e => e.id === entry.id ? updated : e));
+      }
+    } catch (err) {
+      console.error('scope 更新失败', err);
+    } finally {
+      setPatchingScopeId(null);
+    }
   };
 
   const handleSave = async (id) => {
@@ -277,10 +299,19 @@ const MemoryManager = ({ presets, openDestructor }) => {
               {/* Meta row */}
               <div className="flex items-start justify-between gap-4 mb-3">
                 <div className="flex items-center gap-2 flex-wrap">
-                  {entry.scope && (
-                    <span className="text-[9px] font-bold uppercase tracking-[0.15em] px-2 py-0.5 rounded-[2px] bg-exo-accent/10 text-exo-accent border border-exo-accent/20">
-                      {entry.scope}
-                    </span>
+                  {entry.scope !== undefined && (
+                    <select
+                      value={entry.scope || ''}
+                      disabled={patchingScopeId === entry.id}
+                      onChange={e => handleScopeChange(entry, e.target.value)}
+                      onClick={e => e.stopPropagation()}
+                      className="text-[9px] font-bold uppercase tracking-[0.15em] px-2 py-0.5 rounded-[2px] bg-exo-accent/10 text-exo-accent border border-exo-accent/20 cursor-pointer outline-none hover:bg-exo-accent/20 transition-colors disabled:opacity-50"
+                    >
+                      <option value="" disabled className="bg-exo-pure text-exo-muted">— scope —</option>
+                      {Object.entries(SCOPE_LABELS).map(([val, label]) => (
+                        <option key={val} value={val} className="bg-exo-pure text-white">{label}</option>
+                      ))}
+                    </select>
                   )}
                   {entry.source && (
                     <span className="text-[9px] font-bold uppercase tracking-[0.15em] px-2 py-0.5 rounded-[2px] bg-white/5 text-exo-muted border border-exo-mist-10">

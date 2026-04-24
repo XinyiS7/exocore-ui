@@ -404,9 +404,8 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
       fetch(`${baseUrl}/api/agents/chat/${activeSessionId}/`, { credentials: 'include' })
         .then(res => res.json())
         .then(async data => {
-          if (!Array.isArray(data) || data.length < 2) return;
-          const n = data.length;
-          const userId = data[n - 2]?.id;
+          if (!Array.isArray(data) || data.length === 0) return;
+          const userId = [...data].reverse().find(m => m.role === 'user')?.id;
           // 等待附件转换完成并持久化到 localStorage
           if (userId && pendingAttachConversionRef.current) {
             try {

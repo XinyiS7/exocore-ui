@@ -108,6 +108,7 @@ export default function App() {
             activeSessionId={activeSessionId}
             setActiveSessionId={setActiveSessionId}
             projects={projects}
+            setProjects={setProjects}
             refreshKey={refreshKey}
             openDestructor={openDestructor}
             openNewSession={openNewSession}
@@ -133,6 +134,7 @@ export default function App() {
             mode="project"
             isMainView={true}
             projects={projects}
+            setProjects={setProjects}
             refreshKey={refreshKey}
             openDestructor={openDestructor}
             openNewSession={openNewSession}
@@ -218,7 +220,7 @@ export default function App() {
 
       {/* Sidebar Container */}
       <div className={`
-        fixed md:relative inset-y-0 left-0 z-[120] md:z-auto transition-transform duration-500 ease-out
+        fixed md:relative inset-y-0 left-0 z-[120] md:z-[1] transition-transform duration-500 ease-out
         ${isSidebarExpanded ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
         <Sidebar
@@ -262,6 +264,7 @@ export default function App() {
                 activeSessionId={activeSessionId}
                 setActiveSessionId={(id) => { setActiveSessionId(id); setActiveFileProjectId(null); setActiveCouncilId(null); setShowConvList(false); }}
                 projects={projects}
+                setProjects={setProjects}
                 refreshKey={refreshKey}
                 setRefreshKey={setRefreshKey}
                 openDestructor={openDestructor}

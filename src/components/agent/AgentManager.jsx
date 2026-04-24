@@ -78,12 +78,12 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
       )}
       <div
         className={`
-          relative flex flex-col p-6 rounded-[2px] border transition-all animate-fade-in
+          relative flex flex-col p-6 rounded-[2px] border transition-all animate-fade-in overflow-hidden
           ${isG045
             ? 'bg-exo-accent/[0.03] border-exo-accent/30 shadow-[0_0_30px_rgba(212,175,55,0.05)]'
             : 'bg-exo-pure border-exo-mist-10 hover:border-exo-mist-20'
-          } 
-          ${isDraggingThis ? 'opacity-40 scale-[0.98]' : ''} 
+          }
+          ${isDraggingThis ? 'opacity-40 scale-[0.98]' : ''}
           ${isDragOver ? (isG045 ? 'border-exo-accent shadow-glow-sharp' : 'border-white/40 shadow-brutalist') : ''}
         `}
         draggable
@@ -92,8 +92,9 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
         onDragOver={(e) => { e.preventDefault(); setDragOver(preset.id); }}
         onDrop={() => { handleDrop(dragging, preset.id, list); setDragging(null); setDragOver(null); }}
       >
-        <div className="flex flex-wrap items-start gap-4 mb-6">
-          <div className="flex items-center gap-4 flex-1 min-w-0">
+        <div className="mb-6">
+          {/* Row 1: grip + avatar + name */}
+          <div className="flex items-center gap-4 mb-3">
             <div className="cursor-grab text-exo-muted/30 hover:text-exo-accent transition-colors shrink-0"><GripVertical size={18} /></div>
 
             {/* Avatar */}
@@ -109,7 +110,7 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
               <input type="file" ref={avatarInputRef} accept="image/*" className="hidden" onChange={handleAvatarChange} />
             </div>
 
-            <div className="min-w-0 space-y-1">
+            <div className="min-w-0 flex-1 space-y-1">
               <h3 className={`text-lg font-bold flex items-center gap-2 font-display uppercase tracking-tight ${isG045 ? 'text-exo-accent' : 'text-white'}`}>
                 <span className="truncate">{preset.name}</span>
                 {isG045 && <Sparkles size={14} className="text-exo-accent animate-pulse-glow shrink-0" />}
@@ -118,7 +119,8 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Row 2: action buttons — always on its own row, never collides with avatar */}
+          <div className="flex items-center gap-2 pl-10">
             <button
               onClick={() => setEditTarget(preset)}
               className="p-2 text-exo-muted hover:text-white border border-exo-mist-10 rounded-[2px] hover:bg-white/5 transition-all" title="Edit Core"

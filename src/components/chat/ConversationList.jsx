@@ -7,17 +7,18 @@ import {
 } from 'lucide-react';
 import { baseUrl, getCsrfToken } from '../../utils/api';
 
-const ConversationList = ({ 
-  activeSessionId, 
-  setActiveSessionId, 
-  projects = [], 
-  refreshKey, 
+const ConversationList = ({
+  activeSessionId,
+  setActiveSessionId,
+  projects = [],
+  setProjects,
+  refreshKey,
   setRefreshKey,
-  openDestructor, 
-  openNewSession, 
-  activeFileProjectId, 
-  setActiveFileProjectId, 
-  showConvList, 
+  openDestructor,
+  openNewSession,
+  activeFileProjectId,
+  setActiveFileProjectId,
+  showConvList,
   onClose,
   mode = 'chat', // 'chat' | 'council' | 'project'
   councilSessions = [],
@@ -31,6 +32,19 @@ const ConversationList = ({
   const [activeMenuId, setActiveMenuId] = useState(null);
   const [showAllProjects, setShowAllProjects] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const handleRenameProject = (proj) => {
+    const newName = prompt('Rename project:', proj.name);
+    if (!newName || newName === proj.name) return;
+    fetch(`${baseUrl}/api/core/projects/${proj.id}/`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+      credentials: 'include',
+      body: JSON.stringify({ name: newName }),
+    }).then(r => {
+      if (r.ok) setProjects?.(prev => prev.map(p => p.id === proj.id ? { ...p, name: newName } : p));
+    });
+  };
 
   useEffect(() => {
     fetch(`${baseUrl}/api/agents/conversations/`, { credentials: 'include' })
@@ -203,12 +217,12 @@ const ConversationList = ({
                     <div className="grid gap-2">
                       {visibleProjects.map(proj => {
                         const isExpanded = expandedProjects.has(proj.id);
-                        const projSessions = conversations.filter(c => c.project === proj.id);
+                        const projSessions = conversations.filter(c => c.project === proj.id && c.agent_type !== 'g045');
                         return (
                           <div key={proj.id} className="space-y-1">
                             <div
                               onClick={() => toggleProject(proj.id)}
-                              className={`flex items-center gap-4 p-3 rounded-[4px] cursor-pointer transition-all border ${isExpanded ? 'bg-exo-pure border-exo-mist-12' : 'border-transparent hover:bg-white/[0.03] hover:border-exo-mist-10'}`}
+                              className={`group flex items-center gap-4 p-3 rounded-[4px] cursor-pointer transition-all border ${isExpanded ? 'bg-exo-pure border-exo-mist-12' : 'border-transparent hover:bg-white/[0.03] hover:border-exo-mist-10'}`}
                             >
                               <div className={`p-2 rounded-[2px] transition-all border ${isExpanded ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' : 'bg-white/5 text-exo-muted border-transparent'}`}>
                                 {isExpanded ? <FolderOpen size={16}/> : <Folder size={16}/>}
@@ -217,6 +231,13 @@ const ConversationList = ({
                                 <div className="text-sm font-display font-light truncate leading-tight">{proj.name}</div>
                                 <div className="text-[9px] font-mono opacity-30 uppercase tracking-tighter">{projSessions.length} active nodes</div>
                               </div>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleRenameProject(proj); }}
+                                className="p-1 text-exo-muted/40 hover:text-exo-accent transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+                                title="Rename project"
+                              >
+                                <Edit2 size={12} />
+                              </button>
                               <ChevronRight size={14} className={`transition-transform opacity-30 ${isExpanded ? 'rotate-90' : ''}`} />
                             </div>
                             {isExpanded && (
@@ -309,12 +330,12 @@ const ConversationList = ({
                 <div className="grid gap-3">
                   {sortedProjects.map(proj => {
                     const isExpanded = expandedProjects.has(proj.id) || mode === 'project';
-                    const projSessions = conversations.filter(c => c.project === proj.id);
+                    const projSessions = conversations.filter(c => c.project === proj.id && c.agent_type !== 'g045');
                     return (
                       <div key={proj.id} className="space-y-2">
-                        <div 
+                        <div
                           onClick={() => toggleProject(proj.id)}
-                          className={`flex items-center gap-4 p-4 rounded-[4px] cursor-pointer transition-all border ${isExpanded ? 'bg-exo-pure border-exo-mist-12 shadow-brutalist' : 'border-transparent hover:bg-white/[0.03] hover:border-exo-mist-10'}`}
+                          className={`group flex items-center gap-4 p-4 rounded-[4px] cursor-pointer transition-all border ${isExpanded ? 'bg-exo-pure border-exo-mist-12 shadow-brutalist' : 'border-transparent hover:bg-white/[0.03] hover:border-exo-mist-10'}`}
                         >
                           <div className={`p-2 rounded-[2px] transition-all border ${isExpanded ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' : 'bg-white/5 text-exo-muted border-transparent'}`}>
                             {isExpanded ? <FolderOpen size={18}/> : <Folder size={18}/>}
@@ -323,6 +344,13 @@ const ConversationList = ({
                             <div className="text-base font-display font-light truncate">{proj.name}</div>
                             <div className="text-[9px] font-mono opacity-30 uppercase tracking-tighter">{projSessions.length} active nodes</div>
                           </div>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleRenameProject(proj); }}
+                            className="p-1 text-exo-muted/40 hover:text-exo-accent transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+                            title="Rename project"
+                          >
+                            <Edit2 size={12} />
+                          </button>
                           <ChevronRight size={14} className={`transition-transform opacity-30 ${isExpanded ? 'rotate-90' : ''}`} />
                         </div>
                         {isExpanded && (
