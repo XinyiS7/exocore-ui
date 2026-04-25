@@ -7,10 +7,17 @@ import rehypeHighlight from 'rehype-highlight';
 import rehypeKatex from 'rehype-katex';
 import { baseUrl, getCsrfToken } from '../../utils/api';
 
+function extractText(node) {
+  if (typeof node === 'string') return node;
+  if (Array.isArray(node)) return node.map(extractText).join('');
+  if (node?.props?.children != null) return extractText(node.props.children);
+  return '';
+}
+
 function CodeBlock({ children, className }) {
   const [copied, setCopied] = useState(false);
   const lang = (className || '').replace('language-', '') || 'code';
-  const text = typeof children === 'string' ? children : (children?.props?.children ?? '');
+  const text = extractText(children);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(String(text)).then(() => {
@@ -40,7 +47,11 @@ function CodeBlock({ children, className }) {
 
 const MD_COMPONENTS = {
   pre({ children, ...props }) {
-    const codeEl = React.Children.toArray(children).find(c => c?.type === 'code');
+    // When a custom `code` component is defined, react-markdown sets type to the
+    // component function rather than the string 'code' — check both cases.
+    const codeEl = React.Children.toArray(children).find(
+      c => c?.type === 'code' || typeof c?.type === 'function'
+    );
     if (codeEl) {
       return <CodeBlock className={codeEl.props?.className}>{codeEl.props?.children}</CodeBlock>;
     }
