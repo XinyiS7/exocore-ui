@@ -16,7 +16,7 @@ function extractText(node) {
 
 function CodeBlock({ children, className }) {
   const [copied, setCopied] = useState(false);
-  const lang = (className || '').replace('language-', '') || 'code';
+  const lang = (className || '').split(' ').find(c => c.startsWith('language-'))?.replace('language-', '') || 'code';
   const text = extractText(children);
 
   const handleCopy = () => {
