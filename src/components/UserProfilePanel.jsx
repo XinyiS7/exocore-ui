@@ -139,7 +139,7 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
         mode,
         from: periodStart.toISOString().slice(0, 10),
       });
-      const res = await fetch(`${baseUrl}/api/core/stats/usage/?${params}`, { credentials: 'include' });
+      const res = await fetch(`${baseUrl}/api/telemetry/usage/`, { credentials: 'include' });
       if (!res.ok) throw new Error('stats_unavailable');
       const data = await res.json();
       setRawData(data);
