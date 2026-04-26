@@ -41,7 +41,7 @@ const BranchSessionModal = ({ isOpen, onClose, onConfirm, isSubmitting }) => {
               placeholder="USE DEFAULT IF NULL..." 
               className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm text-white font-mono focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20"
               autoFocus
-              onKeyDown={e => { if (e.key === 'Enter') onConfirm(name); }}
+              onKeyDown={e => { if (e.key === 'Enter') onConfirm(e.target.value); }}
             />
           </div>
         </div>

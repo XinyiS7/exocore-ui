@@ -520,6 +520,15 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
       });
       const data = await res.json();
       if (res.ok) {
+        const trimmedName = newName.trim();
+        if (trimmedName) {
+          await fetch(`${baseUrl}/api/agents/conversations/${data.conversation_id}/`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+            credentials: 'include',
+            body: JSON.stringify({ name: trimmedName }),
+          }).catch(() => {});
+        }
         if (setRefreshKey) setRefreshKey(p => p + 1);
         if (setActiveSessionId) setActiveSessionId(data.conversation_id);
         setBranchingMessageId(null);

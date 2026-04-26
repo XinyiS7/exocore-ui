@@ -96,7 +96,7 @@ const ConversationList = ({
       onClick={() => setActiveSessionId(conv.id)} 
       className={`group relative flex items-center justify-between p-3 rounded-[4px] cursor-pointer transition-all border ${activeSessionId === conv.id ? 'bg-exo-accent/10 text-exo-accent border-exo-accent/40 shadow-glow-gold' : 'text-exo-muted hover:bg-white/[0.03] border-transparent hover:border-exo-mist-10'}`}
     >
-      <div className="flex items-center gap-3 overflow-hidden">
+      <div className="flex items-center gap-3 overflow-hidden min-w-0">
         <div className={`p-1.5 rounded-[2px] border transition-all ${activeSessionId === conv.id ? 'bg-exo-accent/20 border-exo-accent/40' : 'bg-white/5 border-transparent group-hover:border-exo-mist-10'}`}>
           <Icon size={14} className={activeSessionId === conv.id ? 'text-exo-accent' : 'opacity-40 group-hover:opacity-100'} />
         </div>
