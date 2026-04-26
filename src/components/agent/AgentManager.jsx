@@ -8,7 +8,7 @@ import { getAgentAvatarUrl } from '../../utils/avatar';
 import EditPresetModal from '../modals/EditPresetModal';
 import AvatarCropModal from '../modals/AvatarCropModal';
 import MemoryAnchorTicker from './MemoryAnchorTicker';
-import { getAgentHubOrder } from '../../utils/presets';
+import { getAgentHubOrder, isSuperiorType } from '../../utils/presets';
 
 const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, refreshPresets }) => {
   const [editTarget, setEditTarget] = useState(null);
@@ -24,8 +24,8 @@ const AgentManager = ({ openNewSession, openDestructor, setCurrentTab, presets, 
       return orderA - orderB;
     });
 
-  const g045Presets = applyOrder(presets.filter(p => p.agent_type === 'g045'));
-  const standardPresets = applyOrder(presets.filter(p => p.agent_type !== 'g045'));
+  const g045Presets = applyOrder(presets.filter(p => isSuperiorType(p.agent_type)));
+  const standardPresets = applyOrder(presets.filter(p => !isSuperiorType(p.agent_type)));
 
   const handleDrop = (srcId, dstId, list) => {
     if (srcId === dstId) return;

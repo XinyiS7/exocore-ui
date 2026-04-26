@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, X, Activity, Folder, Check, MessageSquare, Code2 } from 'lucide-react';
 import { baseUrl, getCsrfToken } from '../../utils/api';
-import { sortPresets } from '../../utils/presets';
+import { sortPresets, isSuperiorType } from '../../utils/presets';
 
 const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, onSuccess }) => {
   const sortedPresets = useMemo(() => sortPresets(presets), [presets, isOpen]);
@@ -27,7 +27,7 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
   if (!isOpen) return null;
 
   const currentPreset = sortedPresets.find(p => p.id === parseInt(selectedPresetId));
-  const isG045 = currentPreset?.agent_type === 'g045';
+  const isG045 = isSuperiorType(currentPreset?.agent_type);
 
   const toggleProject = (pid) => {
     if (isG045) setSelectedProjectIds(prev => prev.includes(pid) ? prev.filter(id => id !== pid) : [...prev, pid]);
@@ -102,20 +102,20 @@ const NewSessionModal = ({ isOpen, onClose, projects, presets, initialContext, o
                 return (
                   <div 
                     key={preset.id} 
-                    onClick={() => { setSelectedPresetId(preset.id); if (preset.agent_type !== 'g045' && selectedProjectIds.length > 1) setSelectedProjectIds([selectedProjectIds[0]]); }}
+                    onClick={() => { setSelectedPresetId(preset.id); if (!isSuperiorType(preset.agent_type) && selectedProjectIds.length > 1) setSelectedProjectIds([selectedProjectIds[0]]); }}
                     className={`
                       group p-4 rounded-[2px] border cursor-pointer flex justify-between items-center transition-all
-                      ${isSelected 
-                        ? (preset.agent_type === 'g045' ? 'bg-exo-accent/10 border-exo-accent/60' : 'bg-white/5 border-white/40 shadow-brutalist') 
+                      ${isSelected
+                        ? (isSuperiorType(preset.agent_type) ? 'bg-exo-accent/10 border-exo-accent/60' : 'bg-white/5 border-white/40 shadow-brutalist')
                         : 'bg-black/30 border-exo-mist-10 text-exo-muted hover:border-exo-mist-20'}
                     `}
                   >
                     <div className="flex flex-col gap-1">
-                      <span className={`text-[13px] font-bold uppercase tracking-tight font-display ${isSelected ? (preset.agent_type === 'g045' ? 'text-exo-accent' : 'text-white') : ''}`}>{preset.name}</span>
+                      <span className={`text-[13px] font-bold uppercase tracking-tight font-display ${isSelected ? (isSuperiorType(preset.agent_type) ? 'text-exo-accent' : 'text-white') : ''}`}>{preset.name}</span>
                       <span className="text-[10px] opacity-40 font-mono uppercase tracking-widest">{preset.default_model}</span>
                     </div>
                     {isSelected ? (
-                      <div className={`p-1 rounded-full ${preset.agent_type === 'g045' ? 'bg-exo-accent text-exo-pure' : 'bg-white text-exo-pure'}`}>
+                      <div className={`p-1 rounded-full ${isSuperiorType(preset.agent_type) ? 'bg-exo-accent text-exo-pure' : 'bg-white text-exo-pure'}`}>
                         <Check size={12} strokeWidth={3} />
                       </div>
                     ) : (

@@ -1,3 +1,5 @@
+export const isSuperiorType = (type) => type === 'superior' || type === 'g045';
+
 /**
  * 获取 Agent Hub 的手动排序顺序
  */
@@ -18,9 +20,9 @@ export const sortPresets = (presets) => {
   const order = getAgentHubOrder();
   
   return [...presets].sort((a, b) => {
-    // 1. 优先级：g045 核心置顶
-    const typeA = a.agent_type === 'g045' ? 0 : 1;
-    const typeB = b.agent_type === 'g045' ? 0 : 1;
+    // 1. 优先级：superior 核心置顶
+    const typeA = isSuperiorType(a.agent_type) ? 0 : 1;
+    const typeB = isSuperiorType(b.agent_type) ? 0 : 1;
     if (typeA !== typeB) return typeA - typeB;
     
     // 2. 优先级：手动排序顺序

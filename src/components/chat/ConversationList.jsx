@@ -78,7 +78,7 @@ const ConversationList = ({
   );
 
   const g045Sessions = filteredConversations.filter(c => c.agent_type === 'g045' && !councilInternalIds.has(c.id));
-  const standardSessions = filteredConversations.filter(c => c.agent_type !== 'g045' && c.project === null && !councilInternalIds.has(c.id));
+  const standardSessions = filteredConversations.filter(c => c.agent_type !== 'g045' && !c.project && !councilInternalIds.has(c.id));
 
   const sortedProjects = useMemo(() => {
     if (!projects) return [];

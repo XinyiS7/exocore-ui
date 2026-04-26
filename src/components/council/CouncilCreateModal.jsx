@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Users, Crown, Check, Shield } from 'lucide-react';
 import { createCouncilSession } from '../../utils/councilApi';
-import { sortPresets } from '../../utils/presets';
+import { sortPresets, isSuperiorType } from '../../utils/presets';
 
 const CouncilCreateModal = ({ isOpen, onClose, presets, onSuccess }) => {
   const [name, setName] = useState('');
@@ -17,7 +17,7 @@ const CouncilCreateModal = ({ isOpen, onClose, presets, onSuccess }) => {
     setName('');
     setError('');
     setSelectedParticipantIds([]);
-    const g045 = sortedPresets.find(p => p.agent_type === 'g045');
+    const g045 = sortedPresets.find(p => isSuperiorType(p.agent_type));
     setArbitratorId(g045 ? String(g045.id) : (sortedPresets[0] ? String(sortedPresets[0].id) : ''));
   }, [isOpen, sortedPresets]);
 
@@ -89,7 +89,7 @@ const CouncilCreateModal = ({ isOpen, onClose, presets, onSuccess }) => {
               className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-2.5 text-sm text-white font-mono focus:border-exo-accent/40 outline-none transition-all cursor-pointer"
             >
               {sortedPresets.map(p => (
-                <option key={p.id} value={p.id} className="bg-exo-pure">{p.name}{p.agent_type === 'g045' ? ' [L3_CORE]' : ''}</option>
+                <option key={p.id} value={p.id} className="bg-exo-pure">{p.name}{isSuperiorType(p.agent_type) ? ' [L3_CORE]' : ''}</option>
               ))}
             </select>
           </div>
@@ -117,7 +117,7 @@ const CouncilCreateModal = ({ isOpen, onClose, presets, onSuccess }) => {
                       {selected && <Check size={10} className="text-exo-pure" strokeWidth={4} />}
                     </div>
                     <span className="text-[12px] font-mono uppercase tracking-tight">{p.name}</span>
-                    {p.agent_type === 'g045' && <span className="ml-auto text-[9px] font-mono text-exo-accent opacity-60 font-bold uppercase tracking-widest">[L3]</span>}
+                    {isSuperiorType(p.agent_type) && <span className="ml-auto text-[9px] font-mono text-exo-accent opacity-60 font-bold uppercase tracking-widest">[L3]</span>}
                   </div>
                 );
               })}
