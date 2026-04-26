@@ -20,8 +20,11 @@ import HomePanel from './components/home/HomePanel';
 import TaskPanel from './components/tasks/TaskPanel';
 
 export default function App() {
-  const [currentTab, setCurrentTab] = useState('home');
-  const [activeSessionId, setActiveSessionId] = useState(null);
+  const [currentTab, setCurrentTab] = useState(() => localStorage.getItem('exo_active_tab') || 'home');
+  const [activeSessionId, setActiveSessionId] = useState(() => {
+    const saved = localStorage.getItem('exo_active_session');
+    return saved ? Number(saved) : null;
+  });
   const [refreshKey, setRefreshKey] = useState(0);
   const [projects, setProjects] = useState([]);
   const [presets, setPresets] = useState([]);
@@ -38,6 +41,15 @@ export default function App() {
   const [activeCouncilId, setActiveCouncilId] = useState(null);
   const [councilSessions, setCouncilSessions] = useState([]);
   const [showCouncilCreate, setShowCouncilCreate] = useState(false);
+
+  useEffect(() => {
+    if (activeSessionId) localStorage.setItem('exo_active_session', String(activeSessionId));
+    else localStorage.removeItem('exo_active_session');
+  }, [activeSessionId]);
+
+  useEffect(() => {
+    localStorage.setItem('exo_active_tab', currentTab);
+  }, [currentTab]);
 
   useEffect(() => {
     fetch(`${baseUrl}/api/core/projects/`, { credentials: 'include' })
@@ -75,7 +87,11 @@ export default function App() {
   // Helper to reset selections when switching tabs
   const handleTabChange = (tab) => {
     setCurrentTab(tab);
-    if (tab !== 'chat') { setActiveSessionId(null); setActiveFileProjectId(null); }
+    if (tab !== 'chat') {
+      setActiveSessionId(null);
+      localStorage.removeItem('exo_active_session');
+      setActiveFileProjectId(null);
+    }
     if (tab !== 'council') { setActiveCouncilId(null); }
     // On mobile, close sidebar after selection
     if (window.innerWidth < 768) setIsSidebarExpanded(false);
