@@ -40,7 +40,7 @@ const MobileSidebar = ({
     <>
       {/* Backdrop */}
       <div
-        className="md:hidden fixed inset-0 z-[110] bg-black/80 backdrop-blur-sm"
+        className="md:hidden fixed inset-0 z-[110] bg-transparent"
         onClick={onClose}
       />
 
