@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   MessageSquare, BrainCircuit, ScrollText, Settings, Hexagon,
-  List, LayoutGrid, Calendar, X
+  List, Calendar, X
 } from 'lucide-react';
 import { getUserAvatarUrl } from '../../utils/avatar';
 
