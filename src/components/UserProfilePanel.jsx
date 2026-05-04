@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Camera, Check, ChevronLeft, ChevronRight, Activity } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Legend
+  ResponsiveContainer
 } from 'recharts';
 import { getUserAvatarUrl } from '../utils/avatar';
 import AvatarCropModal from './modals/AvatarCropModal';
@@ -22,47 +22,7 @@ const modelMatchesPlatform = (model, platform) => {
   return MODEL_REGISTRY.find(m => m.id === model)?.platform === platform;
 };
 
-// ─── Date helpers ─────────────────────────────────────────────────────────────
-const startOfWeek = (date) => {
-  const d = new Date(date);
-  const day = d.getDay(); // 0=Sun
-  d.setDate(d.getDate() - day);
-  d.setHours(0, 0, 0, 0);
-  return d;
-};
-
-const startOfMonth = (date) => {
-  const d = new Date(date);
-  d.setDate(1);
-  d.setHours(0, 0, 0, 0);
-  return d;
-};
-
-const addPeriod = (date, mode, delta) => {
-  const d = new Date(date);
-  if (mode === 'week') d.setDate(d.getDate() + delta * 7);
-  else d.setMonth(d.getMonth() + delta);
-  return d;
-};
-
-const formatPeriodLabel = (anchor, mode) => {
-  if (mode === 'week') {
-    const start = startOfWeek(anchor);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 6);
-    const fmt = (d) => `${d.getMonth() + 1}/${d.getDate()}`;
-    return `${fmt(start)} – ${fmt(end)}`;
-  }
-  return anchor.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long' });
-};
-
-const isCurrentPeriod = (anchor, mode) => {
-  const now = new Date();
-  if (mode === 'week') {
-    return startOfWeek(anchor).getTime() === startOfWeek(now).getTime();
-  }
-  return anchor.getMonth() === now.getMonth() && anchor.getFullYear() === now.getFullYear();
-};
+const toDateStr = (d) => d.toISOString().slice(0, 10);
 
 // ─── Custom Tooltip ───────────────────────────────────────────────────────────
 const CustomTooltip = ({ active, payload, label }) => {
@@ -128,18 +88,15 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
   // Hover summary state
   const [activeInputPoint, setActiveInputPoint] = useState(null);
   const [activeOutputPoint, setActiveOutputPoint] = useState(null);
+  const [activeCachedPoint, setActiveCachedPoint] = useState(null);
 
   // ── Fetch stats ──
   const fetchStats = useCallback(async () => {
     setIsLoadingStats(true);
     setStatsError(false);
     try {
-      const periodStart = mode === 'week' ? startOfWeek(anchor) : startOfMonth(anchor);
-      const params = new URLSearchParams({
-        mode,
-        from: periodStart.toISOString().slice(0, 10),
-      });
-      const res = await fetch(`${baseUrl}/api/telemetry/usage/`, { credentials: 'include' });
+      const params = new URLSearchParams({ mode, from: toDateStr(anchor) });
+      const res = await fetch(`${baseUrl}/api/telemetry/usage/?${params}`, { credentials: 'include' });
       if (!res.ok) throw new Error('stats_unavailable');
       const data = await res.json();
       setRawData(data);
@@ -179,8 +136,16 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
   };
 
   // ── Period nav ──
-  const prevPeriod = () => setAnchor(a => addPeriod(a, mode, -1));
-  const nextPeriod = () => setAnchor(a => addPeriod(a, mode, +1));
+  const prevPeriod = () => setAnchor(a => {
+    const d = new Date(a);
+    mode === 'week' ? d.setDate(d.getDate() - 7) : d.setMonth(d.getMonth() - 1);
+    return d;
+  });
+  const nextPeriod = () => setAnchor(a => {
+    const d = new Date(a);
+    mode === 'week' ? d.setDate(d.getDate() + 7) : d.setMonth(d.getMonth() + 1);
+    return d;
+  });
   const toggleMode = () => {
     setMode(m => m === 'week' ? 'month' : 'week');
     setAnchor(new Date());
@@ -204,6 +169,7 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
         const entry = (day.models || []).find(m => m.model === model);
         point[`${model}_input`]  = entry?.input_tokens  ?? 0;
         point[`${model}_output`] = entry?.output_tokens ?? 0;
+        point[`${model}_cached`] = entry?.cached_tokens ?? 0;
         point[`${model}_convs`]  = entry?.conversation_count ?? 0;
       });
       return point;
@@ -339,9 +305,13 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
                   className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-exo-text hover:text-exo-accent transition-colors min-w-[80px] text-center"
                   title={mode === 'week' ? '切换为按月显示' : '切换为按周显示'}
                 >
-                  {isCurrentPeriod(anchor, mode)
+                  {rawData?.is_current
                     ? (mode === 'week' ? '本周' : '本月')
-                    : formatPeriodLabel(anchor, mode)
+                    : (mode === 'week'
+                      ? (rawData?.from === rawData?.to
+                        ? rawData?.from?.slice(5) ?? ''
+                        : `${rawData?.from?.slice(5) ?? ''} – ${rawData?.to?.slice(5) ?? ''}`)
+                      : rawData?.from?.slice(0, 7) ?? '')
                   }
                 </button>
                 <button
@@ -397,6 +367,16 @@ const UserProfilePanel = ({ isOpen, onClose }) => {
                   valueKey="output"
                   onActivate={setActiveOutputPoint}
                   activePoint={activeOutputPoint}
+                />
+
+                {/* Cached tokens chart */}
+                <ChartBlock
+                  title="Cached Tokens"
+                  data={chartData}
+                  models={allModels}
+                  valueKey="cached"
+                  onActivate={setActiveCachedPoint}
+                  activePoint={activeCachedPoint}
                 />
               </>
             )}

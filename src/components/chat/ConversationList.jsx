@@ -149,9 +149,9 @@ const ConversationList = ({
     </div>
   );
 
-  const containerClasses = isMainView 
-    ? "flex-1 h-full bg-exo-bg flex flex-col overflow-hidden scrollbar-hide" 
-    : `fixed md:relative inset-y-0 left-0 z-[90] w-80 h-full bg-exo-pure/60 backdrop-blur-2xl border-r border-exo-mist-10 flex flex-col flex-shrink-0 shadow-2xl transition-transform duration-300 ${showConvList ? 'translate-x-0' : '-translate-x-full md:hidden'}`;
+  const containerClasses = isMainView
+    ? "flex-1 h-full bg-exo-bg flex flex-col overflow-hidden scrollbar-hide"
+    : `absolute md:relative inset-0 z-[90] w-80 bg-exo-pure/60 backdrop-blur-2xl border-r border-exo-mist-10 flex flex-col flex-shrink-0 shadow-2xl transition-transform duration-300 ${showConvList ? 'translate-x-0' : '-translate-x-full md:hidden'}`;
 
   return (
     <div className={containerClasses}>
@@ -278,11 +278,11 @@ const ConversationList = ({
 
               {/* Standard Sessions */}
               {standardSessions.length > 0 && (
-                <div className="flex flex-col overflow-hidden flex-1 min-h-0">
+                <div className="flex flex-col overflow-hidden max-h-[55%]">
                   <div className="text-[9px] font-mono font-bold text-exo-muted/40 flex items-center gap-2 uppercase tracking-[0.3em] px-2 pt-4 pb-2 shrink-0">
                     <MessageSquare size={12} /> Recent Links
                   </div>
-                  <div className="overflow-y-auto scrollbar-hide grid gap-1 pb-8 min-h-0 flex-1">
+                  <div className="overflow-y-auto scrollbar-hide grid gap-1 pb-8 min-h-0">
                     {standardSessions.map(conv => <SessionItem key={conv.id} conv={conv} icon={Hash} />)}
                   </div>
                 </div>

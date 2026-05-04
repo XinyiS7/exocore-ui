@@ -1,6 +1,6 @@
 ========================================================
   ExoCore — React 前端接口数据格式速查表
-  最后更新：2026-04-26 (SAI-G045 Alessandro)
+  最后更新：2026-05-03 — §23 Telemetry API 新增 cached_tokens 字段
 ========================================================
 
 
@@ -202,8 +202,191 @@
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 21. Tasks API — /api/tasks/
+   日程/习惯追踪 + 日历快照
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 详见主文档，无变动。
+
+// ════════════════════════════════════════════════════════════════════════════
+// §21a  ScheduleEntry CRUD
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── 21a.1. GET /api/tasks/entries/
+//         可附加过滤: ?status=active&entry_type=todo&is_pinned=true
+// 返回: Array<ScheduleEntry>
+
+[
+  {
+    "id": 5,
+    "title": "Review PR #42",
+    "description": "Check the authentication middleware changes",
+    "entry_type": "todo",              // "todo" | "periodic" | "goal"
+    "status": "active",                // "active" | "suspended" | "escalated" | "archived"
+    "is_pinned": false,
+    "start_date": "2026-04-01",
+    "tags": ["dev", "review"],
+
+    // [todo 专用]
+    "due_date": "2026-05-03",
+
+    // [periodic 专用]
+    "interval_unit": null,             // "day" | "week" | "month"
+    "interval_value": null,            // 每 N 个单位
+    "end_type": null,                  // "count" | "date" | "never"
+    "end_count": null,
+    "end_date": null,
+    "occurrences_done": 0,             // 已完成次数; next_due = start_date + interval × occurrences_done
+
+    // [goal 专用]
+    "goal_count": null,                // 每周期目标次数
+    "goal_period": null,               // "week" | "month"
+    "cycle_start": null,               // 当前周期起始日期
+    "cycle_due": null,                 // 当前周期截止日期
+
+    // GCal 同步
+    "gcal_event_id": "",               // 空字符串 = 未同步
+    "gcal_event_link": "",
+
+    "created_at": "2026-04-09T10:00:00Z",
+    "updated_at": "2026-04-20T14:30:00Z"
+  }
+]
+
+// ── 21a.2. POST /api/tasks/entries/   — 创建新条目
+// Request:
+{
+  "title": "Review PR",
+  "description": "...",
+  "entry_type": "todo",                // 必填
+  "start_date": "2026-05-01",
+  "due_date": "2026-05-03",            // todo 用
+  "tags": ["dev"],
+  // periodic 可选字段: interval_unit, interval_value, end_type, end_count, end_date
+  // goal 可选字段: goal_count, goal_period
+}
+
+// ── 21a.3. GET /api/tasks/entries/<pk>/    — 单条详情
+// ── 21a.4. PATCH /api/tasks/entries/<pk>/  — 部分更新
+// ── 21a.5. DELETE /api/tasks/entries/<pk>/ — 软删除 (status → "archived")
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// §21b  Entry Actions
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── 21b.1. POST /api/tasks/entries/<pk>/complete/
+// 打卡完成。Body (optional): { "note": "did 3 sets" }
+// 返回: CompletionRecord 对象
+
+// ── 21b.2. POST /api/tasks/entries/<pk>/suspend/  — 挂起 (status → "suspended")
+// ── 21b.3. POST /api/tasks/entries/<pk>/resume/   — 恢复 (status → "active")
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// §21c  Google Calendar Sync (ExoCore → GCal)
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── 21c.1. POST /api/tasks/entries/<pk>/gcal/
+// 将 ScheduleEntry 推送到 Google Calendar（创建或更新 all-day event）。
+// 成功返回:
+{
+  "gcal_synced": true,
+  "gcal_event_id": "abcd1234",
+  "gcal_event_link": "https://www.google.com/calendar/event?eid=..."
+}
+// 失败 (502):
+{ "detail": "GCal sync failed: ...", "gcal_synced": false }
+
+// ── 21c.2. DELETE /api/tasks/entries/<pk>/gcal/
+// 解除 GCal 关联（删除远端 event，清空本地 gcal_event_id/link）。
+// 返回: 204 No Content
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// §21d  Calendar Snapshots (GCal + ExoCore merged)
+// 后台定时任务（启动 + 每 24h）从 Google Calendar 拉取事件，与 ExoCore
+// 内部 ScheduleEntry 合并去重后写入 JSON 快照。Google Tasks 不在此范围内。
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── 21d.1. GET /api/tasks/calendar/
+// 90 天全量快照，供前端小日历视图加载。
+// 首次启动后立即可用；若文件尚未生成返回 503。
+//
+// Response:
+{
+  "fetched_at": "2026-05-02T17:06:34+00:00",
+  "window_start": "2026-05-02",
+  "window_end": "2026-07-31",
+  "count": 4,
+  "events": [
+    {
+      "id": "60ojiob1c5im8b9o..._20260503",   // GCal event ID (含 recurrence suffix)
+      "source": "gcal",                        // "gcal" | "exocore"
+      "title": "Misu 内驱",
+      "start": "2026-05-03",                   // all_day=true 时仅日期
+      "end": "2026-05-04",                     // GCal exclusive end
+      "all_day": true,
+      "description": "",
+      "location": "",
+      "html_link": "https://www.google.com/calendar/event?eid=...",
+      "entry_type": null,                      // null for GCal events
+      "status": null,
+      "exocore_entry_id": null                 // null for GCal events
+    },
+    {
+      "id": "exo_5",
+      "source": "exocore",
+      "title": "[ExoCore] Review PR #42",
+      "start": "2026-05-03",
+      "end": "2026-05-04",
+      "all_day": true,
+      "description": "Check the authentication middleware changes",
+      "location": null,
+      "html_link": "https://www.google.com/calendar/event?eid=...",  // if synced
+      "entry_type": "todo",
+      "status": "active",
+      "exocore_entry_id": 5
+    },
+    {
+      "id": "4dlo979grhe8hei2u9ikukv94g",
+      "source": "gcal",
+      "title": "ZBH treffen",
+      "start": "2026-05-05T13:00:00+02:00",    // all_day=false 时带时间
+      "end": "2026-05-05T14:30:00+02:00",
+      "all_day": false,
+      "description": "",
+      "location": "Albert-Einstein-Ring, Hamburg",
+      "html_link": "https://www.google.com/calendar/event?eid=...",
+      "entry_type": null,
+      "status": null,
+      "exocore_entry_id": null
+    }
+  ]
+}
+
+// 去重规则: ExoCore 条目如已同步到 GCal (gcal_event_id 匹配某 GCal 事件),
+// 则仅保留 GCal 版本，不重复出现。
+
+// ── 21d.2. GET /api/tasks/calendar/today/
+// 48h 快照（calendar_schedule.json 的子集），供 timeline / routine 近期提醒。
+// 结构与 §21d.1 完全一致，仅 window_start/window_end 为 48h 范围。
+// 若文件尚未生成返回 503。
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// §21e  Completion Records
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── 21e.1. GET /api/tasks/completions/?entry=<pk>
+// 返回: Array<CompletionRecord>
+[
+  {
+    "id": 12,
+    "entry": 5,
+    "completed_at": "2026-05-01T09:30:00Z",
+    "cycle_start": null,               // goal 类型记录归属周期
+    "note": "did 3 sets"
+  }
+]
+
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -346,3 +529,76 @@
 // Note: AgentPreset feature toggles (can_self_check / can_deep_org / can_interact)
 // are NOT on AgentPreset fields. They are managed as ID lists in SystemConfig
 // (self_check_preset_ids / deep_org_preset_ids / interact_preset_ids) via PATCH above.
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// §23  Telemetry API — /api/telemetry/
+// ════════════════════════════════════════════════════════════════════════════
+//
+// ── 23a. GET /api/telemetry/usage/?mode=week&from=YYYY-MM-DD
+//        每日粒度用量（折线图用）。mode: "week" (7天) | "month" (30天)
+//        from: 起始日期 YYYY-MM-DD，默认今天
+//
+// Response:
+{
+  "daily": [
+    {
+      "date": "04/21",
+      "models": [
+        {
+          "model": "gemini-3.1-pro-preview",
+          "input_tokens": 12345,      // promptTokenCount (char-based estimate for non-Gemini)
+          "output_tokens": 6789,      // candidatesTokenCount
+          "cached_tokens": 12000,     // cachedContentTokenCount (Gemini) / prompt_cache_hit_tokens (DeepSeek); 0 = miss
+          "conversation_count": 5
+        },
+        {
+          "model": "deepseek-v4-pro",
+          "input_tokens": 800,
+          "output_tokens": 250,
+          "cached_tokens": 750,
+          "conversation_count": 2
+        }
+      ]
+    }
+  ],
+  "from": "2026-04-21",
+  "to": "2026-04-27",
+  "is_current": true
+}
+
+// ── 23b. GET /api/telemetry/weekly/?weeks=12&from=YYYY-MM-DD
+//        周度聚合用量（概览用）。from: 周一日期，默认本周一
+//
+// Response:
+{
+  "weekly": [
+    {
+      "week": "04/21–04/27",
+      "is_current": true,
+      "models": [
+        {"model": "gemini-3.1-pro-preview", "input_tokens": 12345, "output_tokens": 6789, "cached_tokens": 12000, "conversation_count": 5}
+      ]
+    }
+  ]
+}
+
+// ── 23c. GET /api/telemetry/monthly/?months=6&from=YYYY-MM
+//        月度聚合用量（概览用）。from: 月份 YYYY-MM，默认当月
+//
+// Response:
+{
+  "monthly": [
+    {
+      "month": "2026-04",
+      "is_current": true,
+      "models": [
+        {"model": "gemini-3.1-pro-preview", "input_tokens": 123450, "output_tokens": 67890, "cached_tokens": 120000, "conversation_count": 50}
+      ]
+    }
+  ]
+}
+
+// ── 23d. GET /api/telemetry/daily/
+//        原始 daily_summary.json 全量快照，keyed by date → platform → model
+//        结构同旧格式，一般只供调试

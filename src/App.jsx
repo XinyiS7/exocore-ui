@@ -274,7 +274,7 @@ export default function App() {
           
           {/* Side Column List (Visible in chat/council/project if showConvList is true and NOT in main view) */}
           {showConvList && (['chat', 'council', 'project'].includes(currentTab)) && (
-            <div className="absolute inset-y-0 left-0 z-[80] h-full shadow-[30px_0_60px_rgba(0,0,0,0.8)]">
+            <div className="absolute inset-y-0 left-0 z-[80] w-80 h-full shadow-[30px_0_60px_rgba(0,0,0,0.8)]">
               <ConversationList
                 mode={currentTab}
                 activeSessionId={activeSessionId}
