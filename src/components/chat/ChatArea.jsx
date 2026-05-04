@@ -560,7 +560,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
 
   return (
     <div className="flex-1 min-w-0 flex flex-col h-full bg-exo-bg relative">
-      <div className="h-14 border-b border-exo-mist-10 flex items-center justify-between px-4 md:px-6 bg-exo-pure/40 backdrop-blur-md">
+      <div className="h-14 border-b border-exo-mist-10 flex items-center justify-between px-4 md:px-6 bg-exo-pure/40 backdrop-blur-md relative z-20">
         <div className="flex items-center gap-2 md:gap-3">
           {onBack
             ? <button onClick={onBack} className="p-1.5 rounded-[4px] text-exo-muted hover:text-exo-text hover:bg-white/5"><ArrowLeft size={18} /></button>

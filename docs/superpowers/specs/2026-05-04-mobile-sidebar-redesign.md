@@ -1,4 +1,4 @@
-# Mobile Sidebar Redesign
+c# Mobile Sidebar Redesign
 
 **Date:** 2026-05-04
 **Status:** Approved
