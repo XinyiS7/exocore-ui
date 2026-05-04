@@ -89,7 +89,7 @@ const MobileSidebar = ({
           <MobileNavIcon
             icon={List}
             isActive={showConvList}
-            onClick={() => setShowConvList(!showConvList)}
+            onClick={() => { onClose(); setShowConvList(true); }}
           />
         )}
 

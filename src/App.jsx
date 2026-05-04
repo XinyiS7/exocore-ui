@@ -284,7 +284,7 @@ export default function App() {
               <ConversationList
                 mode={currentTab}
                 activeSessionId={activeSessionId}
-                setActiveSessionId={(id) => { setActiveSessionId(id); setActiveFileProjectId(null); setActiveCouncilId(null); setShowConvList(false); }}
+                setActiveSessionId={(id) => { setActiveSessionId(id); setActiveFileProjectId(null); setActiveCouncilId(null); setShowConvList(false); setIsMobileSidebarOpen(false); }}
                 projects={projects}
                 setProjects={setProjects}
                 refreshKey={refreshKey}
@@ -297,7 +297,7 @@ export default function App() {
                 onClose={() => setShowConvList(false)}
                 councilSessions={councilSessions}
                 activeCouncilId={activeCouncilId}
-                setActiveCouncilId={(id) => { setActiveCouncilId(id); setActiveSessionId(null); setShowConvList(false); }}
+                setActiveCouncilId={(id) => { setActiveCouncilId(id); setActiveSessionId(null); setShowConvList(false); setIsMobileSidebarOpen(false); }}
                 onCreateCouncil={() => setShowCouncilCreate(true)}
               />
             </div>
