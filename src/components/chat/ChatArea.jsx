@@ -8,6 +8,7 @@ import { getUserAvatarUrl, getAgentAvatarUrl } from '../../utils/avatar';
 import { filesToAttachmentData, saveAttachments, enrichMessages } from '../../utils/attachmentStorage';
 import MessageBubble from './MessageBubble';
 import BranchSessionModal from '../modals/BranchSessionModal';
+import ContextCacheIndicator from './ContextCacheIndicator';
 
 const MSGS_PER_PAGE = 40;
 
@@ -648,6 +649,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
               )}
             </div>
           )}
+          <ContextCacheIndicator activeSessionId={activeSessionId} />
           <button onClick={handleCompress} className="p-2 text-exo-muted hover:text-exo-accent transition-colors" title="Save & Compress"><Save size={18} /></button>
           <button onClick={() => openNewSession()} className="p-2 text-exo-muted hover:text-exo-accent transition-colors" title="New Session"><Plus size={18} /></button>
         </div>
