@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import 'highlight.js/styles/atom-one-dark.css';
-import { Hexagon, MessageSquare, Users, Plus, Menu } from 'lucide-react';
+import { Hexagon, MessageSquare, Users, Plus } from 'lucide-react';
 import { baseUrl } from './utils/api';
 
 import DestructorModal from './components/modals/DestructorModal';
 import NewSessionModal from './components/modals/NewSessionModal';
 import Sidebar from './components/layout/Sidebar';
+import MobileSidebar from './components/layout/MobileSidebar';
 import ConversationList from './components/chat/ConversationList';
 import ChatArea from './components/chat/ChatArea';
 import ProjectFilesArea from './components/project/ProjectFilesArea';
@@ -33,7 +34,8 @@ export default function App() {
   // Sidebar and List states
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [showConvList, setShowConvList] = useState(false);
-  
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
   // Profile panel state
   const [showProfilePanel, setShowProfilePanel] = useState(false);
 
@@ -93,8 +95,7 @@ export default function App() {
       setActiveFileProjectId(null);
     }
     if (tab !== 'council') { setActiveCouncilId(null); }
-    // On mobile, close sidebar after selection
-    if (window.innerWidth < 768) setIsSidebarExpanded(false);
+    setIsMobileSidebarOpen(false);
   };
 
   const renderMainContent = () => {
@@ -231,14 +232,19 @@ export default function App() {
         }}
       />
 
-      {/* Sidebar Overlay for Mobile */}
-      <div className={`md:hidden fixed inset-0 z-[110] bg-black/80 backdrop-blur-sm transition-opacity ${isSidebarExpanded ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsSidebarExpanded(false)} />
+      {/* Mobile Sidebar (icon-only floating overlay) */}
+      <MobileSidebar
+        currentTab={currentTab}
+        setCurrentTab={handleTabChange}
+        showConvList={showConvList}
+        setShowConvList={setShowConvList}
+        isOpen={isMobileSidebarOpen}
+        onClose={() => setIsMobileSidebarOpen(false)}
+        onOpenProfile={() => setShowProfilePanel(true)}
+      />
 
-      {/* Sidebar Container */}
-      <div className={`
-        fixed md:relative inset-y-0 left-0 z-[120] md:z-[1] transition-transform duration-500 ease-out
-        ${isSidebarExpanded ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-      `}>
+      {/* Desktop Sidebar (unchanged) */}
+      <div className="hidden md:block h-full flex-shrink-0">
         <Sidebar
           currentTab={currentTab}
           setCurrentTab={handleTabChange}
@@ -255,19 +261,19 @@ export default function App() {
         
         {/* Mobile Header Toggle (Hidden in standalone mode) */}
         <div className="md:hidden h-14 border-b border-exo-mist-10 flex items-center px-4 shrink-0 bg-exo-pure/60 backdrop-blur-md justify-between standalone:hidden">
-          <button onClick={() => setIsSidebarExpanded(true)} className="p-2 text-exo-muted hover:text-exo-accent transition-colors">
-            <Menu size={20} />
+          <button onClick={() => setIsMobileSidebarOpen(true)} className="p-1.5 text-exo-muted hover:text-exo-accent transition-colors rounded-[4px] border border-exo-mist-8 hover:border-exo-accent/30">
+            <Hexagon size={20} />
           </button>
           <div className="text-exo-accent font-mono font-bold tracking-[0.3em] text-[10px] uppercase">ExoCore // Neural.Link</div>
           <div className="w-10" /> {/* Spacer */}
         </div>
 
-        {/* Floating Menu Toggle for Standalone/Clean mode */}
-        <button 
-          onClick={() => setIsSidebarExpanded(true)} 
-          className="md:hidden fixed bottom-6 right-6 z-[100] w-12 h-12 rounded-[4px] bg-exo-accent/10 border border-exo-accent/30 text-exo-accent flex items-center justify-center backdrop-blur-md shadow-glow-gold active:scale-95 transition-all standalone:flex hidden"
+        {/* Hexagon trigger for Standalone PWA mode */}
+        <button
+          onClick={() => setIsMobileSidebarOpen(true)}
+          className="md:hidden fixed top-3 left-3 z-[100] w-10 h-10 rounded-[4px] bg-exo-pure/90 border border-exo-accent/30 text-exo-accent flex items-center justify-center backdrop-blur-md shadow-glow-gold active:scale-95 transition-all standalone:flex hidden"
         >
-          <Menu size={24} />
+          <Hexagon size={20} />
         </button>
 
         <div className="flex-1 flex flex-row overflow-hidden relative">
