@@ -1,16 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Plus, X, Calendar, CheckCircle2, Circle, ChevronLeft, ChevronRight, Target, RefreshCw } from 'lucide-react';
-import { 
-  fetchEntries, completeEntry, deleteEntry, createEntry 
+import {
+  fetchEntries, completeEntry, deleteEntry, createEntry, fetchCalendar
 } from '../../utils/tasksApi';
-
-const REPEAT_OPTIONS = [
-  { value: 'none',    label: '不重复' },
-  { value: 'daily',   label: '每天' },
-  { value: 'weekly',  label: '每周' },
-  { value: 'monthly', label: '每月' },
-  { value: 'yearly',  label: '每年' },
-];
 
 const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日'];
 
@@ -24,44 +16,61 @@ function buildCalendarGrid(year, month) {
   return cells;
 }
 
+function getGcalDotDays(events) {
+  const days = new Set();
+  (events || []).forEach(ev => {
+    if (ev.source !== 'gcal' || !ev.start) return;
+    const startRaw = ev.start.slice(0, 10);
+    const endRaw = ev.end ? ev.end.slice(0, 10) : startRaw;
+    let cur = new Date(startRaw);
+    const end = new Date(endRaw);
+    while (cur < end) {
+      days.add(cur.toISOString().slice(0, 10));
+      cur.setDate(cur.getDate() + 1);
+    }
+  });
+  return days;
+}
+
 const EmptyForm = { title: '', deadline: '', repeat: 'none', note: '' };
 
 export default function CalendarWidget() {
   const today = new Date();
   const todayIso = today.toISOString().slice(0, 10);
-  
+
   const [selectedDate, setSelectedDate] = useState(todayIso);
   const [viewYear, setViewYear]   = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [entries, setEntries]     = useState([]);
+  const [calendarEvents, setCalendarEvents] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [form, setForm]           = useState(EmptyForm);
 
-  // ── 拉取任务列表 ───────────────────────────────────────────
   const load = useCallback(() => {
     setLoading(true);
-    fetchEntries({ status: 'active' })
-      .then(data => setEntries(Array.isArray(data) ? data : []))
+    Promise.all([
+      fetchEntries({ status: 'active' }),
+      fetchCalendar().catch(() => ({ events: [] })),
+    ])
+      .then(([entryData, calData]) => {
+        setEntries(Array.isArray(entryData) ? entryData : []);
+        setCalendarEvents(calData?.events || []);
+      })
       .catch(err => console.error('任务列表拉取失败:', err))
       .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
-  // ── CRUD ─────────────────────────────────────────────────────
   const addTask = () => {
     if (!form.title.trim()) return;
-    
-    // 映射到 TaskEntry 结构
     const payload = {
       title: form.title.trim(),
-      entry_type: 'todo', // 首页默认添加 todo
+      entry_type: 'todo',
       due_date: form.deadline || selectedDate,
       description: form.note.trim() || null,
-      // 后端目前用 entry_type 区分，不直接用 repeat 字符串，但可以根据需求扩展
     };
-
     createEntry(payload)
       .then(newEntry => {
         setEntries(prev => [newEntry, ...prev]);
@@ -73,7 +82,7 @@ export default function CalendarWidget() {
 
   const handleToggle = (id) => {
     completeEntry(id)
-      .then(() => load()) // 重新加载以更新状态（可能导致任务移出 active 列表）
+      .then(() => load())
       .catch(err => console.error('任务完成操作失败:', err));
   };
 
@@ -105,26 +114,31 @@ export default function CalendarWidget() {
 
   const getIso = (d) => `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
-  // 计算哪些天有任务
-  const dotDays = new Set();
-  entries.forEach(e => {
-    if (e.entry_type === 'todo' && e.due_date) dotDays.add(e.due_date);
-    if (e.entry_type === 'periodic' && e.next_periodic_due) dotDays.add(e.next_periodic_due);
-    if (e.entry_type === 'goal' && e.cycle_start && e.cycle_due) {
-      let cur = new Date(e.cycle_start);
-      const end = new Date(e.cycle_due);
-      // 防止死循环或跨度过大导致性能问题，限制在当前视角月内或合理范围内
-      while (cur <= end) {
-        dotDays.add(cur.toISOString().slice(0, 10));
-        cur.setDate(cur.getDate() + 1);
-        if (dotDays.size > 1000) break; // 安全阈值
+  // ExoCore task dot days
+  const exoDotDays = useMemo(() => {
+    const days = new Set();
+    entries.forEach(e => {
+      if (e.entry_type === 'todo' && e.due_date) days.add(e.due_date);
+      if (e.entry_type === 'periodic' && e.next_periodic_due) days.add(e.next_periodic_due);
+      if (e.entry_type === 'goal' && e.cycle_start && e.cycle_due) {
+        let cur = new Date(e.cycle_start);
+        const end = new Date(e.cycle_due);
+        while (cur <= end) {
+          days.add(cur.toISOString().slice(0, 10));
+          cur.setDate(cur.getDate() + 1);
+          if (days.size > 1000) break;
+        }
       }
-    }
-  });
+    });
+    return days;
+  }, [entries]);
+
+  // GCal dot days
+  const gcalDotDays = useMemo(() => getGcalDotDays(calendarEvents), [calendarEvents]);
 
   const monthName = new Date(viewYear, viewMonth).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long' });
 
-  // 过滤当前选中日期的任务
+  // ExoCore tasks for selected date
   const filteredEntries = entries.filter(e => {
     if (e.entry_type === 'todo') return e.due_date === selectedDate;
     if (e.entry_type === 'periodic') return e.next_periodic_due === selectedDate;
@@ -133,6 +147,16 @@ export default function CalendarWidget() {
     }
     return false;
   });
+
+  // GCal events for selected date (only Google Calendar, not ExoCore dupes)
+  const selectedGcalEvents = useMemo(() => {
+    return (calendarEvents || []).filter(ev => {
+      if (ev.source !== 'gcal' || !ev.start) return false;
+      const startRaw = ev.start.slice(0, 10);
+      const endRaw = ev.end ? ev.end.slice(0, 10) : startRaw;
+      return selectedDate >= startRaw && selectedDate < endRaw;
+    });
+  }, [calendarEvents, selectedDate]);
 
   return (
     <div className="flex flex-col lg:flex-row gap-6">
@@ -155,14 +179,15 @@ export default function CalendarWidget() {
           <div className="grid grid-cols-7 px-3 pb-3 gap-y-0.5">
             {cells.map((d, i) => {
               const iso = d ? getIso(d) : null;
-              const hasDot = iso && dotDays.has(iso);
+              const hasExo = iso && exoDotDays.has(iso);
+              const hasGcal = iso && gcalDotDays.has(iso);
               const selected = d && isSelected(d);
               const today_ = d && isTodayDate(d);
 
               return (
                 <div key={i} className="flex items-center justify-center h-8 relative">
                   {d && (
-                    <button 
+                    <button
                       onClick={() => setSelectedDate(iso)}
                       className={`w-7 h-7 flex items-center justify-center rounded-full text-xs transition-all relative
                         ${selected
@@ -173,8 +198,11 @@ export default function CalendarWidget() {
                         }`}
                     >
                       {d}
-                      {hasDot && !selected && (
-                        <span className="absolute bottom-1 w-1 h-1 rounded-full bg-exo-accent/60" />
+                      {!selected && (
+                        <span className="absolute bottom-0.5 flex items-center gap-0.5">
+                          {hasExo && <span className="w-1 h-1 rounded-full bg-exo-accent/60" />}
+                          {hasGcal && <span className="w-1 h-1 rounded-full bg-blue-400/60" />}
+                        </span>
                       )}
                     </button>
                   )}
@@ -233,34 +261,81 @@ export default function CalendarWidget() {
             {loading && (
               <div className="px-4 py-6 text-center label-caps text-exo-muted/30">加载中...</div>
             )}
-            {!loading && filteredEntries.length === 0 && (
+            {!loading && filteredEntries.length === 0 && selectedGcalEvents.length === 0 && (
               <div className="px-4 py-8 text-center text-exo-muted/30 text-xs tracking-wide">
                 该日期无待办任务
               </div>
             )}
             {filteredEntries.map(entry => (
-              <TodoItem 
-                key={entry.id} 
-                entry={entry} 
-                onToggle={handleToggle} 
-                onDelete={handleDelete} 
+              <TodoItem
+                key={entry.id}
+                entry={entry}
+                onToggle={handleToggle}
+                onDelete={handleDelete}
               />
             ))}
           </div>
         </div>
 
-        {/* Google Calendar — 保持占位 */}
-        <div className="bg-exo-surface/40 border border-exo-border/30 rounded-xl overflow-hidden opacity-60">
-          <div className="flex items-center justify-between px-4 py-2 border-b border-exo-border/20">
-            <div className="flex items-center gap-2">
-              <span className="label-caps text-[10px] text-exo-muted/40">External Sync</span>
+        {/* Google Calendar Events */}
+        {selectedGcalEvents.length > 0 && (
+          <div className="bg-exo-surface border border-exo-border/50 rounded-xl overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 accent-line-top border-b border-exo-border/30">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
+                <span className="label-caps text-exo-muted/60">Google Calendar</span>
+              </div>
+              <span className="text-[10px] text-exo-muted/30">{selectedGcalEvents.length} 事件</span>
+            </div>
+            <div className="divide-y divide-exo-border/10">
+              {selectedGcalEvents.map(ev => (
+                <a
+                  key={ev.id}
+                  href={ev.html_link || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start gap-3 px-4 py-3 hover:bg-white/[0.02] transition-colors group"
+                >
+                  <div className="mt-0.5 w-1.5 h-1.5 rounded-full bg-blue-400/40 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm text-exo-text/70 group-hover:text-exo-text transition-colors truncate">
+                      {ev.title || '(无标题)'}
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      {!ev.all_day && ev.start && (
+                        <span className="text-[10px] text-exo-muted/40">
+                          {ev.start.slice(11, 16)}
+                          {ev.end ? ` – ${ev.end.slice(11, 16)}` : ''}
+                        </span>
+                      )}
+                      {ev.all_day && (
+                        <span className="text-[10px] text-exo-muted/40">全天</span>
+                      )}
+                      {ev.location && (
+                        <span className="text-[10px] text-exo-muted/30 truncate">{ev.location}</span>
+                      )}
+                    </div>
+                  </div>
+                </a>
+              ))}
             </div>
           </div>
-          <div className="px-4 py-3 flex items-center justify-between">
-            <span className="text-[11px] text-exo-muted/30">Google Calendar 未连接</span>
-            <button disabled className="text-[10px] text-exo-muted/20 border border-exo-border/20 px-2 py-0.5 rounded">CONNECT</button>
+        )}
+
+        {/* GCal status when no events for selected date but calendar is configured */}
+        {selectedGcalEvents.length === 0 && !loading && calendarEvents.length > 0 && (
+          <div className="bg-exo-surface/40 border border-exo-border/30 rounded-xl overflow-hidden opacity-60">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-exo-border/20">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-400/40" />
+                <span className="label-caps text-[10px] text-exo-muted/40">Google Calendar</span>
+              </div>
+            </div>
+            <div className="px-4 py-3">
+              <span className="text-[11px] text-exo-muted/30">该日期无外部日历事件</span>
+            </div>
           </div>
-        </div>
+        )}
 
       </div>
     </div>
@@ -275,7 +350,7 @@ const TYPE_ICONS = {
 
 function TodoItem({ entry, onToggle, onDelete }) {
   const Icon = TYPE_ICONS[entry.entry_type] || Circle;
-  const isCompleted = entry.status === 'completed'; // 虽然我们 load active，但如果是刚刚完成还没刷新列表的情况
+  const isCompleted = entry.status === 'completed';
 
   return (
     <div className="group flex items-start gap-3 px-4 py-3 hover:bg-white/[0.02] transition-colors">
@@ -309,4 +384,3 @@ function TodoItem({ entry, onToggle, onDelete }) {
     </div>
   );
 }
-

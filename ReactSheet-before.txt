@@ -1,0 +1,409 @@
+========================================================
+  ExoCore — React 前端接口数据格式速查表
+  最后更新：2026-04-26 (SAI-G045 Alessandro)
+========================================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. GET /api/agents/conversations/
+   返回：Array<Conversation>
+   用途：主会话列表（已自动排除 Archived 会话）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[
+  {
+    "id": 12,
+    "name": "关于量子纠缠的讨论",
+    "created_at": "2026-03-10T14:23:00Z",
+    "last_message_at": "2026-03-10T15:01:44Z",   // 最后一条 assistant 消息时间，无则同 created_at
+
+    // 所属项目（无项目为 0）
+    "project": 3,                                  // project.id；0 = 无项目归属（API 层 sentinel，DB 存 null）
+    "project_name": "Grand-Archives",              // null = 无项目归属
+
+    // agent 快速筛选字段（返回 DB 原始类型，前端自行处理显示）
+    "agent_type": "superior",                      // "superior" | "g045"（legacy alias，等同于 superior）| "standard"
+    "agent_preset_id": 2,                          // AgentPreset.id
+
+    // 会话偏好（加载会话时用于回显下拉框）
+    "session_type": "chat",                        // "chat" | "code" | "cli"
+    "thinking_level": "auto",                      // "off" | "auto" | "low" | "medium" | "high"
+    "temperature": 1.0,                            // 0.0 ~ 2.0，每次发消息后自动持久化
+
+    // 嵌套的 AgentSession（精简版，preset 信息已由上方扁平字段覆盖）
+    "agent_session": {
+      "id": 5,
+      "frozen_project_ids": [3, 7]                // Superior 权限快照（g045 ≡ superior）；standard 为 []
+    }
+  },
+  ...
+]
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. GET /api/agents/chat/<session_id>/
+   返回：Array<Message>
+   用途：加载会话历史消息
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[
+  {
+    "id": 101,
+    "role": "user",
+    "content": "量子纠缠是什么？",
+    "reasoning_content": null,
+    "platform": "gemini-3.1-pro-preview",
+    "created_at": "2026-03-10T14:23:01Z",
+    "index_in_session": 0                         // 与 HistoryChunk.start/end_index 对应
+  },
+  ...
+]
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. POST /api/agents/chat/<session_id>/   (SSE 流式响应)
+   用途：发送消息并接收流式回复
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 事件类型与 data 格式见主文档，无变动。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. GET /api/core/projects/<project_pk>/files/
+   返回：Array<ProjectFile | ObsidianSyncEntry>
+   用途：项目文件列表（含 web 上传 + Obsidian 同步两类）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 格式见主文档，无变动。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. GET  /api/memory/knowledge/<pk>/
+    PATCH /api/memory/knowledge/<pk>/
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 格式见主文档，无变动。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. GET /api/agents/conversations/<pk>/history_chunks/
+    返回：该会话所有 HistoryChunk（长期记忆片段），按时间顺序排列
+    用途：记忆管理页，展示一个会话的全部压实历史
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{
+  "conversation_id": 12,
+  "session_name": "关于量子纠缠的讨论",
+  "session_type": "chat",
+  "history_chunks": [
+    {
+      "id": 7,
+      "start_index": 0,                // 对应原始消息的 index_in_session 起始
+      "end_index": 9,                  // 对应原始消息的 index_in_session 结束
+      "topic": "量子纠缠基本原理",       // LLM 提炼的话题标签
+      "summary": "用户询问了量子纠缠的基本原理...", // LLM 生成的陈述性摘要
+      "keywords": ["量子纠缠", "EPR"],
+      "unresolved": false,             // 是否包含未竟事宜
+      "created_at": "2026-03-10T15:00:00Z"
+    }
+  ]
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+13. GET  /api/memory/history_chunks/<pk>/
+    返回：HistoryChunk 详情
+    PATCH /api/memory/history_chunks/<pk>/
+    用途：用户手动维护 HistoryChunk 元数据（话题标签/关键词/未竟状态）
+    原始聊天记录通过 start_index/end_index 只读展示，不在此处传输
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// GET 返回：
+{
+  "id": 7,
+  "conversation": 12,
+  "session_name": "关于量子纠缠的讨论",
+  "session_type": "chat",
+  "start_index": 0,       // 对应 Message.index_in_session 起始（用于加载原始消息）
+  "end_index": 9,         // 对应 Message.index_in_session 结束
+
+  // 可编辑字段（来源：metadata_json / DB 字段双写）
+  "topic_label": "量子纠缠基本原理",   // LLM 提炼的主题标签，用户可修改
+  "keywords": ["量子纠缠", "EPR"],     // 检索关键词，用户可修改
+  "unresolved": false,                 // 是否有未竟事宜，用户可 toggle
+
+  // 只读上下文（来源：metadata_json，LLM 推断）
+  "time_ref": "3月某个下午",           // 时间背景
+  "emotion": "好奇/探索",              // 情感基调
+  "entities": ["量子纠缠", "EPR悖论"], // 涉及的实体
+  "importance": 0.8,                   // 重要度评分 0.0-1.0
+
+  "created_at": "2026-03-10T15:00:00Z"
+}
+
+// PATCH 请求体（只允许以下三个字段）：
+{
+  "topic_label": "新的话题标签",   // 同步写入 metadata_json.topic_label
+  "keywords": ["新关键词"],        // 同步写入 keywords 字段 + metadata_json.keywords
+  "unresolved": true               // 同步写入 unresolved 字段 + metadata_json.unresolved
+}
+
+// PATCH 响应（updated 列表反映实际写入的 DB 字段）：
+// 仅改 topic_label → { "msg": "已保存。", "updated": ["metadata_json"] }
+// 改 keywords     → { "msg": "已保存。", "updated": ["keywords", "metadata_json"] }
+// 改 unresolved   → { "msg": "已保存。", "updated": ["unresolved", "metadata_json"] }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+15. GET /api/core/tweets/
+    返回：分页推文列表（根推文 + 嵌套回复，最多2层）
+    用途：时间线首屏及无限滚动加载
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// 首次请求：GET /api/core/tweets/
+// 翻页请求：GET /api/core/tweets/?before_id=38
+
+// Response (200)：
+{
+  "tweets": [
+    {
+      "id": 42,
+      "author": "user",                          // "user" | "agent:{id}"
+      "content": "今天写代码好累...",
+      "parent": null,
+      "created_at": "2026-03-21T14:30:00Z",      // 后端已自动转换为本地时间字符串
+      "replies": [
+        {
+          "id": 43,
+          "author": "agent:1",
+          "content": "要注意休息哦～",
+          "parent": 42,
+          "created_at": "14:45:00",              // 回复层级可能仅返回时分
+          "replies": [...]
+        }
+      ]
+    }
+  ],
+  "has_more": true,
+  "next_before_id": 22
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+16. POST /api/core/tweets/
+    用途：用户发新推文（根帖）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{ "content": "今天天气不错" }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+17. POST /api/core/tweets/<id>/reply/
+    用途：用户回复某条推文
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{ "content": "我也觉得！" }
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+21. Tasks API — /api/tasks/
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 详见主文档，无变动。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+22. MemoryEntry API — /api/memory/entries/
+    长期记忆条目（用户可查看并编辑 content / scope / tags）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// ── 22a. GET /api/memory/entries/?preset_id=<id>
+//        可附加过滤参数：&scope=work &source=highlight &is_processed=false
+// 返回：Array<MemoryEntry>
+
+[
+  {
+    "id": 3,
+    "preset": 1,
+    "conversation": 12,          // null = user_manual（非会话来源）
+    "message": 101,              // null = 非划线来源
+    "source": "highlight",       // "highlight" | "g045_tool" | "user_manual"
+    "content": "量子纠缠是两个粒子…",
+    "scope": "work",             // null（Ollama 处理中或用户已清除）
+                                 // | "work" | "life" | "hobby" | "emotion"
+    "tags": ["量子纠缠", "物理"],
+    "is_processed": true,        // false = Ollama 分类中，scope/tags 暂为空
+    "created_at": "2026-04-21T14:23:00Z",
+    "updated_at": "2026-04-21T14:25:00Z"
+  }
+]
+
+
+// ── 22b. GET /api/memory/entries/tags/?preset_id=<id>
+//        返回该 preset 下所有已有 tag（去重、排序），供 autocomplete 使用
+// 注意：此路由必须在 /entries/<pk>/ 之前匹配
+
+["爱好", "物理", "量子纠缠"]
+
+
+// ── 22c. POST /api/memory/entries/   — 用户手动新增（user_manual）
+// Request（preset_id 与 message_id 互斥，只能传其一）：
+{ "preset_id": 1, "content": "我喜欢读科幻小说", "scope": "hobby", "tags": ["科幻"] }
+// 若省略 scope：后台触发 Ollama 异步分类（is_processed: false → true）
+// 若提供 scope：直接写入，is_processed=true，跳过 Ollama
+
+// ── 22d. POST /api/memory/entries/   — 划线笔记（highlight）
+{ "message_id": 101, "content": "量子纠缠是两个粒子…" }
+// preset / conversation 自动从 message 所属会话派生
+// 始终触发 Ollama 异步分类
+
+
+// ── 22e. PATCH /api/memory/entries/<pk>/
+//        可编辑字段：content / scope / tags（三者可单独或组合）
+//        - scope 设有效值（"work"|"life"|"hobby"|"emotion"）→ 写入并置 is_processed=true
+//        - scope 传 null → 清除 scope，is_processed 保持不变（不重触 Ollama）
+//        - content / tags 修改不影响 is_processed
+
+// Request 示例（增改 scope）：
+{ "scope": "life" }
+
+// Request 示例（清除 scope）：
+{ "scope": null }
+
+// Request 示例（同时编辑三个字段）：
+{ "content": "修改后的内容", "scope": "work", "tags": ["新标签"] }
+
+// Response：返回完整更新后的 MemoryEntry 对象（同 22a 单条格式）
+
+
+// ── 22f. DELETE /api/memory/entries/<pk>/  → 204 No Content
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// §20  SystemConfig & Model Registry API
+// ════════════════════════════════════════════════════════════════════════════
+//
+// Singleton operator configuration. DB values override env vars; empty DB
+// value falls back to env. API key fields are always masked on read.
+//
+// Auth: same as all other endpoints (extension_secret or session auth).
+//
+// ── 20a. GET /api/core/config/
+// Returns the full SystemConfig singleton.
+// API key fields: if set → "****<last4>"; if not set → ""
+//
+// Response:
+{
+  "gemini_api_key":                   "****abcd",   // masked; "" if not set
+  "deepseek_api_key":                  "",
+  "google_calendar_id":               "user@gmail.com",
+  "google_calendar_credentials_path": "/path/to/gcal.json",
+
+  "self_check_preset_ids":  [1],      // G045 preset IDs allowed to self-check
+  "deep_org_preset_ids":    [1],      // G045 preset IDs allowed deep-organize
+  "interact_preset_ids":    [1],      // G045 preset IDs allowed timeline interaction
+
+  "active_start": "09:00",            // TimeField — HH:MM
+  "active_end":   "23:00",
+
+  "interaction_base_hours":       2,  // active window min interval hours
+  "interaction_random_hours":     2,  // random addon (active + night)
+  "night_interaction_base_hours": 6,  // outside active window min interval
+
+  "deep_org_weekday": 0,              // 0=Mon … 6=Sun
+  "deep_org_hour":    3,              // 0-23; read once at server startup
+
+  "model_generate_abstract":      "",           // empty = Ollama default
+  "model_realtime_recompress":    "deepseek-v4-pro",
+  "model_extract_chunk_metadata": "",
+
+  "updated_at": "2026-04-25T10:00:00Z"
+}
+
+// ── 20b. PATCH /api/core/config/
+// Partial update. Any key field whose value starts with "****" is ignored
+// (user didn't change it). Returns updated config in the same masked shape.
+//
+// Validation:
+//   - active_start / active_end: HH:MM string, parsed to time
+//   - deep_org_weekday: 0–6
+//   - deep_org_hour: 0–23
+//   - model_* fields: must exist in model_registry if non-empty (any role)
+//   - *_preset_ids: must be valid G045 AgentPreset IDs
+//
+// Request example:
+{ "gemini_api_key": "sk-newkey", "self_check_preset_ids": [1, 2], "deep_org_hour": 4 }
+// → key stored; subsequent GET returns "****wkey"
+
+// To leave a key unchanged, send its masked value:
+{ "gemini_api_key": "****abcd" }   // → ignored, DB untouched
+
+// ── 20c. GET /api/core/models/
+// Returns full model registry for NLP model selector dropdowns.
+//
+// Response:
+[
+  { "provider": "gemini",   "id": "gemini-3.1-pro-preview", "roles": ["main"] },
+  { "provider": "gemini",   "id": "gemini-2.5-flash",       "roles": ["sub_agent"] },
+  { "provider": "deepseek", "id": "deepseek-v4-pro",        "roles": ["main"] }
+  // ... all entries from model_registry.list_models()
+]
+//
+// Note: AgentPreset feature toggles (can_self_check / can_deep_org / can_interact)
+// are NOT on AgentPreset fields. They are managed as ID lists in SystemConfig
+// (self_check_preset_ids / deep_org_preset_ids / interact_preset_ids) via PATCH above.
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// §23  Telemetry API — /api/telemetry/
+// ════════════════════════════════════════════════════════════════════════════
+//
+// ── 23a. GET /api/telemetry/usage/?mode=week&from=YYYY-MM-DD
+//        每日粒度用量（折线图用）。mode: "week" (7天) | "month" (30天)
+//        from: 起始日期 YYYY-MM-DD，默认今天
+//
+// Response:
+{
+  "daily": [
+    {
+      "date": "04/21",
+      "models": [
+        {"model": "gemini-3.1-pro-preview", "input_tokens": 12345, "output_tokens": 6789, "conversation_count": 5},
+        {"model": "deepseek-v4-pro", "input_tokens": 800, "output_tokens": 250, "conversation_count": 2}
+      ]
+    }
+  ],
+  "from": "2026-04-21",
+  "to": "2026-04-27",
+  "is_current": true
+}
+
+// ── 23b. GET /api/telemetry/weekly/?weeks=12&from=YYYY-MM-DD
+//        周度聚合用量（概览用）。from: 周一日期，默认本周一
+//
+// Response:
+{
+  "weekly": [
+    {
+      "week": "04/21–04/27",
+      "is_current": true,
+      "models": [
+        {"model": "gemini-3.1-pro-preview", "input_tokens": 12345, "output_tokens": 6789, "conversation_count": 5}
+      ]
+    }
+  ]
+}
+
+// ── 23c. GET /api/telemetry/monthly/?months=6&from=YYYY-MM
+//        月度聚合用量（概览用）。from: 月份 YYYY-MM，默认当月
+//
+// Response:
+{
+  "monthly": [
+    {
+      "month": "2026-04",
+      "is_current": true,
+      "models": [
+        {"model": "gemini-3.1-pro-preview", "input_tokens": 123450, "output_tokens": 67890, "conversation_count": 50}
+      ]
+    }
+  ]
+}
+
+// ── 23d. GET /api/telemetry/daily/
+//        原始 daily_summary.json 全量快照，keyed by date → platform → model
+//        结构同旧格式，一般只供调试

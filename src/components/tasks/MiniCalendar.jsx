@@ -1,5 +1,5 @@
 // src/components/tasks/MiniCalendar.jsx
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const DOW = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
@@ -19,7 +19,6 @@ function buildGrid(year, month) {
 }
 
 function getDotDays(entries) {
-  // Returns a Set of ISO date strings that have at least one relevant entry
   const days = new Set();
   entries.forEach(e => {
     if (e.entry_type === 'todo'     && e.due_date)          days.add(e.due_date);
@@ -36,15 +35,32 @@ function getDotDays(entries) {
   return days;
 }
 
-export default function MiniCalendar({ selectedDate, onSelectDate, entries = [] }) {
+function getGcalDotDays(events) {
+  const days = new Set();
+  (events || []).forEach(ev => {
+    if (ev.source !== 'gcal' || !ev.start) return;
+    const startRaw = ev.start.slice(0, 10);
+    const endRaw = ev.end ? ev.end.slice(0, 10) : startRaw;
+    let cur = new Date(startRaw);
+    const end = new Date(endRaw);
+    while (cur < end) {
+      days.add(cur.toISOString().slice(0, 10));
+      cur.setDate(cur.getDate() + 1);
+    }
+  });
+  return days;
+}
+
+export default function MiniCalendar({ selectedDate, onSelectDate, entries = [], calendarEvents = [] }) {
   const todayIso = new Date().toISOString().slice(0, 10);
   const initYear  = parseInt(selectedDate.slice(0, 4));
   const initMonth = parseInt(selectedDate.slice(5, 7)) - 1;
   const [viewYear,  setViewYear]  = useState(initYear);
   const [viewMonth, setViewMonth] = useState(initMonth);
 
-  const cells   = buildGrid(viewYear, viewMonth);
-  const dotDays = getDotDays(entries);
+  const cells      = buildGrid(viewYear, viewMonth);
+  const dotDays    = useMemo(() => getDotDays(entries), [entries]);
+  const gcalDotDays = useMemo(() => getGcalDotDays(calendarEvents), [calendarEvents]);
 
   const prevMonth = () => {
     const y = viewMonth === 0 ? viewYear - 1 : viewYear;
@@ -94,7 +110,8 @@ export default function MiniCalendar({ selectedDate, onSelectDate, entries = [] 
           if (!cell.iso) return <div key={i} />;
           const isToday    = cell.iso === todayIso;
           const isSelected = cell.iso === selectedDate;
-          const hasDot     = dotDays.has(cell.iso);
+          const hasExo     = dotDays.has(cell.iso);
+          const hasGcal    = gcalDotDays.has(cell.iso);
           return (
             <button
               key={cell.iso}
@@ -109,9 +126,10 @@ export default function MiniCalendar({ selectedDate, onSelectDate, entries = [] 
               ].join(' ')}
             >
               {cell.day}
-              {hasDot && (
-                <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-exo-accent/50" />
-              )}
+              <span className="absolute bottom-0.5 flex items-center gap-0.5">
+                {hasExo && <span className="w-1 h-1 rounded-full bg-exo-accent/50" />}
+                {hasGcal && <span className="w-1 h-1 rounded-full bg-blue-400/50" />}
+              </span>
             </button>
           );
         })}

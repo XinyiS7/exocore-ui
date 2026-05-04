@@ -5,7 +5,7 @@ import TaskCreateModal from './TaskCreateModal';
 import TaskRow from './TaskRow';
 import {
   fetchEntries, completeEntry, updateEntry, deleteEntry,
-  suspendEntry, resumeEntry, syncGcal, unsyncGcal,
+  suspendEntry, resumeEntry, syncGcal, unsyncGcal, fetchCalendar,
 } from '../../utils/tasksApi';
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
@@ -32,6 +32,7 @@ function SectionHeader({ label }) {
 
 export default function TaskPanel({ openDestructor }) {
   const [entries,      setEntries]      = useState([]);
+  const [calendarEvents, setCalendarEvents] = useState([]);
   const [loading,      setLoading]      = useState(true);
   const [selectedDate, setSelectedDate] = useState(todayIso());
   const [typeFilter,   setTypeFilter]   = useState('all');
@@ -42,8 +43,14 @@ export default function TaskPanel({ openDestructor }) {
 
   const load = useCallback(() => {
     setLoading(true);
-    fetchEntries({ status: statusFilter })
-      .then(data => setEntries(Array.isArray(data) ? data : []))
+    Promise.all([
+      fetchEntries({ status: statusFilter }),
+      fetchCalendar().catch(() => ({ events: [] })),
+    ])
+      .then(([entryData, calData]) => {
+        setEntries(Array.isArray(entryData) ? entryData : []);
+        setCalendarEvents(calData?.events || []);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [statusFilter]);
@@ -114,6 +121,7 @@ export default function TaskPanel({ openDestructor }) {
             selectedDate={selectedDate}
             onSelectDate={(date) => { setSelectedDate(date); if(window.innerWidth < 1024) setShowSidebar(false); }}
             entries={entries}
+            calendarEvents={calendarEvents}
           />
 
           {/* Type filter */}

@@ -31,3 +31,9 @@ export const syncGcal     = (id)       => jsonReq('POST',   `${baseUrl}/api/task
 export const unsyncGcal   = (id)       => jsonReq('DELETE', `${baseUrl}/api/tasks/entries/${id}/gcal/`);
 export const fetchCompletions = (entryId) =>
   fetch(`${baseUrl}/api/tasks/completions/?entry=${entryId}`, { credentials: 'include' }).then(r => r.json());
+
+export const fetchCalendar = () =>
+  fetch(`${baseUrl}/api/tasks/calendar/`, { credentials: 'include' }).then(r => r.json());
+
+export const fetchTodayCalendar = () =>
+  fetch(`${baseUrl}/api/tasks/calendar/today/`, { credentials: 'include' }).then(r => r.json());
