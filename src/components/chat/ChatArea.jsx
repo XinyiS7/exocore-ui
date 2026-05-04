@@ -56,6 +56,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   const imageInputRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const topSentinelRef = useRef(null);
+  const cacheRef = useRef(null);
   // 保存当前正在发送消息的附件转换 Promise（用于 SSE 结束后持久化到 localStorage）
   const pendingAttachConversionRef = useRef(null);
   const textareaRef = useRef(null);
@@ -424,13 +425,14 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
           setMessages(enriched.slice(startIdx));
         })
         .catch(() => {});
-      if (currentPending.length > 0) {
-        setPendingAttachments([]);
-        fetch(`${baseUrl}/api/agents/conversations/${activeSessionId}/attachments/`, { credentials: 'include' })
-          .then(res => res.json())
-          .then(data => setSessionAttachments(Array.isArray(data) ? data : []))
-          .catch(() => {});
-      }
+      // Refresh attachments after every SSE completion
+      setPendingAttachments([]);
+      fetch(`${baseUrl}/api/agents/conversations/${activeSessionId}/attachments/`, { credentials: 'include' })
+        .then(res => res.json())
+        .then(data => setSessionAttachments(Array.isArray(data) ? data : []))
+        .catch(() => {});
+      // Trigger cache check (server may have created/renewed cache during this request)
+      cacheRef.current?.refresh();
     }
   };
 
@@ -649,7 +651,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
               )}
             </div>
           )}
-          <ContextCacheIndicator activeSessionId={activeSessionId} />
+          <ContextCacheIndicator ref={cacheRef} activeSessionId={activeSessionId} />
           <button onClick={handleCompress} className="p-2 text-exo-muted hover:text-exo-accent transition-colors" title="Save & Compress"><Save size={18} /></button>
           <button onClick={() => openNewSession()} className="p-2 text-exo-muted hover:text-exo-accent transition-colors" title="New Session"><Plus size={18} /></button>
         </div>

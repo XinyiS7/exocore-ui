@@ -1,4 +1,4 @@
-@import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { baseUrl, getCsrfToken } from '../../utils/api';
 
 const CACHE_TTL = 3600;
@@ -35,7 +35,7 @@ function clearStorage(sessionId) {
   localStorage.removeItem(`${STORAGE_PREFIX}${sessionId}`);
 }
 
-export default function ContextCacheIndicator({ activeSessionId }) {
+const ContextCacheIndicator = forwardRef(function ContextCacheIndicator({ activeSessionId }, ref) {
   const [cacheState, setCacheState] = useState(null);
   const [remainingSeconds, setRemainingSeconds] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -65,6 +65,9 @@ export default function ContextCacheIndicator({ activeSessionId }) {
       }
     } catch { /* keep local countdown on network error */ }
   }, []);
+
+  // Expose refresh to parent (called after SSE stream completes)
+  useImperativeHandle(ref, () => ({ refresh: () => fetchCache() }), [fetchCache]);
 
   // ── Session switch ─────────────────────────────────────────────
   useEffect(() => {
@@ -239,4 +242,6 @@ export default function ContextCacheIndicator({ activeSessionId }) {
       )}
     </div>
   );
-}
+});
+
+export default ContextCacheIndicator;
