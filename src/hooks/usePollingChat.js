@@ -3,7 +3,6 @@ import { baseUrl, getCsrfToken } from '../utils/api';
 
 export const usePollingChat = () => {
   const isPollingRef = useRef(false);
-  const typewriterTimerRef = useRef(null);
   const pollingTimerRef = useRef(null);
 
   const sendMessageAsync = useCallback((payload, sessionId, signal, onDelta) => {
@@ -11,13 +10,10 @@ export const usePollingChat = () => {
       isPollingRef.current = true;
       let currentCursor = 0;
       let messageId = null;
-      const typewriterQueue = []; // Array of { text: string, type: string }
-      let isFlushing = false;
 
       const cleanup = () => {
         isPollingRef.current = false;
         if (pollingTimerRef.current) clearTimeout(pollingTimerRef.current);
-        if (typewriterTimerRef.current) clearTimeout(typewriterTimerRef.current);
       };
 
       const onAbort = () => {
@@ -27,24 +23,6 @@ export const usePollingChat = () => {
       if (signal) {
         signal.addEventListener('abort', onAbort);
       }
-
-      const flushTypewriter = () => {
-        if (!isPollingRef.current) return;
-        if (typewriterQueue.length > 0) {
-          const first = typewriterQueue[0];
-          const chunk = first.text.substring(0, 5); // Typing slightly faster
-          first.text = first.text.substring(5);
-          
-          onDelta(chunk, first.type);
-          
-          if (first.text.length === 0) {
-            typewriterQueue.shift();
-          }
-          typewriterTimerRef.current = setTimeout(flushTypewriter, 20); 
-        } else {
-          isFlushing = false;
-        }
-      };
 
       try {
         const fetchOptions = {
@@ -81,44 +59,32 @@ export const usePollingChat = () => {
             if (!pollRes.ok) throw new Error(`HTTP ${pollRes.status}`);
             const pollData = await pollRes.json();
             
-            // Handle multiple events if supported by backend, or single delta
+            // Handle multiple events
             const events = pollData.events || (pollData.delta ? [{ delta: pollData.delta, event_type: pollData.event_type || 'content' }] : []);
             
             if (events.length > 0) {
               let totalDeltaLen = 0;
               events.forEach(ev => {
-                totalDeltaLen += ev.delta.length;
-                if (typewriterQueue.length > 0 && typewriterQueue[typewriterQueue.length - 1].type === ev.event_type) {
-                  typewriterQueue[typewriterQueue.length - 1].text += ev.delta;
-                } else {
-                  typewriterQueue.push({ text: ev.delta, type: ev.event_type });
+                const deltaStr = ev.delta || '';
+                totalDeltaLen += deltaStr.length;
+                if (deltaStr) {
+                  onDelta(deltaStr, ev.event_type || 'content');
                 }
               });
 
+              // Increment cursor correctly
               currentCursor = pollData.cursor !== undefined ? pollData.cursor : currentCursor + totalDeltaLen;
-              
-              if (!isFlushing) {
-                isFlushing = true;
-                flushTypewriter();
-              }
             }
 
             if (pollData.status === 'done' || pollData.status === 'error') {
               cleanup();
               if (signal) signal.removeEventListener('abort', onAbort);
               
-              const flushRemaining = () => {
-                while (typewriterQueue.length > 0) {
-                  const ev = typewriterQueue.shift();
-                  onDelta(ev.text, ev.type);
-                }
-                if (pollData.status === 'error') {
-                   reject(new Error(pollData.error_message || 'Server error'));
-                } else {
-                   resolve();
-                }
-              };
-              flushRemaining();
+              if (pollData.status === 'error') {
+                 reject(new Error(pollData.error_message || 'Server error'));
+              } else {
+                 resolve();
+              }
               return;
             }
 
@@ -145,7 +111,6 @@ export const usePollingChat = () => {
   const abortPolling = useCallback(() => {
     isPollingRef.current = false;
     if (pollingTimerRef.current) clearTimeout(pollingTimerRef.current);
-    if (typewriterTimerRef.current) clearTimeout(typewriterTimerRef.current);
   }, []);
 
   return { sendMessageAsync, abortPolling };
