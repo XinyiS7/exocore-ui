@@ -334,6 +334,11 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
               lastMsg.reasoning_steps = steps;
             } else if (type === 'status') {
               lastMsg.status_text = text;
+            } else if (type === 'anchor_created') {
+              try { 
+                const parsed = typeof text === 'string' ? JSON.parse(text) : text;
+                lastMsg.new_anchors = [...(lastMsg.new_anchors || []), parsed]; 
+              } catch(e) {}
             } else {
               lastMsg.content = (lastMsg.content || '') + text;
               lastMsg.status_text = null;
