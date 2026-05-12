@@ -9,6 +9,7 @@ import { filesToAttachmentData, saveAttachments, enrichMessages } from '../../ut
 import MessageBubble from './MessageBubble';
 import BranchSessionModal from '../modals/BranchSessionModal';
 import ContextCacheIndicator from './ContextCacheIndicator';
+import { usePollingChat } from '../../hooks/usePollingChat';
 
 const MSGS_PER_PAGE = 40;
 
@@ -22,6 +23,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   const [thinkingLevel, setThinkingLevel] = useState("auto");
   const [temperature, setTemperature] = useState(1.0);
   const [currentModel, setCurrentModel] = useState("");
+  const [chatMode, setChatMode] = useState(() => localStorage.getItem('exo_chat_mode') || 'sse');
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [attachedFilePreviews, setAttachedFilePreviews] = useState([]);
   const blobUrlMapRef = useRef(new Map());
@@ -30,6 +32,8 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   const [lastTelemetry, setLastTelemetry] = useState(null);
   const [userNick, setUserNick] = useState(() => localStorage.getItem('exo_user_nick') || 'You');
   const [userAvatarUrl] = useState(() => getUserAvatarUrl());
+
+  const { sendMessageAsync } = usePollingChat();
 
   const [showAttachPanel, setShowAttachPanel] = useState(false);
   const [sessionAttachments, setSessionAttachments] = useState([]);
@@ -316,77 +320,103 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
         fetchOptions.body = JSON.stringify(bodyData);
       }
 
-      response = await fetch(`${baseUrl}/api/agents/chat/${activeSessionId}/`, fetchOptions);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder("utf-8");
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const blocks = buffer.split('\n\n'); buffer = blocks.pop();
-
-        for (const block of blocks) {
-          const lines = block.split('\n');
-          let eventType = 'message'; let dataStr = '';
-          for (const line of lines) {
-            if (line.startsWith('event:')) eventType = line.substring(6).trim();
-            else if (line.startsWith('data:')) dataStr += line.substring(5).trim();
-          }
-          if (!dataStr || eventType === 'done' || dataStr === '[DONE]') continue;
-
-          if (eventType === 'telemetry') {
-            try { setLastTelemetry(JSON.parse(dataStr)); } catch(e) {}
-            continue;
-          }
-
-          if (eventType === 'error') {
-            let errorMsg = dataStr;
-            try { const e = JSON.parse(dataStr); errorMsg = e.message || dataStr; } catch(e) {}
-            setMessages(prev => {
-              const newMsgs = [...prev];
-              const lastMsg = { ...newMsgs[newMsgs.length - 1] };
-              lastMsg.status_text = null;
-              lastMsg.error = errorMsg;
-              newMsgs[newMsgs.length - 1] = lastMsg;
-              allHistoryRef.current[allHistoryRef.current.length - 1] = lastMsg;
-              return newMsgs;
-            });
-            continue;
-          }
-
-          let text = dataStr;
-          try {
-            const parsed = JSON.parse(dataStr);
-            if (typeof parsed === 'string') text = parsed;
-          } catch (e) { text = dataStr.replace(/\\n/g, '\n'); }
-
+      if (chatMode === 'async') {
+        const payload = (currentFiles.length > 0 && !regenerateMessageId) ? fetchOptions.body : bodyData;
+        await sendMessageAsync(payload, activeSessionId, abortControllerRef.current.signal, (text, type) => {
           setMessages(prev => {
             const newMsgs = [...prev];
             const lastMsg = { ...newMsgs[newMsgs.length - 1] };
-            newMsgs[newMsgs.length - 1] = lastMsg;
-            if (eventType === 'reasoning') {
-              const steps = [...(lastMsg.reasoning_steps || [])];
-              if (steps[steps.length - 1] !== text) steps.push(text);
-              lastMsg.reasoning_steps = steps;
-            } else if (eventType === 'thinking') {
+            if (type === 'thinking') {
               lastMsg.reasoning_content = (lastMsg.reasoning_content || '') + text;
-            } else if (eventType === 'content') {
+            } else if (type === 'reasoning') {
+              const steps = [...(lastMsg.reasoning_steps || [])];
+              if (steps.length === 0 || steps[steps.length - 1] !== text) steps.push(text);
+              lastMsg.reasoning_steps = steps;
+            } else if (type === 'status') {
+              lastMsg.status_text = text;
+            } else {
               lastMsg.content = (lastMsg.content || '') + text;
               lastMsg.status_text = null;
-            } else if (eventType === 'anchor_created') {
-              try { lastMsg.new_anchors = [...(lastMsg.new_anchors || []), JSON.parse(text)]; } catch(e) {}
-            } else if (eventType === 'status') {
-              lastMsg.status_text = text;
             }
+            newMsgs[newMsgs.length - 1] = lastMsg;
             allHistoryRef.current[allHistoryRef.current.length - 1] = lastMsg;
             return newMsgs;
           });
+          if (isNearBottom()) scrollToBottom(false);
+        });
+      } else {
+        response = await fetch(`${baseUrl}/api/agents/chat/${activeSessionId}/`, fetchOptions);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const blocks = buffer.split('\n\n'); buffer = blocks.pop();
+
+          for (const block of blocks) {
+            const lines = block.split('\n');
+            let eventType = 'message'; let dataStr = '';
+            for (const line of lines) {
+              if (line.startsWith('event:')) eventType = line.substring(6).trim();
+              else if (line.startsWith('data:')) dataStr += line.substring(5).trim();
+            }
+            if (!dataStr || eventType === 'done' || dataStr === '[DONE]') continue;
+
+            if (eventType === 'telemetry') {
+              try { setLastTelemetry(JSON.parse(dataStr)); } catch(e) {}
+              continue;
+            }
+
+            if (eventType === 'error') {
+              let errorMsg = dataStr;
+              try { const e = JSON.parse(dataStr); errorMsg = e.message || dataStr; } catch(e) {}
+              setMessages(prev => {
+                const newMsgs = [...prev];
+                const lastMsg = { ...newMsgs[newMsgs.length - 1] };
+                lastMsg.status_text = null;
+                lastMsg.error = errorMsg;
+                newMsgs[newMsgs.length - 1] = lastMsg;
+                allHistoryRef.current[allHistoryRef.current.length - 1] = lastMsg;
+                return newMsgs;
+              });
+              continue;
+            }
+
+            let text = dataStr;
+            try {
+              const parsed = JSON.parse(dataStr);
+              if (typeof parsed === 'string') text = parsed;
+            } catch (e) { text = dataStr.replace(/\\n/g, '\n'); }
+
+            setMessages(prev => {
+              const newMsgs = [...prev];
+              const lastMsg = { ...newMsgs[newMsgs.length - 1] };
+              newMsgs[newMsgs.length - 1] = lastMsg;
+              if (eventType === 'reasoning') {
+                const steps = [...(lastMsg.reasoning_steps || [])];
+                if (steps[steps.length - 1] !== text) steps.push(text);
+                lastMsg.reasoning_steps = steps;
+              } else if (eventType === 'thinking') {
+                lastMsg.reasoning_content = (lastMsg.reasoning_content || '') + text;
+              } else if (eventType === 'content') {
+                lastMsg.content = (lastMsg.content || '') + text;
+                lastMsg.status_text = null;
+              } else if (eventType === 'anchor_created') {
+                try { lastMsg.new_anchors = [...(lastMsg.new_anchors || []), JSON.parse(text)]; } catch(e) {}
+              } else if (eventType === 'status') {
+                lastMsg.status_text = text;
+              }
+              allHistoryRef.current[allHistoryRef.current.length - 1] = lastMsg;
+              return newMsgs;
+            });
+          }
+          if (isNearBottom()) scrollToBottom(false);
         }
-        if (isNearBottom()) scrollToBottom(false);
       }
     } catch (err) {
       if (err.name === 'AbortError') {
@@ -713,6 +743,18 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
               {AVAILABLE_MODELS.map(m => (
                 <option key={m} value={m} className="bg-exo-pure text-white">{m}</option>
               ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2 bg-white/[0.04] px-2 py-1 rounded-[2px] border border-white/[0.08]">
+            <span className="text-[10px] font-mono uppercase tracking-tighter opacity-40">Mode</span>
+            <select value={chatMode} onChange={(e) => {
+              const mode = e.target.value;
+              setChatMode(mode);
+              localStorage.setItem('exo_chat_mode', mode);
+            }} className="bg-transparent outline-none text-[11px] font-mono text-white/80 cursor-pointer">
+              <option value="sse" className="bg-exo-pure">SSE</option>
+              <option value="async" className="bg-exo-pure">Async</option>
             </select>
           </div>
 
