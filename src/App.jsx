@@ -18,6 +18,7 @@ import CouncilArea from './components/council/CouncilArea';
 import CouncilCreateModal from './components/council/CouncilCreateModal';
 import HomePanel from './components/home/HomePanel';
 import TaskPanel from './components/tasks/TaskPanel';
+import AppShell from './layouts/v2/AppShell';
 
 export default function App() {
   const {
@@ -287,9 +288,17 @@ export default function App() {
           </div>
         </>
       ) : (
-        <div className="flex-1 flex items-center justify-center text-exo-muted">
-          <p className="font-mono text-sm">v2 shell — coming soon</p>
-        </div>
+        <AppShell appState={{
+          projects, setProjects, presets, activeSessionId, setActiveSessionId,
+          refreshKey, setRefreshKey, activeFileProjectId, setActiveFileProjectId,
+          activeCouncilId, setActiveCouncilId, councilSessions,
+          showCouncilCreate, setShowCouncilCreate,
+          destructorConfig, setDestructorConfig,
+          newSessionConfig, setNewSessionConfig,
+          openDestructor, openNewSession,
+          showProfilePanel, setShowProfilePanel,
+          refreshPresets, refreshCouncilSessions,
+        }} />
       )}
     </div>
   );
