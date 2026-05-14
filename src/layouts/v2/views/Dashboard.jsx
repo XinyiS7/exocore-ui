@@ -27,6 +27,7 @@ export default function Dashboard({ appState, setView }) {
   );
   const [searchTerm, setSearchTerm] = useState('');
   const [showResults, setShowResults] = useState(false);
+  const [allConversations, setAllConversations] = useState([]);
   const searchRef = useRef(null);
 
   useEffect(() => {
@@ -51,8 +52,18 @@ export default function Dashboard({ appState, setView }) {
     return preset ? preset.name : 'Agent';
   };
 
-  const filteredAgents = searchTerm.trim()
-    ? presets.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+  const handleSearchFocus = () => {
+    setShowResults(true);
+    if (allConversations.length === 0) {
+      fetch(`${baseUrl}/api/agents/conversations/`, { credentials: 'include' })
+        .then(res => res.json())
+        .then(data => setAllConversations(Array.isArray(data) ? data : []))
+        .catch(() => {});
+    }
+  };
+
+  const filteredConversations = searchTerm.trim()
+    ? allConversations.filter(c => (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()))
     : [];
 
   // Close dropdown on outside click
@@ -90,32 +101,36 @@ export default function Dashboard({ appState, setView }) {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => { setSearchTerm(e.target.value); setShowResults(true); }}
-                onFocus={() => setShowResults(true)}
-                placeholder="搜索 Agent..."
+                onFocus={handleSearchFocus}
+                placeholder="搜索会话..."
                 className="flex-1 bg-transparent text-sm text-exo-text placeholder:text-exo-muted outline-none border-none p-0"
               />
             </div>
-            {showResults && filteredAgents.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-exo-pure border border-exo-mist-8 rounded-md shadow-lg overflow-hidden z-50">
-                {filteredAgents.map(agent => (
+            {showResults && filteredConversations.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-exo-pure border border-exo-mist-8 rounded-md shadow-lg overflow-hidden z-50 max-h-64 overflow-y-auto">
+                {filteredConversations.map(convo => (
                   <button
-                    key={agent.id}
+                    key={convo.id}
                     onClick={() => {
                       setSearchTerm('');
                       setShowResults(false);
-                      setView('agent_profile', { agentId: agent.id, agentName: agent.name });
+                      setActiveSessionId(convo.id);
+                      setView('chat', { sessionId: convo.id, sessionTitle: convo.name });
                     }}
                     className="flex items-center gap-3 w-full px-4 py-3 hover:bg-white/5 transition-all text-left"
                   >
-                    <span className="text-sm text-white truncate">{agent.name}</span>
-                    <span className="text-[10px] text-exo-muted uppercase tracking-wider ml-auto">{agent.agent_type}</span>
+                    <MessageSquare size={14} className="text-exo-muted shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm text-white truncate block">{convo.name || `Session #${convo.id}`}</span>
+                      <span className="text-[9px] text-exo-muted">{getAgentName(convo.agent_preset_id)} · {convo.agent_type}</span>
+                    </div>
                   </button>
                 ))}
               </div>
             )}
-            {showResults && searchTerm.trim() && filteredAgents.length === 0 && (
+            {showResults && searchTerm.trim() && filteredConversations.length === 0 && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-exo-pure border border-exo-mist-8 rounded-md p-4 text-center z-50">
-                <p className="text-xs text-exo-muted">No agents found</p>
+                <p className="text-xs text-exo-muted">No sessions found</p>
               </div>
             )}
           </div>
