@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BrainCircuit, FolderKanban, Building2, CheckSquare, Search, ArrowRight, MessageSquare } from 'lucide-react';
 import CalendarWidget from '../../../components/home/CalendarWidget';
 import { baseUrl } from '../../../utils/api';
@@ -18,24 +18,53 @@ const QUICK_LINKS = [
   { id: 'task', icon: CheckSquare, label: '任务与时序', desc: '日程与时间线' },
 ];
 
-export default function Dashboard({ appState, setView, setViewParams }) {
+export default function Dashboard({ appState, setView }) {
   const userNick = localStorage.getItem('exo_user_nick') || 'Exo User';
+  const { presets, refreshKey, setActiveSessionId } = appState;
   const [recentSessions, setRecentSessions] = useState([]);
   const [greeting] = useState(
     () => WELCOME_SENTENCES[Math.floor(Math.random() * WELCOME_SENTENCES.length)]
   );
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showResults, setShowResults] = useState(false);
+  const searchRef = useRef(null);
 
   useEffect(() => {
-    fetch(`${baseUrl}/api/agents/sessions/?limit=3`, { credentials: 'include' })
+    fetch(`${baseUrl}/api/agents/conversations/`, { credentials: 'include' })
       .then(res => res.json())
-      .then(data => setRecentSessions(data.results || data))
+      .then(data => {
+        const sorted = (Array.isArray(data) ? data : []).sort(
+          (a, b) => new Date(b.last_message_at || b.created_at) - new Date(a.last_message_at || a.created_at)
+        );
+        setRecentSessions(sorted.slice(0, 3));
+      })
       .catch(() => setRecentSessions([]));
-  }, [appState.refreshKey]);
+  }, [refreshKey]);
 
-  const handleSessionClick = (session) => {
-    appState.setActiveSessionId(session.id);
-    setView('chat', { sessionId: session.id, sessionTitle: session.title });
+  const handleSessionClick = (convo) => {
+    setActiveSessionId(convo.id);
+    setView('chat', { sessionId: convo.id, sessionTitle: convo.name });
   };
+
+  const getAgentName = (presetId) => {
+    const preset = presets.find(p => p.id === presetId);
+    return preset ? preset.name : 'Agent';
+  };
+
+  const filteredAgents = searchTerm.trim()
+    ? presets.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    : [];
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setShowResults(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   return (
     <div className="flex-1 h-full overflow-y-auto bg-exo-bg scrollbar-hide">
@@ -54,14 +83,41 @@ export default function Dashboard({ appState, setView, setViewParams }) {
           <p className="text-base text-exo-muted max-w-xl font-light">{greeting}</p>
 
           {/* Search bar */}
-          <div className="pt-2 max-w-md">
-            <div
-              onClick={() => setView('agent_hub')}
-              className="flex items-center gap-3 px-4 py-3 bg-exo-pure border border-exo-mist-10 rounded-md hover:border-exo-accent/30 cursor-pointer transition-all group"
-            >
-              <Search size={16} className="text-exo-muted group-hover:text-exo-accent transition-colors" />
-              <span className="text-sm text-exo-muted group-hover:text-exo-text transition-colors">搜索会话...</span>
+          <div className="pt-2 max-w-md relative" ref={searchRef}>
+            <div className="flex items-center gap-3 px-4 py-3 bg-exo-pure border border-exo-mist-10 rounded-md transition-all group focus-within:border-exo-accent/40">
+              <Search size={16} className="text-exo-muted group-focus-within:text-exo-accent transition-colors shrink-0" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => { setSearchTerm(e.target.value); setShowResults(true); }}
+                onFocus={() => setShowResults(true)}
+                placeholder="搜索 Agent..."
+                className="flex-1 bg-transparent text-sm text-exo-text placeholder:text-exo-muted outline-none border-none p-0"
+              />
             </div>
+            {showResults && filteredAgents.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-exo-pure border border-exo-mist-8 rounded-md shadow-lg overflow-hidden z-50">
+                {filteredAgents.map(agent => (
+                  <button
+                    key={agent.id}
+                    onClick={() => {
+                      setSearchTerm('');
+                      setShowResults(false);
+                      setView('agent_profile', { agentId: agent.id, agentName: agent.name });
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-3 hover:bg-white/5 transition-all text-left"
+                  >
+                    <span className="text-sm text-white truncate">{agent.name}</span>
+                    <span className="text-[10px] text-exo-muted uppercase tracking-wider ml-auto">{agent.agent_type}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {showResults && searchTerm.trim() && filteredAgents.length === 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-exo-pure border border-exo-mist-8 rounded-md p-4 text-center z-50">
+                <p className="text-xs text-exo-muted">No agents found</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -73,19 +129,19 @@ export default function Dashboard({ appState, setView, setViewParams }) {
               <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-exo-muted">Recent Sessions</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {recentSessions.map(session => (
+              {recentSessions.map(convo => (
                 <button
-                  key={session.id}
-                  onClick={() => handleSessionClick(session)}
+                  key={convo.id}
+                  onClick={() => handleSessionClick(convo)}
                   className="group flex items-center gap-4 p-5 bg-exo-pure border border-exo-mist-10 rounded-md hover:border-exo-accent/30 hover:shadow-glow-gold transition-all text-left"
                 >
                   <div className="p-2.5 rounded-md bg-exo-accent/5 border border-exo-mist-10 text-exo-accent group-hover:shadow-glow-gold transition-all">
                     <MessageSquare size={18} strokeWidth={1.5} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white truncate">{session.title || `Session #${session.id}`}</p>
+                    <p className="text-sm font-medium text-white truncate">{convo.name || `Session #${convo.id}`}</p>
                     <p className="text-[10px] font-mono text-exo-muted mt-0.5">
-                      {session.agent_name || 'Agent'} · {session.message_count || 0} msgs
+                      {getAgentName(convo.agent_preset_id)} · {convo.agent_type || 'chat'}
                     </p>
                   </div>
                   <ArrowRight size={14} className="text-exo-mist-20 group-hover:text-exo-accent group-hover:translate-x-0.5 transition-all shrink-0" />

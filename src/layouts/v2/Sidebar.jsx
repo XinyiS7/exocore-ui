@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Hexagon, BrainCircuit, FolderKanban, Building2, CheckSquare,
-  Settings, PanelLeftOpen, PanelLeftClose
+  Settings, PanelLeftOpen, PanelLeftClose, RotateCcw
 } from 'lucide-react';
 import { getUserAvatarUrl } from '../../utils/avatar';
 
@@ -105,6 +105,23 @@ export default function Sidebar({ view, setView, appState }) {
           isExpanded={isExpanded}
           onClick={() => setView('settings')}
         />
+
+        {/* Switch to v1 */}
+        <button
+          onClick={() => {
+            localStorage.setItem('exo_layout_version', 'v1');
+            window.dispatchEvent(new CustomEvent('layout-version-changed', { detail: 'v1' }));
+          }}
+          className="flex items-center gap-3 w-full px-3 py-2.5 transition-all group/back text-exo-muted hover:text-exo-accent"
+          title="Switch to v1 Layout"
+        >
+          <div className="p-1.5 rounded-md transition-all shrink-0 group-hover/back:bg-white/5">
+            <RotateCcw size={18} strokeWidth={1.5} />
+          </div>
+          {isExpanded && (
+            <span className="text-sm font-medium whitespace-nowrap">返回旧版</span>
+          )}
+        </button>
 
         {/* User avatar */}
         <button

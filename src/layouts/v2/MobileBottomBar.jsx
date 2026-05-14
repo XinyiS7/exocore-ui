@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrainCircuit, FolderKanban, Building2, CheckSquare } from 'lucide-react';
+import { BrainCircuit, FolderKanban, Building2, CheckSquare, RotateCcw } from 'lucide-react';
 
 const BOTTOM_ITEMS = [
   { id: 'agent_hub', icon: BrainCircuit, label: 'Agent' },
@@ -26,6 +26,17 @@ export default function MobileBottomBar({ view, setView }) {
           </button>
         );
       })}
+      <button
+        onClick={() => {
+          localStorage.setItem('exo_layout_version', 'v1');
+          window.dispatchEvent(new CustomEvent('layout-version-changed', { detail: 'v1' }));
+        }}
+        className="flex flex-col items-center justify-center gap-0.5 py-1 px-2 text-exo-muted opacity-40 hover:opacity-80 active:scale-95 transition-all"
+        title="Switch to v1 Layout"
+      >
+        <RotateCcw size={15} strokeWidth={1.5} />
+        <span className="text-[7px] font-medium tracking-wider uppercase">v1</span>
+      </button>
     </div>
   );
 }
