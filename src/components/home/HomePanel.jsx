@@ -70,7 +70,10 @@ export default function HomePanel({ setCurrentTab }) {
                 }}
                 className="relative w-10 h-5 rounded-full border border-exo-mist-10 bg-exo-pure transition-colors hover:border-exo-accent/30"
               >
-                <div className={`absolute top-0.5 transition-all ${localStorage.getItem('exo_layout_version') === 'v2' ? 'left-5' : 'left-0.5'} w-4 h-4 rounded-full bg-exo-accent/60`} />
+                <div
+                  className="absolute top-0.5 transition-all w-4 h-4 rounded-full bg-exo-accent/60"
+                  style={{ left: localStorage.getItem('exo_layout_version') === 'v2' ? '1.25rem' : '0.125rem' }}
+                />
               </button>
               <span className="text-[10px] font-mono text-exo-muted">
                 {localStorage.getItem('exo_layout_version') === 'v2' ? 'v2 (new)' : 'v1'}
