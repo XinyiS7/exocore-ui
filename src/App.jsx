@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import 'highlight.js/styles/atom-one-dark.css';
 import { Hexagon, MessageSquare, Users, Plus } from 'lucide-react';
-import { baseUrl } from './utils/api';
+import { useAppState } from './hooks/useAppState';
 
 import DestructorModal from './components/modals/DestructorModal';
 import NewSessionModal from './components/modals/NewSessionModal';
@@ -16,75 +16,35 @@ import UserProfilePanel from './components/UserProfilePanel';
 import SettingsPanel from './components/settings/SettingsPanel';
 import CouncilArea from './components/council/CouncilArea';
 import CouncilCreateModal from './components/council/CouncilCreateModal';
-import { listCouncilSessions } from './utils/councilApi';
 import HomePanel from './components/home/HomePanel';
 import TaskPanel from './components/tasks/TaskPanel';
 
 export default function App() {
+  const {
+    projects, setProjects,
+    presets,
+    activeSessionId, setActiveSessionId,
+    refreshKey, setRefreshKey,
+    activeFileProjectId, setActiveFileProjectId,
+    activeCouncilId, setActiveCouncilId,
+    councilSessions,
+    showCouncilCreate, setShowCouncilCreate,
+    destructorConfig, setDestructorConfig,
+    newSessionConfig, setNewSessionConfig,
+    openDestructor, openNewSession,
+    showProfilePanel, setShowProfilePanel,
+    refreshPresets, refreshCouncilSessions,
+  } = useAppState();
+
+  // --- v1 navigation state (unchanged) ---
   const [currentTab, setCurrentTab] = useState(() => localStorage.getItem('exo_active_tab') || 'home');
-  const [activeSessionId, setActiveSessionId] = useState(() => {
-    const saved = localStorage.getItem('exo_active_session');
-    return saved ? Number(saved) : null;
-  });
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [projects, setProjects] = useState([]);
-  const [presets, setPresets] = useState([]);
-  const [activeFileProjectId, setActiveFileProjectId] = useState(null);
-  
-  // Sidebar and List states
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [showConvList, setShowConvList] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  // Profile panel state
-  const [showProfilePanel, setShowProfilePanel] = useState(false);
-
-  // Council state
-  const [activeCouncilId, setActiveCouncilId] = useState(null);
-  const [councilSessions, setCouncilSessions] = useState([]);
-  const [showCouncilCreate, setShowCouncilCreate] = useState(false);
-
-  useEffect(() => {
-    if (activeSessionId) localStorage.setItem('exo_active_session', String(activeSessionId));
-    else localStorage.removeItem('exo_active_session');
-  }, [activeSessionId]);
-
   useEffect(() => {
     localStorage.setItem('exo_active_tab', currentTab);
   }, [currentTab]);
-
-  useEffect(() => {
-    fetch(`${baseUrl}/api/core/projects/`, { credentials: 'include' })
-      .then(res => res.json())
-      .then(data => setProjects(data))
-      .catch(err => console.error("项目加载失败", err));
-
-    fetch(`${baseUrl}/api/agents/presets/`, { credentials: 'include' })
-      .then(res => res.json())
-      .then(setPresets)
-      .catch(err => console.error("Presets 拉取失败", err));
-  }, []);
-
-  const refreshPresets = () => {
-    fetch(`${baseUrl}/api/agents/presets/`, { credentials: 'include' })
-      .then(res => res.json())
-      .then(setPresets)
-      .catch(err => console.error("Presets 刷新失败", err));
-  };
-
-  const refreshCouncilSessions = () => {
-    listCouncilSessions()
-      .then(setCouncilSessions)
-      .catch(err => console.error('Council 列表拉取失败:', err));
-  };
-
-  useEffect(() => { refreshCouncilSessions(); }, [refreshKey]);
-
-  const [destructorConfig, setDestructorConfig] = useState({ isOpen: false });
-  const openDestructor = (config) => setDestructorConfig({ ...config, isOpen: true });
-
-  const [newSessionConfig, setNewSessionConfig] = useState({ isOpen: false, initialContext: null });
-  const openNewSession = (initialContext = null) => setNewSessionConfig({ isOpen: true, initialContext });
 
   // Helper to reset selections when switching tabs
   const handleTabChange = (tab) => {
