@@ -36,6 +36,20 @@ export default function App() {
     refreshPresets, refreshCouncilSessions,
   } = useAppState();
 
+  const [layoutVersion, setLayoutVersion] = useState(
+    () => localStorage.getItem('exo_layout_version') || 'v1'
+  );
+
+  useEffect(() => {
+    localStorage.setItem('exo_layout_version', layoutVersion);
+  }, [layoutVersion]);
+
+  useEffect(() => {
+    const handler = (e) => setLayoutVersion(e.detail);
+    window.addEventListener('layout-version-changed', handler);
+    return () => window.removeEventListener('layout-version-changed', handler);
+  }, []);
+
   // --- v1 navigation state (unchanged) ---
   const [currentTab, setCurrentTab] = useState(() => localStorage.getItem('exo_active_tab') || 'home');
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
@@ -192,83 +206,91 @@ export default function App() {
         }}
       />
 
-      {/* Mobile Sidebar (icon-only floating overlay) */}
-      <MobileSidebar
-        currentTab={currentTab}
-        setCurrentTab={handleTabChange}
-        showConvList={showConvList}
-        setShowConvList={setShowConvList}
-        isOpen={isMobileSidebarOpen}
-        onClose={() => setIsMobileSidebarOpen(false)}
-        onOpenProfile={() => setShowProfilePanel(true)}
-      />
+      {layoutVersion === 'v1' ? (
+        <>
+          {/* Mobile Sidebar (icon-only floating overlay) */}
+          <MobileSidebar
+            currentTab={currentTab}
+            setCurrentTab={handleTabChange}
+            showConvList={showConvList}
+            setShowConvList={setShowConvList}
+            isOpen={isMobileSidebarOpen}
+            onClose={() => setIsMobileSidebarOpen(false)}
+            onOpenProfile={() => setShowProfilePanel(true)}
+          />
 
-      {/* Desktop Sidebar (unchanged) */}
-      <div className="hidden md:block h-full flex-shrink-0">
-        <Sidebar
-          currentTab={currentTab}
-          setCurrentTab={handleTabChange}
-          showConvList={showConvList}
-          setShowConvList={setShowConvList}
-          isExpanded={isSidebarExpanded}
-          setIsExpanded={setIsSidebarExpanded}
-          onOpenProfile={() => setShowProfilePanel(true)}
-        />
-      </div>
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 relative h-full">
-        
-        {/* Mobile Header Toggle (Hidden in standalone mode) */}
-        <div className="md:hidden h-14 border-b border-exo-mist-10 flex items-center px-4 shrink-0 bg-exo-pure/60 backdrop-blur-md justify-between standalone:hidden">
-          <button onClick={() => setIsMobileSidebarOpen(true)} className="p-1.5 text-exo-muted hover:text-exo-accent transition-colors rounded-[4px] border border-exo-mist-8 hover:border-exo-accent/30">
-            <Hexagon size={20} />
-          </button>
-          <div className="text-exo-accent font-mono font-bold tracking-[0.3em] text-[10px] uppercase">ExoCore // Neural.Link</div>
-          <div className="w-10" /> {/* Spacer */}
-        </div>
-
-        {/* Hexagon trigger for Standalone PWA mode */}
-        <button
-          onClick={() => setIsMobileSidebarOpen(true)}
-          className="md:hidden fixed top-3 left-3 z-[100] w-10 h-10 rounded-[4px] bg-exo-pure/90 border border-exo-accent/30 text-exo-accent flex items-center justify-center backdrop-blur-md shadow-glow-gold active:scale-95 transition-all standalone:flex hidden"
-        >
-          <Hexagon size={20} />
-        </button>
-
-        <div className="flex-1 flex flex-row overflow-hidden relative">
-          
-          {/* Side Column List (Visible in chat/council/project if showConvList is true and NOT in main view) */}
-          {showConvList && (['chat', 'council', 'project'].includes(currentTab)) && (
-            <div className="absolute inset-y-0 left-0 z-[80] w-80 h-full shadow-[30px_0_60px_rgba(0,0,0,0.8)]">
-              <ConversationList
-                mode={currentTab}
-                activeSessionId={activeSessionId}
-                setActiveSessionId={(id) => { setActiveSessionId(id); setActiveFileProjectId(null); setActiveCouncilId(null); setShowConvList(false); setIsMobileSidebarOpen(false); }}
-                projects={projects}
-                setProjects={setProjects}
-                refreshKey={refreshKey}
-                setRefreshKey={setRefreshKey}
-                openDestructor={openDestructor}
-                openNewSession={openNewSession}
-                activeFileProjectId={activeFileProjectId}
-                setActiveFileProjectId={setActiveFileProjectId}
-                showConvList={showConvList}
-                onClose={() => setShowConvList(false)}
-                councilSessions={councilSessions}
-                activeCouncilId={activeCouncilId}
-                setActiveCouncilId={(id) => { setActiveCouncilId(id); setActiveSessionId(null); setShowConvList(false); setIsMobileSidebarOpen(false); }}
-                onCreateCouncil={() => setShowCouncilCreate(true)}
-              />
-            </div>
-          )}
-
-          {/* Actual Tab Content */}
-          <div className="flex-1 min-w-0 overflow-hidden relative h-full">
-            {renderMainContent()}
+          {/* Desktop Sidebar (unchanged) */}
+          <div className="hidden md:block h-full flex-shrink-0">
+            <Sidebar
+              currentTab={currentTab}
+              setCurrentTab={handleTabChange}
+              showConvList={showConvList}
+              setShowConvList={setShowConvList}
+              isExpanded={isSidebarExpanded}
+              setIsExpanded={setIsSidebarExpanded}
+              onOpenProfile={() => setShowProfilePanel(true)}
+            />
           </div>
+
+          {/* Main Content Area */}
+          <div className="flex-1 flex flex-col min-w-0 relative h-full">
+
+            {/* Mobile Header Toggle (Hidden in standalone mode) */}
+            <div className="md:hidden h-14 border-b border-exo-mist-10 flex items-center px-4 shrink-0 bg-exo-pure/60 backdrop-blur-md justify-between standalone:hidden">
+              <button onClick={() => setIsMobileSidebarOpen(true)} className="p-1.5 text-exo-muted hover:text-exo-accent transition-colors rounded-[4px] border border-exo-mist-8 hover:border-exo-accent/30">
+                <Hexagon size={20} />
+              </button>
+              <div className="text-exo-accent font-mono font-bold tracking-[0.3em] text-[10px] uppercase">ExoCore // Neural.Link</div>
+              <div className="w-10" /> {/* Spacer */}
+            </div>
+
+            {/* Hexagon trigger for Standalone PWA mode */}
+            <button
+              onClick={() => setIsMobileSidebarOpen(true)}
+              className="md:hidden fixed top-3 left-3 z-[100] w-10 h-10 rounded-[4px] bg-exo-pure/90 border border-exo-accent/30 text-exo-accent flex items-center justify-center backdrop-blur-md shadow-glow-gold active:scale-95 transition-all standalone:flex hidden"
+            >
+              <Hexagon size={20} />
+            </button>
+
+            <div className="flex-1 flex flex-row overflow-hidden relative">
+
+              {/* Side Column List (Visible in chat/council/project if showConvList is true and NOT in main view) */}
+              {showConvList && (['chat', 'council', 'project'].includes(currentTab)) && (
+                <div className="absolute inset-y-0 left-0 z-[80] w-80 h-full shadow-[30px_0_60px_rgba(0,0,0,0.8)]">
+                  <ConversationList
+                    mode={currentTab}
+                    activeSessionId={activeSessionId}
+                    setActiveSessionId={(id) => { setActiveSessionId(id); setActiveFileProjectId(null); setActiveCouncilId(null); setShowConvList(false); setIsMobileSidebarOpen(false); }}
+                    projects={projects}
+                    setProjects={setProjects}
+                    refreshKey={refreshKey}
+                    setRefreshKey={setRefreshKey}
+                    openDestructor={openDestructor}
+                    openNewSession={openNewSession}
+                    activeFileProjectId={activeFileProjectId}
+                    setActiveFileProjectId={setActiveFileProjectId}
+                    showConvList={showConvList}
+                    onClose={() => setShowConvList(false)}
+                    councilSessions={councilSessions}
+                    activeCouncilId={activeCouncilId}
+                    setActiveCouncilId={(id) => { setActiveCouncilId(id); setActiveSessionId(null); setShowConvList(false); setIsMobileSidebarOpen(false); }}
+                    onCreateCouncil={() => setShowCouncilCreate(true)}
+                  />
+                </div>
+              )}
+
+              {/* Actual Tab Content */}
+              <div className="flex-1 min-w-0 overflow-hidden relative h-full">
+                {renderMainContent()}
+              </div>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="flex-1 flex items-center justify-center text-exo-muted">
+          <p className="font-mono text-sm">v2 shell — coming soon</p>
         </div>
-      </div>
+      )}
     </div>
   );
 }

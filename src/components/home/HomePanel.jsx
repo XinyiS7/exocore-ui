@@ -60,6 +60,22 @@ export default function HomePanel({ setCurrentTab }) {
             <p className="text-lg text-exo-muted max-w-2xl font-light leading-tight-12">
               您的个人 AI 协作中枢已就绪。所有子系统运行正常，<span className="text-exo-accent/60 font-mono">链路延迟 2ms</span>。
             </p>
+            <div className="pt-4 flex items-center gap-2">
+              <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-exo-muted">Layout</span>
+              <button
+                onClick={() => {
+                  const next = localStorage.getItem('exo_layout_version') === 'v2' ? 'v1' : 'v2';
+                  localStorage.setItem('exo_layout_version', next);
+                  window.dispatchEvent(new CustomEvent('layout-version-changed', { detail: next }));
+                }}
+                className="relative w-10 h-5 rounded-full border border-exo-mist-10 bg-exo-pure transition-colors hover:border-exo-accent/30"
+              >
+                <div className={`absolute top-0.5 transition-all ${localStorage.getItem('exo_layout_version') === 'v2' ? 'left-5' : 'left-0.5'} w-4 h-4 rounded-full bg-exo-accent/60`} />
+              </button>
+              <span className="text-[10px] font-mono text-exo-muted">
+                {localStorage.getItem('exo_layout_version') === 'v2' ? 'v2 (new)' : 'v1'}
+              </span>
+            </div>
           </div>
         </div>
 
