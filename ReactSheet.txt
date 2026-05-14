@@ -1,6 +1,6 @@
 ========================================================
   ExoCore — React 前端接口数据格式速查表
-  最后更新：2026-05-03 — §23 Telemetry API 新增 cached_tokens 字段
+  最后更新：2026-05-12 — §3 新增 async 轮询模式 + /status/ 端点
 ========================================================
 
 
@@ -64,7 +64,49 @@
 3. POST /api/agents/chat/<session_id>/   (SSE 流式响应)
    用途：发送消息并接收流式回复
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// ── 3a. SSE 模式（默认） ──
+// POST /api/agents/chat/<session_id>/?mode=sse （默认）
 // 事件类型与 data 格式见主文档，无变动。
+
+// ── 3b. Async 轮询模式 ──
+// POST /api/agents/chat/<session_id>/?mode=async
+// 立即返回 token，后台线程继续处理。前端关闭/刷新不中断 LLM 调用。
+//
+// Request body 与 SSE 模式完全一致：
+{
+  "content": "你好",
+  "thinking_level": "medium",
+  "temperature": 1.0,
+  "model": null,                    // 可选模型覆盖
+  "files": [],                      // 可选上传文件
+  "pending_attachments": []         // 可选附件 ID
+}
+
+// Response (200) — 立即返回:
+{
+  "message_id": "a1b2c3d4",        // 轮询 token（UUID 前 8 位）
+  "status": "processing"
+}
+
+// ── 3c. 轮询状态 ──
+// GET /api/agents/chat/<session_id>/status/?message_id=<token>&cursor=<int>
+// 每 500ms 轮询一次，获取增量文本。
+//
+// Response:
+{
+  "status": "streaming",           // "streaming" | "done" | "error" | "not_found"
+  "delta": "刚刚我在想...",         // cursor 之后的新增文本
+  "cursor": 7,                     // 下次轮询带上此值
+  "error_message": null            // 仅 error 时非 null
+}
+
+// 前端轮询逻辑:
+// 1. POST ?mode=async → 取得 message_id
+// 2. setInterval 500ms: GET /status/?message_id=<id>&cursor=<last_cursor>
+// 3. delta 用打字机动画逐字渲染
+// 4. status="done" → 停止轮询，GET /chat/<sid>/ 拉完整消息列表
+// 5. status="error" → 显示错误，停止轮询
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -650,3 +692,37 @@
 //        下一轮 LLM 请求自动走 cold 路径重建。
 //        成功返回 204 No Content。
 //        无缓存时返回 404。
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// §25  File Transfer — 前端文件上传协调备忘
+//      Adapter Turn 机制依赖前端区分「文件上传」与「剪贴板粘贴」两类图片。
+//      当前后端通过 file_size 阈值（>100KB）作为近似判断，不够精确。
+//      待前端明确上传入口后协调调整。
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── 当前行为 ──
+//
+// 图片附件满足 file_size > 100KB，或文本附件 file_size > 10KB（约 >100行）
+// 时触发 Adapter Turn：后端生成虚拟 user/model turn 将 file_uri 冻入 Gemini
+// Context Cache，后续轮次不重传文件，节省 token 并避免大 base64 导致 SSE 断流。
+//
+// 小图片（<100KB，通常为剪贴板粘贴）保持次抛，每轮在 Part 5 新鲜发送。
+
+// ── 待协调 ──
+//
+// 1. 前端「文件上传」入口（按钮/拖拽）提交的图片应始终触发 adapter
+//    → 可考虑在 POST attachments 时传 source="upload" 标记
+// 2. 前端「剪贴板粘贴」的图片（clipboard paste）应始终不触发
+//    → 可考虑传 source="clipboard" 标记，或由后端根据请求路径区分
+// 3. 建议：前端在调用 POST /api/agents/conversations/<pk>/attachments/
+//    时增加可选字段 source: "upload" | "clipboard"，后端据此精确判断，
+//    替代当前的 file_size 阈值启发式。
+// 4. 文本文件的行数阈值（当前 10KB 近似）如需更精确，可考虑前端传
+//    line_count 字段。
+
+// ── 相关代码 ──
+//
+// 后端触发检测: agents/services.py → SuperiorService._detect_adapter_trigger()
+// Cache 构建:    engines/cache_chunk.py → CacheChunkBuilder._build_fresh(adapter_info)
+// Gemini 缓存:   engines/context_cache.py → _create_gemini_cache (has_adapter 分支)

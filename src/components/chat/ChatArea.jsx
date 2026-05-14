@@ -437,22 +437,11 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     } finally {
       setIsGenerating(false);
       abortControllerRef.current = null;
-      // 刷新消息列表以获取真实 DB id（供书签功能及附件持久化使用）
+      // 刷新消息列表以获取真实 DB id
       fetch(`${baseUrl}/api/agents/chat/${activeSessionId}/`, { credentials: 'include' })
         .then(res => res.json())
         .then(async data => {
           if (!Array.isArray(data) || data.length === 0) return;
-          const userId = [...data].reverse().find(m => m.role === 'user')?.id;
-          // 等待附件转换完成并持久化到 localStorage
-          if (userId && pendingAttachConversionRef.current) {
-            try {
-              const attachData = await pendingAttachConversionRef.current;
-              if (attachData.length > 0) saveAttachments(userId, attachData);
-            } catch (e) {
-              console.warn('附件持久化失败:', e);
-            }
-            pendingAttachConversionRef.current = null;
-          }
           const enriched = enrichMessages(data);
           allHistoryRef.current = enriched;
           const startIdx = Math.max(0, enriched.length - MSGS_PER_PAGE);

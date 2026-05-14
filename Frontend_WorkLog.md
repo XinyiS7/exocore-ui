@@ -151,3 +151,14 @@ GCalEvent 字段：id, title, start, end, calendar_id, color_id, all_day
 - dispatch / cross_exam 返回的多条 `stream_urls` 并行订阅，不串行
 - 参与者 phase_status 指示点：idle=灰 / generating=金色脉冲 / done=绿
 - 无新增动态 Tailwind 模板字符串（避免触发已知 lightningcss 构建问题）
+## 2026-05-13
+
+### 图片上传持久化与预览重构
+- 移除了前端 localStorage 对于 Base64 图片预览的依赖，解决了长文本/多图片导致的存储溢出及图片丢失问题。
+- 重构 ttachmentStorage.js 中的 enrichMessages，直接映射后端 GET /api/agents/chat/<id>/ 返回的 ttachments_meta 数据。
+- 使用后端的 ile_uri 作为组件的 preview 源，结合 Nginx 的 /media/ 代理实现图片的持久化访问。
+- 调整 
+ginx-local.conf 和 
+ginx.conf 增加 client_max_body_size 100M，加固大附件上传链路。
+
+
