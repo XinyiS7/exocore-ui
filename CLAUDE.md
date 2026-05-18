@@ -4,6 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Plan first, work later.
 
+**Shell environment**: Git Bash (Windows). Use Bash tool for shell commands, not PowerShell.
+
 # Communication Principles
 
 **1. First Principles Thinking**:
