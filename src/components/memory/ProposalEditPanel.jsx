@@ -4,6 +4,7 @@ import { baseUrl, getCsrfToken } from '../../utils/api';
 
 const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack }) => {
   const [topicLabel, setTopicLabel] = useState(proposal?.topic || '');
+  const [summary, setSummary] = useState(proposal?.summary || '');
   const [keywords, setKeywords] = useState(
     Array.isArray(proposal?.keywords) ? proposal.keywords.join(', ') : (proposal?.keywords || '')
   );
@@ -26,6 +27,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
       .then(res => res.json())
       .then(data => {
         if (data.topic_label !== undefined) setTopicLabel(data.topic_label);
+        if (data.summary !== undefined) setSummary(data.summary);
         if (data.keywords) setKeywords(Array.isArray(data.keywords) ? data.keywords.join(', ') : data.keywords);
         if (data.unresolved !== undefined) setUnresolved(data.unresolved);
         setReadonlyMeta({
@@ -65,6 +67,7 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
         credentials: 'include',
         body: JSON.stringify({
           topic_label: topicLabel,
+          summary,
           keywords: keywords.split(',').map(k => k.trim()).filter(Boolean),
           unresolved,
         }),
@@ -137,6 +140,17 @@ const ProposalEditPanel = ({ proposal, conversationName, conversationId, onBack 
                 value={topicLabel}
                 onChange={e => setTopicLabel(e.target.value)}
                 placeholder="TOPIC LABEL..."
+              />
+            </div>
+
+            {/* summary / content */}
+            <div className="space-y-2">
+              <label className="label-caps opacity-50">Content / 内容摘要</label>
+              <textarea
+                className="w-full bg-black/60 border border-exo-mist-10 rounded-[2px] px-4 py-3 text-sm text-white font-mono focus:border-exo-accent/40 outline-none transition-all placeholder:opacity-20 resize-y min-h-[120px]"
+                value={summary}
+                onChange={e => setSummary(e.target.value)}
+                placeholder="DETAILED SUMMARY..."
               />
             </div>
 

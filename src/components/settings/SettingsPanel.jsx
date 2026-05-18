@@ -25,6 +25,7 @@ const SettingsPanel = ({ projects, presets, openDestructor }) => {
   const [convProposals, setConvProposals] = useState({});
   const [loadingConvs, setLoadingConvs] = useState(new Set());
   const [editingProposal, setEditingProposal] = useState(null);
+  const [unresolvedFilter, setUnresolvedFilter] = useState(false);
 
   useEffect(() => {
     if (memSubTab !== 'proposals' || conversations.length > 0) return;
@@ -144,7 +145,7 @@ const SettingsPanel = ({ projects, presets, openDestructor }) => {
               />
             ) : (
               <>
-                <div className="flex items-center gap-1 p-4 border-b border-exo-mist-10 shrink-0 bg-exo-pure/50">
+                <div className="flex items-center gap-1 p-4 border-b border-exo-mist-10 shrink-0 bg-exo-pure/50 flex-wrap">
                   <button
                     onClick={() => setMemSubTab('files')}
                     className={`px-4 py-1.5 rounded-[2px] text-[11px] font-bold uppercase tracking-wider transition-all ${memSubTab === 'files' ? 'bg-exo-accent text-exo-pure shadow-brutalist-gold' : 'text-exo-muted hover:text-white hover:bg-white/5 border border-exo-mist-10'}`}
@@ -153,6 +154,22 @@ const SettingsPanel = ({ projects, presets, openDestructor }) => {
                     onClick={() => setMemSubTab('proposals')}
                     className={`px-4 py-1.5 rounded-[2px] text-[11px] font-bold uppercase tracking-wider transition-all ${memSubTab === 'proposals' ? 'bg-exo-accent text-exo-pure shadow-brutalist-gold' : 'text-exo-muted hover:text-white hover:bg-white/5 border border-exo-mist-10'}`}
                   >摘要 / Summaries</button>
+                  {memSubTab === 'proposals' && (
+                    <div className="flex-1" />
+                  )}
+                  {memSubTab === 'proposals' && (
+                    <button
+                      onClick={() => setUnresolvedFilter(v => !v)}
+                      className={`px-3 py-1.5 rounded-[2px] text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                        unresolvedFilter
+                          ? 'bg-exo-accent/10 border border-exo-accent/30 text-exo-accent'
+                          : 'text-exo-muted hover:text-white hover:bg-white/5 border border-exo-mist-10'
+                      }`}
+                    >
+                      <span className={unresolvedFilter ? '' : 'opacity-40'}>◈</span>
+                      Unresolved / 未竟事宜
+                    </button>
+                  )}
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-3">
@@ -234,8 +251,12 @@ const SettingsPanel = ({ projects, presets, openDestructor }) => {
                                 <div className="px-4 py-6 text-[10px] text-exo-muted text-center font-mono animate-pulse">Extracting memories...</div>
                               ) : !chunks || chunks.length === 0 ? (
                                 <div className="px-4 py-6 text-[10px] text-exo-muted/40 text-center font-mono">No history chunks in this session</div>
-                              ) : (
-                                chunks.slice().sort((a, b) => b.id - a.id).map(chunk => (
+                              ) : (() => {
+                                const filtered = unresolvedFilter ? chunks.filter(c => c.unresolved) : chunks;
+                                if (unresolvedFilter && filtered.length === 0) {
+                                  return <div className="px-4 py-6 text-[10px] text-exo-muted/40 text-center font-mono">No unresolved items</div>;
+                                }
+                                return filtered.slice().sort((a, b) => b.id - a.id).map(chunk => (
                                   <button
                                     key={chunk.id}
                                     onClick={() => setEditingProposal({ proposal: chunk, conversationName: conv.name || `Session #${conv.id}`, conversationId: conv.id })}
@@ -272,8 +293,8 @@ const SettingsPanel = ({ projects, presets, openDestructor }) => {
                                     </div>
                                     <Edit3 size={12} className="text-exo-accent opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-1" />
                                   </button>
-                                ))
-                              )}
+                                ));
+                              })()}
                             </div>
                           )}
                         </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { createPortal } from 'react-dom';
 import { baseUrl, getCsrfToken } from '../../utils/api';
 
 const CACHE_TTL = 3600;
@@ -40,7 +41,9 @@ const ContextCacheIndicator = forwardRef(function ContextCacheIndicator({ active
   const [remainingSeconds, setRemainingSeconds] = useState(0);
   const [loading, setLoading] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const [tooltipPos, setTooltipPos] = useState(null);
   const tickRef = useRef(null);
+  const triggerRef = useRef(null);
   const pollRef = useRef(null);
   const sessionRef = useRef(activeSessionId);
 
@@ -170,7 +173,19 @@ const ContextCacheIndicator = forwardRef(function ContextCacheIndicator({ active
     }
   };
 
-  // ── Derived values ─────────────────────────────────────────────
+  const handleMouseEnter = useCallback(() => {
+    setHovered(true);
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setTooltipPos({ left: rect.left + rect.width / 2, top: rect.top });
+    }
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setHovered(false);
+    setTooltipPos(null);
+  }, []);
+
   const isActive = cacheState?.active && remainingSeconds > 0;
   const fillPercent = isActive ? Math.min(100, (remainingSeconds / CACHE_TTL) * 100) : 0;
   const remainingMinutes = Math.ceil(remainingSeconds / 60);
@@ -182,11 +197,29 @@ const ContextCacheIndicator = forwardRef(function ContextCacheIndicator({ active
       ? '缓存已过期或已释放'
       : `剩余 ${remainingMinutes} 分钟${cacheState?.renewals > 0 ? ` · 已续期 ${cacheState.renewals} 次` : ''}`;
 
+  const tooltipEl = hovered && tooltipPos
+    ? createPortal(
+        <div
+          className="fixed px-3 py-1.5 bg-exo-panel border border-exo-border rounded-[3px] text-[10px] font-mono text-white whitespace-nowrap shadow-xl pointer-events-none"
+          style={{
+            left: tooltipPos.left,
+            top: tooltipPos.top - 8,
+            transform: 'translate(-50%, -100%)',
+            zIndex: 99999,
+          }}
+        >
+          {tooltipText}
+        </div>,
+        document.body
+      )
+    : null;
+
   return (
     <div
+      ref={triggerRef}
       className="relative flex items-center"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <div className={`
         flex items-center h-7 rounded-full border overflow-hidden transition-all select-none
@@ -234,12 +267,7 @@ const ContextCacheIndicator = forwardRef(function ContextCacheIndicator({ active
         </button>
       </div>
 
-      {/* Tooltip */}
-      {hovered && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-exo-panel border border-exo-border rounded-[3px] text-[10px] font-mono text-white whitespace-nowrap shadow-xl z-50 pointer-events-none">
-          {tooltipText}
-        </div>
-      )}
+      {tooltipEl}
     </div>
   );
 });

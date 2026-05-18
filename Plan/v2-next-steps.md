@@ -11,6 +11,7 @@
 - AgentProfile 页面的 [New Session] 按钮目前调用 `openNewSession`，需验证是否正确唤起 NewSessionModal
 - AgentProfile 顶部 meta 区目前有 system prompt 可展开编辑（PATCH 保存已实现），但缺少 **name、description、default_model** 的编辑入口
   - 可复用 `EditPresetModal` 或在 AgentProfile 内直接增加 inline 编辑字段
+- 
 - 考虑在 AgentProfile header 加一个齿轮图标打开 EditPresetModal
 
 ## 2. Agent Memory 管理入口
@@ -49,3 +50,10 @@
 - **构建**: lightningcss 不能解析动态拼接的 Tailwind class 名，用 inline style 代替
 - **ContentRouter**: 所有 v2 view 通过 AppShell 的 `navigate(view, params)` 统一路由
 - **组件复用**: ChatArea, MessageBubble, ConversationList, SettingsPanel, CouncilArea 等均为 v1/v2 共享
+
+## 已知 bug 和 愿望清单
+
+- [x] ~~cache daemon 气泡被顶部 banner 挡住~~ → **已修复 (2026-05-18)**: 改用 `createPortal` 将 tooltip 渲染到 `document.body`，不受祖先 overflow/z-index 限制
+- [x] ~~attachments 管理列表窄屏被截断~~ → **已修复 (2026-05-18)**: 添加 `maxWidth: calc(100vw - 2rem)` inline style 防止溢出
+- [x] ~~conversation list 缺少整体滚动条~~ → **已修复 (2026-05-18)**: 外层改为 `overflow-y-auto` 统一滚动，各 section 移除 `max-h-[xx%]` 限制
+- [x] ~~会话历史 content 不可编辑 + 缺少 Unresolved 筛选~~ → **已修复 (2026-05-18)**: ProposalEditPanel 增加 summary textarea 并纳入 PATCH；SettingsPanel 增加 Unresolved 筛选按钮

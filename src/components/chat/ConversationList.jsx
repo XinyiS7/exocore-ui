@@ -150,7 +150,7 @@ const ConversationList = ({
   );
 
   const containerClasses = isMainView
-    ? "flex-1 h-full bg-exo-bg flex flex-col overflow-hidden scrollbar-hide"
+    ? "flex-1 h-full bg-exo-bg flex flex-col overflow-y-auto scrollbar-hide"
     : `absolute md:relative inset-0 z-[90] w-80 bg-exo-pure/60 backdrop-blur-2xl border-r border-exo-mist-10 flex flex-col flex-shrink-0 shadow-2xl transition-transform duration-300 ${showConvList ? 'translate-x-0' : '-translate-x-full md:hidden'}`;
 
   return (
@@ -186,17 +186,17 @@ const ConversationList = ({
         </div>
       </div>
 
-      <div className={`flex-1 flex flex-col overflow-hidden min-h-0 ${isMainView ? 'max-w-4xl mx-auto w-full px-8' : 'px-6'}`}>
+      <div className={`flex-1 flex flex-col ${isMainView ? 'max-w-4xl mx-auto w-full px-8' : 'px-6'}`}>
           
           {mode === 'chat' && (
             <>
               {/* G045 cognitively superior */}
               {g045Sessions.length > 0 && (
-                <div className="flex flex-col overflow-hidden max-h-[40%] shrink-0">
+                <div className="flex flex-col shrink-0">
                   <div className="text-[9px] font-mono font-bold text-exo-accent/60 flex items-center gap-2 uppercase tracking-[0.3em] px-2 pt-4 pb-2 shrink-0">
                     <Sparkles size={12} /> Superior Cognitive
                   </div>
-                  <div className="overflow-y-auto scrollbar-hide grid gap-1 pb-4 min-h-0">
+                  <div className="grid gap-1 pb-4">
                     {g045Sessions.map(conv => <SessionItem key={conv.id} conv={conv} icon={Cpu} />)}
                   </div>
                 </div>
@@ -209,11 +209,11 @@ const ConversationList = ({
 
               {/* Projects Zone */}
               {sortedProjects.length > 0 && (
-                <div className="flex flex-col overflow-hidden max-h-[40%] shrink-0">
+                <div className="flex flex-col shrink-0">
                   <div className="text-[9px] font-mono font-bold text-exo-muted/40 flex items-center gap-2 uppercase tracking-[0.3em] px-2 pt-4 pb-2 shrink-0">
                     <Box size={12} /> Project Repositories
                   </div>
-                  <div className="overflow-y-auto scrollbar-hide flex-1 min-h-0 pb-4">
+                  <div className="flex-1 pb-4">
                     <div className="grid gap-2">
                       {visibleProjects.map(proj => {
                         const isExpanded = expandedProjects.has(proj.id);
@@ -278,11 +278,11 @@ const ConversationList = ({
 
               {/* Standard Sessions */}
               {standardSessions.length > 0 && (
-                <div className="flex flex-col overflow-hidden max-h-[55%]">
+                <div className="flex flex-col">
                   <div className="text-[9px] font-mono font-bold text-exo-muted/40 flex items-center gap-2 uppercase tracking-[0.3em] px-2 pt-4 pb-2 shrink-0">
                     <MessageSquare size={12} /> Recent Links
                   </div>
-                  <div className="overflow-y-auto scrollbar-hide grid gap-1 pb-8 min-h-0">
+                  <div className="grid gap-1 pb-8">
                     {standardSessions.map(conv => <SessionItem key={conv.id} conv={conv} icon={Hash} />)}
                   </div>
                 </div>
