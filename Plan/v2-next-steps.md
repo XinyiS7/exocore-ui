@@ -53,7 +53,7 @@
 
 ## 已知 bug 和 愿望清单
 
-- [x] ~~cache daemon 气泡被顶部 banner 挡住~~ → **已修复 (2026-05-18)**: 改用 `createPortal` 将 tooltip 渲染到 `document.body`，不受祖先 overflow/z-index 限制
+- [x] ~~cache daemon 气泡被挡住~~ → **已修复 (2026-05-18)**: `bd81bdb` 用 `createPortal` 解决 z-index；后续修正 tooltip 在接近 viewport 顶部时自动翻转到下方显示
 - [x] ~~attachments 管理列表窄屏被截断~~ → **已修复 (2026-05-18)**: 添加 `maxWidth: calc(100vw - 2rem)` inline style 防止溢出
 - [x] ~~conversation list 缺少整体滚动条~~ → **已修复 (2026-05-18)**: 外层改为 `overflow-y-auto` 统一滚动，各 section 移除 `max-h-[xx%]` 限制
 - [x] ~~会话历史 content 不可编辑 + 缺少 Unresolved 筛选~~ → **已修复 (2026-05-18)**: ProposalEditPanel 增加 summary textarea 并纳入 PATCH；SettingsPanel 增加 Unresolved 筛选按钮

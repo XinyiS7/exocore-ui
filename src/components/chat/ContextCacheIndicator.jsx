@@ -177,7 +177,15 @@ const ContextCacheIndicator = forwardRef(function ContextCacheIndicator({ active
     setHovered(true);
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
-      setTooltipPos({ left: rect.left + rect.width / 2, top: rect.top });
+      const gap = 6;
+      const estHeight = 28;
+      const above = rect.top >= estHeight + gap;
+      setTooltipPos({
+        left: rect.left + rect.width / 2,
+        anchorTop: rect.top,
+        anchorBottom: rect.bottom,
+        above,
+      });
     }
   }, []);
 
@@ -203,8 +211,8 @@ const ContextCacheIndicator = forwardRef(function ContextCacheIndicator({ active
           className="fixed px-3 py-1.5 bg-exo-panel border border-exo-border rounded-[3px] text-[10px] font-mono text-white whitespace-nowrap shadow-xl pointer-events-none"
           style={{
             left: tooltipPos.left,
-            top: tooltipPos.top - 8,
-            transform: 'translate(-50%, -100%)',
+            top: tooltipPos.above ? tooltipPos.anchorTop - 6 : tooltipPos.anchorBottom + 6,
+            transform: tooltipPos.above ? 'translate(-50%, -100%)' : 'translate(-50%, 0)',
             zIndex: 99999,
           }}
         >
