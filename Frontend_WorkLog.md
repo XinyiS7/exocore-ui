@@ -174,4 +174,13 @@ GCalEvent 字段：id, title, start, end, calendar_id, color_id, all_day
 | ConversationList 无整体滚动条，下方板块消失 | `ConversationList.jsx` | 外层容器 `overflow-hidden` → `overflow-y-auto`；移除各 section `max-h-[40%]`/`max-h-[55%]` 限制和独立 scrollbar |  
 | 会话历史 content 不可编辑 + 缺少 Unresolved 筛选 | `ProposalEditPanel.jsx` + `SettingsPanel.jsx` | 新增 `summary` textarea（120px min-height）并纳入 PATCH payload；SettingsPanel 增加 Unresolved 筛选按钮，过滤 chunks |
 
+### Telemetry 展示重构
+
+- 后端 SSE `telemetry` 事件已下发 `input_chars` / `output_chars` / `cached_input_chars` / `tool_calls` / `model_name` / `platform`，但前端仅渲染了一行 `TX:|RX:`。
+- 新增 `sessionTelemetryRef` (useRef) 在整个会话生命周期内累积每次请求的数据。
+- **紧凑模式**：bot control bar 右侧显示 `● model_name TX:1,234 RX:567 CACHE:78% TOOLS:3`，一目了然。
+- **展开面板**：点击紧凑条弹出 Session Totals（Requests / Total TX / Total RX / Total Cached / Cache Hit Rate / Tool Calls），`absolute bottom-full` 定位。
+- 切换会话时自动重置累积数据和展开状态。
+- 延迟字段（latency）暂未由后端下发，已标注在计划文档中待后续补充。
+
 
