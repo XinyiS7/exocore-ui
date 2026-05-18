@@ -157,8 +157,21 @@ GCalEvent 字段：id, title, start, end, calendar_id, color_id, all_day
 - 移除了前端 localStorage 对于 Base64 图片预览的依赖，解决了长文本/多图片导致的存储溢出及图片丢失问题。
 - 重构 ttachmentStorage.js 中的 enrichMessages，直接映射后端 GET /api/agents/chat/<id>/ 返回的 ttachments_meta 数据。
 - 使用后端的 ile_uri 作为组件的 preview 源，结合 Nginx 的 /media/ 代理实现图片的持久化访问。
-- 调整 
-ginx-local.conf 和 
-ginx.conf 增加 client_max_body_size 100M，加固大附件上传链路。
+- 调整 nginx-local.conf 和 nginx.conf 增加 client_max_body_size 100M，加固大附件上传链路。
+
+---
+
+## 2026-05-18
+
+### 会话界面 Bug 修复
+
+**4 个已知问题修复：**
+
+| Bug | 文件 | 修复方式 |
+|---|---|---|
+| Cache daemon tooltip 被顶部 banner 遮挡 | `ContextCacheIndicator.jsx` | 改用 `createPortal` 渲染 tooltip 到 `document.body`，`position:fixed` + `getBoundingClientRect()` 定位，`z-index:99999` |
+| Attachments 管理列表窄屏右侧被截断 | `ChatArea.jsx:619` | 附件面板添加 inline style `maxWidth: calc(100vw - 2rem)` 防止视口溢出 |
+| ConversationList 无整体滚动条，下方板块消失 | `ConversationList.jsx` | 外层容器 `overflow-hidden` → `overflow-y-auto`；移除各 section `max-h-[40%]`/`max-h-[55%]` 限制和独立 scrollbar |  
+| 会话历史 content 不可编辑 + 缺少 Unresolved 筛选 | `ProposalEditPanel.jsx` + `SettingsPanel.jsx` | 新增 `summary` textarea（120px min-height）并纳入 PATCH payload；SettingsPanel 增加 Unresolved 筛选按钮，过滤 chunks |
 
 

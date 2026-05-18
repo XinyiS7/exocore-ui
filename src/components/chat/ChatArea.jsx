@@ -30,6 +30,8 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   const [hasMore, setHasMore] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [lastTelemetry, setLastTelemetry] = useState(null);
+  const sessionTelemetryRef = useRef({ totalInput: 0, totalOutput: 0, totalCached: 0, totalTools: 0, requests: 0 });
+  const [telemetryExpanded, setTelemetryExpanded] = useState(false);
   const [userNick, setUserNick] = useState(() => localStorage.getItem('exo_user_nick') || 'You');
   const [userAvatarUrl] = useState(() => getUserAvatarUrl());
 
@@ -172,6 +174,8 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
     setMessages([]);
     setHasMore(false);
     setLastTelemetry(null);
+    sessionTelemetryRef.current = { totalInput: 0, totalOutput: 0, totalCached: 0, totalTools: 0, requests: 0 };
+    setTelemetryExpanded(false);
     setSessionAttachments([]);
     setPendingAttachments([]);
     setIsAddingAttach(false);
@@ -373,7 +377,16 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
             if (!dataStr || eventType === 'done' || dataStr === '[DONE]') continue;
 
             if (eventType === 'telemetry') {
-              try { setLastTelemetry(JSON.parse(dataStr)); } catch(e) {}
+              try {
+                const t = JSON.parse(dataStr);
+                setLastTelemetry(t);
+                const acc = sessionTelemetryRef.current;
+                acc.totalInput += t.input_chars ?? 0;
+                acc.totalOutput += t.output_chars ?? 0;
+                acc.totalCached += t.cached_input_chars ?? 0;
+                acc.totalTools += t.tool_calls ?? 0;
+                acc.requests += 1;
+              } catch(e) {}
               continue;
             }
 
@@ -772,8 +785,47 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
             </select>
           </div>
           {lastTelemetry && (
-            <div className="ml-auto font-mono text-[10px] text-exo-muted/40 tabular-nums tracking-widest">
-              TX: {lastTelemetry.input_chars?.toLocaleString()} | RX: {lastTelemetry.output_chars?.toLocaleString()}
+            <div className="ml-auto flex items-center gap-2 relative">
+              <button
+                onClick={() => setTelemetryExpanded(v => !v)}
+                className="font-mono text-[10px] text-exo-muted/40 tabular-nums tracking-widest hover:text-exo-accent/60 transition-colors flex items-center gap-1.5"
+              >
+                <span className="inline-block w-1 h-1 rounded-full bg-exo-accent/60" />
+                <span>{lastTelemetry.model_name || lastTelemetry.platform}</span>
+                <span className="opacity-50">TX:{lastTelemetry.input_chars?.toLocaleString()}</span>
+                <span className="opacity-50">RX:{lastTelemetry.output_chars?.toLocaleString()}</span>
+                {lastTelemetry.cached_input_chars > 0 && (
+                  <span className="opacity-50">
+                    CACHE:{Math.round(lastTelemetry.cached_input_chars / (lastTelemetry.input_chars || 1) * 100)}%
+                  </span>
+                )}
+                {lastTelemetry.tool_calls > 0 && (
+                  <span className="opacity-50">TOOLS:{lastTelemetry.tool_calls}</span>
+                )}
+              </button>
+              {telemetryExpanded && (
+                <div className="absolute bottom-full right-0 mb-2 px-4 py-3 bg-exo-panel border border-exo-border rounded-[4px] font-mono text-[10px] text-exo-muted shadow-xl z-50 min-w-[260px] animate-fade-in">
+                  <div className="text-exo-accent/60 text-[9px] uppercase tracking-[0.2em] mb-2 font-bold">Session Totals</div>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
+                    <span className="opacity-50">Requests</span>
+                    <span className="text-white/80 tabular-nums text-right">{sessionTelemetryRef.current.requests}</span>
+                    <span className="opacity-50">Total TX</span>
+                    <span className="text-white/80 tabular-nums text-right">{sessionTelemetryRef.current.totalInput.toLocaleString()}</span>
+                    <span className="opacity-50">Total RX</span>
+                    <span className="text-white/80 tabular-nums text-right">{sessionTelemetryRef.current.totalOutput.toLocaleString()}</span>
+                    <span className="opacity-50">Total Cached</span>
+                    <span className="text-white/80 tabular-nums text-right">{sessionTelemetryRef.current.totalCached.toLocaleString()}</span>
+                    <span className="opacity-50">Cache Hit Rate</span>
+                    <span className="text-white/80 tabular-nums text-right">
+                      {sessionTelemetryRef.current.totalInput > 0
+                        ? Math.round(sessionTelemetryRef.current.totalCached / sessionTelemetryRef.current.totalInput * 100)
+                        : 0}%
+                    </span>
+                    <span className="opacity-50">Tool Calls</span>
+                    <span className="text-white/80 tabular-nums text-right">{sessionTelemetryRef.current.totalTools}</span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

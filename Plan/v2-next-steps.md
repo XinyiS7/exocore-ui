@@ -34,12 +34,12 @@
 
 ## 4. Telemetry 数据细化
 
-- 当前 ChatArea 的 SSE 流接收 `telemetry` 事件类型，但前端可能没有完整渲染
-- 需要在 ChatArea 或对话界面中展示：
-  - Token 消耗（每次请求 / 累计）
-  - 模型响应延迟
-  - 缓存命中率（ContextCache）
-- 可以做一个可折叠的 telemetry 面板，或在 MessageBubble 下方显示
+- [x] **已实现 (2026-05-18)**: 
+  - 紧凑模式：bot control bar 右侧显示 `● model TX:... RX:... CACHE:...% TOOLS:...`
+  - 点击展开 Session Totals 面板：Requests / Total TX / Total RX / Total Cached / Cache Hit Rate / Tool Calls
+  - `sessionTelemetryRef` 累积整个会话的每次请求数据
+  - 切换会话时自动重置
+- [ ] 模型响应延迟（后端暂未在 SSE telemetry 事件中下发延迟字段，待后端补充）
 
 ---
 
