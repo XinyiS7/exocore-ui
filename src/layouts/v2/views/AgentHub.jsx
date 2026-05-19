@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Star, Zap, Cpu, GripVertical } from 'lucide-react';
 import { getAgentAvatarUrl } from '../../../utils/avatar';
 import { baseUrl } from '../../../utils/api';
@@ -91,26 +91,30 @@ export default function AgentHub({ appState, setView }) {
   const draggingRef = useRef(null);
 
   // Fetch anchors for G045 & Superior agents on mount
+  const superiorPresetIds = useMemo(
+    () => presets.filter((p) => isSuperiorType(p.agent_type)).map((p) => p.id).join(','),
+    [presets],
+  );
   useEffect(() => {
-    const targets = presets.filter((p) => isSuperiorType(p.agent_type));
-    if (targets.length === 0) return;
+    const ids = superiorPresetIds ? superiorPresetIds.split(',') : [];
+    if (ids.length === 0) return;
 
     let cancelled = false;
 
     const fetchAnchors = async () => {
       const map = {};
       await Promise.all(
-        targets.map(async (p) => {
+        ids.map(async (id) => {
           try {
             const res = await fetch(
-              `${baseUrl}/api/agents/presets/${p.id}/anchors/snapshot/`,
+              `${baseUrl}/api/agents/presets/${id}/anchors/snapshot/`,
               { credentials: 'include' },
             );
             if (!res.ok) return;
             const data = await res.json();
-            map[p.id] = Array.isArray(data) ? data : data.anchors || [];
+            map[id] = Array.isArray(data) ? data : data.anchors || [];
           } catch (err) {
-            console.error(`Failed to fetch anchors for preset ${p.id}:`, err);
+            console.error(`Failed to fetch anchors for preset ${id}:`, err);
           }
         }),
       );
@@ -121,7 +125,7 @@ export default function AgentHub({ appState, setView }) {
     return () => {
       cancelled = true;
     };
-  }, [presets]);
+  }, [superiorPresetIds]);
 
   // Apply manual ordering from localStorage
   const applyOrder = (list) => {
@@ -132,7 +136,7 @@ export default function AgentHub({ appState, setView }) {
       if (oA !== undefined && oB !== undefined) return oA - oB;
       if (oA !== undefined) return -1;
       if (oB !== undefined) return 1;
-      return a.id - b.id;
+      return String(a.id).localeCompare(String(b.id));
     });
   };
 
@@ -160,7 +164,9 @@ export default function AgentHub({ appState, setView }) {
     draggingRef.current = null;
   };
 
-  const handleDragOver = (id) => setDragOver(id);
+  const handleDragOver = (id) => {
+    if (dragOver !== id) setDragOver(id);
+  };
 
   const handleDrop = (dstId, sectionList) => {
     const srcId = draggingRef.current;
@@ -265,7 +271,6 @@ export default function AgentHub({ appState, setView }) {
                 <AgentCard
                   key={p.id}
                   preset={p}
-                  anchors={[]}
                   dragging={dragging}
                   dragOver={dragOver}
                   onDragStart={handleDragStart}
