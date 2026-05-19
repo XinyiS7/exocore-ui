@@ -3,15 +3,21 @@ import { Tag, Edit3, Trash2, RefreshCw, ChevronDown, ChevronUp, Plus, Brain } fr
 import { baseUrl, getCsrfToken } from '../../utils/api';
 import { sortPresets } from '../../utils/presets';
 
-const MemoryManager = ({ presets, openDestructor }) => {
+const MemoryManager = ({ presets, openDestructor, presetId }) => {
   const sortedPresets = useMemo(() => sortPresets(presets), [presets]);
-  const [selectedPresetId, setSelectedPresetId] = useState(sortedPresets[0]?.id ?? '');
+  const [selectedPresetId, setSelectedPresetId] = useState(presetId ?? sortedPresets[0]?.id ?? '');
 
   useEffect(() => {
     if (!selectedPresetId && sortedPresets.length > 0) {
       setSelectedPresetId(sortedPresets[0].id);
     }
   }, [sortedPresets, selectedPresetId]);
+
+  useEffect(() => {
+    if (presetId) {
+      setSelectedPresetId(presetId);
+    }
+  }, [presetId]);
 
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -182,16 +188,22 @@ const MemoryManager = ({ presets, openDestructor }) => {
     <div className="flex flex-col h-full overflow-hidden">
       {/* Filter bar */}
       <div className="flex items-center gap-3 p-4 border-b border-exo-mist-10 shrink-0 flex-wrap bg-exo-pure/40 backdrop-blur-sm">
-        <select
-          value={selectedPresetId}
-          onChange={e => setSelectedPresetId(e.target.value)}
-          className="bg-exo-pure border border-exo-mist-10 rounded-[2px] px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-exo-accent outline-none focus:border-exo-accent/40 cursor-pointer shadow-sm"
-        >
-          {sortedPresets.length === 0 && <option value="">无 Agent</option>}
-          {sortedPresets.map(p => (
-            <option key={p.id} value={p.id} className="bg-exo-pure">{p.name}</option>
-          ))}
-        </select>
+        {presetId ? (
+          <span className="text-[10px] text-exo-muted font-mono uppercase tracking-wider px-2">
+            {sortedPresets.find(p => p.id === presetId)?.name || `Preset #${presetId}`}
+          </span>
+        ) : (
+          <select
+            value={selectedPresetId}
+            onChange={e => setSelectedPresetId(e.target.value)}
+            className="bg-exo-pure border border-exo-mist-10 rounded-[2px] px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-exo-accent outline-none focus:border-exo-accent/40 cursor-pointer shadow-sm"
+          >
+            {sortedPresets.length === 0 && <option value="">无 Agent</option>}
+            {sortedPresets.map(p => (
+              <option key={p.id} value={p.id} className="bg-exo-pure">{p.name}</option>
+            ))}
+          </select>
+        )}
 
         <div className="flex items-center gap-2">
           <select value={filters.scope} onChange={e => setFilters(f => ({ ...f, scope: e.target.value }))} className={filterSelect}>
