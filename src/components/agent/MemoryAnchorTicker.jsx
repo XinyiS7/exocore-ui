@@ -1,11 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Activity, ShieldAlert } from 'lucide-react';
 
 const MemoryAnchorTicker = ({ anchors = [] }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFading, setIsFading] = useState(true);
-  const noteRef = useRef(null);
-
   useEffect(() => {
     if (anchors.length <= 1) return;
     const timer = setInterval(() => {
@@ -17,12 +15,6 @@ const MemoryAnchorTicker = ({ anchors = [] }) => {
     }, 8000);
     return () => clearInterval(timer);
   }, [anchors.length]);
-
-  useEffect(() => {
-    const el = noteRef.current;
-    if (!el) return;
-    el.scrollTop = 0;
-  }, [currentIndex]);
 
   if (anchors.length === 0) {
     return (
@@ -73,9 +65,10 @@ const MemoryAnchorTicker = ({ anchors = [] }) => {
 
         {/* Essential note — smooth CSS auto-scroll */}
         <div className="h-10 overflow-hidden">
-          <div ref={noteRef} className="h-full overflow-hidden">
+          <div className="h-full overflow-hidden">
             <p
-              className="text-[11px] text-white/50 leading-relaxed font-mono tracking-tight italic"
+              key={currentIndex}
+              className="text-[11px] text-white/50 leading-relaxed font-mono tracking-tight italic whitespace-pre-wrap"
               style={needsScroll ? {
                 animation: 'ticker-scroll 8s linear infinite',
               } : undefined}
