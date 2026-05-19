@@ -15,9 +15,12 @@ export default function AgentProfile({ appState, setView, viewParams }) {
   const [editingDesc, setEditingDesc] = useState(false);
   const [descDraft, setDescDraft] = useState('');
   const [savingField, setSavingField] = useState(null);
+  const [saveError, setSaveError] = useState(null);
   const [sessions, setSessions] = useState([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [cropFile, setCropFile] = useState(null);
+  const [modelDraft, setModelDraft] = useState(preset?.default_model || '');
 
   const nameInputRef = useRef(null);
   const descInputRef = useRef(null);
@@ -30,19 +33,37 @@ export default function AgentProfile({ appState, setView, viewParams }) {
     }
   }, [preset?.id, preset?.name]);
 
+  // Sync modelDraft when preset loads
+  useEffect(() => {
+    if (preset) setModelDraft(preset.default_model || '');
+  }, [preset?.id]);
+
   // Fetch sessions filtered by this preset
   useEffect(() => {
     if (!preset) return;
-    fetch(`${baseUrl}/api/agents/conversations/`, { credentials: 'include' })
+    const controller = new AbortController();
+    let ignore = false;
+    setSessionsLoading(true);
+
+    fetch(`${baseUrl}/api/agents/conversations/`, { credentials: 'include', signal: controller.signal })
       .then(res => res.json())
       .then(data => {
+        if (ignore) return;
         const agentSessions = (Array.isArray(data) ? data : [])
           .filter(c => c.agent_preset_id === preset.id)
           .sort((a, b) => new Date(b.last_message_at || b.created_at) - new Date(a.last_message_at || a.created_at));
         setSessions(agentSessions);
+        setSessionsLoading(false);
       })
-      .catch(() => setSessions([]));
-  }, [preset, refreshKey]);
+      .catch(err => {
+        if (err.name !== 'AbortError') {
+          setSessions([]);
+          setSessionsLoading(false);
+        }
+      });
+
+    return () => { ignore = true; controller.abort(); };
+  }, [preset?.id, refreshKey]);
 
   // Focus name input when editing starts
   useEffect(() => {
@@ -72,39 +93,63 @@ export default function AgentProfile({ appState, setView, viewParams }) {
 
   const patchPreset = async (fields) => {
     setSavingField(Object.keys(fields)[0]);
+    const res = await fetch(`${baseUrl}/api/agents/presets/${preset.id}/`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+      credentials: 'include',
+      body: JSON.stringify(fields),
+    });
+    if (!res.ok) {
+      setSaveError(`Failed to save (${res.status})`);
+      throw new Error(`Failed to save (${res.status})`);
+    }
+    refreshPresets();
+    setSaveError(null);
+    setSavingField(null);
+  };
+
+  const handleNameSave = async () => {
+    const trimmed = nameDraft.trim();
+    if (!trimmed || trimmed === preset.name) {
+      setEditingName(false);
+      return;
+    }
+    setSavingField('name');
     try {
-      const res = await fetch(`${baseUrl}/api/agents/presets/${preset.id}/`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
-        credentials: 'include',
-        body: JSON.stringify(fields),
-      });
-      if (res.ok) refreshPresets();
-    } catch (e) {
-      console.error('Failed to save preset field', e);
+      await patchPreset({ name: trimmed });
+      setEditingName(false);
+    } catch {
+      // keep editor open, error already set by patchPreset
     } finally {
       setSavingField(null);
     }
   };
 
-  const handleNameSave = () => {
-    const trimmed = nameDraft.trim();
-    if (trimmed && trimmed !== preset.name) {
-      patchPreset({ name: trimmed });
-    }
-    setEditingName(false);
-  };
-
-  const handleDescSave = () => {
+  const handleDescSave = async () => {
     const trimmed = descDraft.trim();
-    if (trimmed !== (preset.description || '')) {
-      patchPreset({ description: trimmed });
+    if (trimmed === (preset.description || '')) {
+      setEditingDesc(false);
+      return;
     }
-    setEditingDesc(false);
+    setSavingField('description');
+    try {
+      await patchPreset({ description: trimmed });
+      setEditingDesc(false);
+    } catch {
+      // keep editor open, error already set by patchPreset
+    } finally {
+      setSavingField(null);
+    }
   };
 
   const handleModelChange = (e) => {
-    patchPreset({ default_model: e.target.value });
+    setModelDraft(e.target.value);
+  };
+
+  const handleModelBlur = () => {
+    if (modelDraft !== (preset.default_model || '')) {
+      patchPreset({ default_model: modelDraft }).catch(() => setModelDraft(preset.default_model || ''));
+    }
   };
 
   const handleAvatarClick = () => {
@@ -243,10 +288,12 @@ export default function AgentProfile({ appState, setView, viewParams }) {
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-mono uppercase tracking-wider text-exo-muted">Model:</span>
                 <select
-                  value={preset.default_model || ''}
+                  value={modelDraft}
                   onChange={handleModelChange}
+                  onBlur={handleModelBlur}
                   className="bg-exo-panel border border-exo-border rounded px-2 py-1 text-xs text-exo-text outline-none focus:border-exo-accent/40 transition-colors cursor-pointer"
                 >
+                  {!preset.default_model && <option value="">Select a model...</option>}
                   {AVAILABLE_MODELS.map(m => (
                     <option key={m} value={m}>{m}</option>
                   ))}
@@ -277,6 +324,10 @@ export default function AgentProfile({ appState, setView, viewParams }) {
             </div>
           </div>
 
+          {saveError && (
+            <p className="text-[10px] text-red-400 mt-2">{saveError}</p>
+          )}
+
           {/* System Prompt Bar */}
           <div className="mt-4">
             <button
@@ -299,7 +350,9 @@ export default function AgentProfile({ appState, setView, viewParams }) {
         {/* Sessions List */}
         <div className="px-4 md:px-12 py-6">
           <h3 className="text-[10px] font-mono uppercase tracking-[0.3em] text-exo-muted mb-4">Sessions</h3>
-          {sessions.length === 0 ? (
+          {sessionsLoading ? (
+            <p className="text-xs text-exo-muted">Loading sessions...</p>
+          ) : sessions.length === 0 ? (
             <p className="text-xs text-exo-muted">No sessions yet.</p>
           ) : (
             <div className="space-y-2">
