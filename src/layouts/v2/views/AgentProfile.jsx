@@ -1,26 +1,38 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, MessageSquare, Plus, ChevronDown, ChevronRight, Pencil } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ArrowLeft, MessageSquare, Plus, Pencil } from 'lucide-react';
 import { getAgentAvatarUrl } from '../../../utils/avatar';
-import { baseUrl, getCsrfToken } from '../../../utils/api';
+import { baseUrl, getCsrfToken, AVAILABLE_MODELS } from '../../../utils/api';
+import EditPresetModal from '../../../components/modals/EditPresetModal';
+import AvatarCropModal from '../../../components/modals/AvatarCropModal';
 
 export default function AgentProfile({ appState, setView, viewParams }) {
   const { presets, setActiveSessionId, openNewSession, refreshKey, refreshPresets } = appState;
   const preset = presets.find(p => p.id === viewParams.agentId);
-  const [anchors, setAnchors] = useState([]);
-  const [sessions, setSessions] = useState([]);
-  const [showPrompt, setShowPrompt] = useState(false);
-  const [editingPrompt, setEditingPrompt] = useState(false);
-  const [promptText, setPromptText] = useState('');
-  const [saving, setSaving] = useState(false);
 
+  const [avatarUrl, setAvatarUrl] = useState(() => getAgentAvatarUrl(viewParams.agentId, ''));
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [editingDesc, setEditingDesc] = useState(false);
+  const [descDraft, setDescDraft] = useState('');
+  const [savingField, setSavingField] = useState(null);
+  const [sessions, setSessions] = useState([]);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [cropFile, setCropFile] = useState(null);
+
+  const nameInputRef = useRef(null);
+  const descInputRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  // Sync avatar with preset name (for dicebear fallback)
+  useEffect(() => {
+    if (preset) {
+      setAvatarUrl(getAgentAvatarUrl(preset.id, preset.name));
+    }
+  }, [preset?.id, preset?.name]);
+
+  // Fetch sessions filtered by this preset
   useEffect(() => {
     if (!preset) return;
-
-    fetch(`${baseUrl}/api/agents/presets/${preset.id}/anchors/snapshot/`, { credentials: 'include' })
-      .then(res => res.json())
-      .then(data => setAnchors(Array.isArray(data) ? data : []))
-      .catch(() => setAnchors([]));
-
     fetch(`${baseUrl}/api/agents/conversations/`, { credentials: 'include' })
       .then(res => res.json())
       .then(data => {
@@ -32,12 +44,15 @@ export default function AgentProfile({ appState, setView, viewParams }) {
       .catch(() => setSessions([]));
   }, [preset, refreshKey]);
 
-  // Sync prompt text when preset changes
+  // Focus name input when editing starts
   useEffect(() => {
-    if (preset) {
-      setPromptText(preset.system_prompt || '');
-    }
-  }, [preset?.id]);
+    if (editingName && nameInputRef.current) nameInputRef.current.focus();
+  }, [editingName]);
+
+  // Focus desc input when editing starts
+  useEffect(() => {
+    if (editingDesc && descInputRef.current) descInputRef.current.focus();
+  }, [editingDesc]);
 
   if (!preset) {
     return (
@@ -47,164 +62,286 @@ export default function AgentProfile({ appState, setView, viewParams }) {
     );
   }
 
-  const avatarUrl = getAgentAvatarUrl(preset.id);
+  const typeBadgeClass = preset.agent_type === 'g045'
+    ? 'bg-exo-accent/15 text-exo-accent border border-exo-accent/30'
+    : preset.agent_type === 'superior'
+      ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+      : 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
+
+  const showMemoryBtn = preset.agent_type === 'g045' || preset.agent_type === 'superior';
+
+  const patchPreset = async (fields) => {
+    setSavingField(Object.keys(fields)[0]);
+    try {
+      const res = await fetch(`${baseUrl}/api/agents/presets/${preset.id}/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+        credentials: 'include',
+        body: JSON.stringify(fields),
+      });
+      if (res.ok) refreshPresets();
+    } catch (e) {
+      console.error('Failed to save preset field', e);
+    } finally {
+      setSavingField(null);
+    }
+  };
+
+  const handleNameSave = () => {
+    const trimmed = nameDraft.trim();
+    if (trimmed && trimmed !== preset.name) {
+      patchPreset({ name: trimmed });
+    }
+    setEditingName(false);
+  };
+
+  const handleDescSave = () => {
+    const trimmed = descDraft.trim();
+    if (trimmed !== (preset.description || '')) {
+      patchPreset({ description: trimmed });
+    }
+    setEditingDesc(false);
+  };
+
+  const handleModelChange = (e) => {
+    patchPreset({ default_model: e.target.value });
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) setCropFile(file);
+    e.target.value = '';
+  };
+
+  const handleCropConfirm = (dataUrl) => {
+    localStorage.setItem(`exo_agent_avatar_${preset.id}`, dataUrl);
+    setAvatarUrl(dataUrl);
+    setCropFile(null);
+  };
 
   const handleSessionClick = (session) => {
     setActiveSessionId(session.id);
     setView('chat', { sessionId: session.id, agentId: preset.id, agentName: preset.name, sessionTitle: session.name });
   };
 
-  const handleSavePrompt = async () => {
-    setSaving(true);
-    try {
-      await fetch(`${baseUrl}/api/agents/presets/${preset.id}/`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
-        credentials: 'include',
-        body: JSON.stringify({ system_prompt: promptText }),
-      });
-      refreshPresets();
-      setEditingPrompt(false);
-    } catch (e) {
-      console.error('Failed to save system prompt', e);
-    } finally {
-      setSaving(false);
-    }
+  const formatLastActive = (dateStr) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now - d;
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return 'just now';
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr}h ago`;
+    const diffDay = Math.floor(diffHr / 24);
+    if (diffDay < 7) return `${diffDay}d ago`;
+    return d.toLocaleDateString();
   };
 
   return (
     <div className="flex-1 h-full flex flex-col bg-exo-bg">
-      {/* Meta Header */}
-      <div className="flex-shrink-0 border-b border-exo-mist-8 px-6 md:px-12 py-4 flex items-center gap-4">
-        <button onClick={() => setView('agent_hub')} className="p-1.5 text-exo-muted hover:text-exo-accent transition-colors">
-          <ArrowLeft size={18} strokeWidth={1.5} />
-        </button>
-        <img src={avatarUrl} className="w-9 h-9 rounded-md border border-exo-mist-10 object-cover bg-exo-pure" alt={preset.name} />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-white truncate">{preset.name}</p>
-          <p className="text-[10px] text-exo-muted uppercase tracking-wider">{preset.agent_type}</p>
-        </div>
-        <button
-          onClick={() => openNewSession({ presetId: preset.id })}
-          className="flex items-center gap-2 px-4 py-2 bg-exo-accent/10 border border-exo-accent/30 rounded-md text-exo-accent text-xs font-medium hover:bg-exo-accent/20 active:scale-95 transition-all"
-        >
-          <Plus size={14} strokeWidth={1.5} />
-          New Session
+      {/* Hidden file input for avatar upload */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileChange}
+      />
+
+      {/* Back bar */}
+      <div className="flex-shrink-0 border-b border-exo-border px-4 md:px-12 py-3">
+        <button onClick={() => setView('agent_hub')} className="flex items-center gap-1.5 text-exo-muted hover:text-exo-accent transition-colors text-xs">
+          <ArrowLeft size={16} strokeWidth={1.5} />
+          Back
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {/* Description & System Prompt Section */}
-        <div className="px-6 md:px-12 py-4 border-b border-exo-mist-6 space-y-3">
-          {preset.description && (
-            <p className="text-sm text-exo-muted">{preset.description}</p>
-          )}
+        {/* Profile Area */}
+        <div className="px-4 md:px-12 py-6 border-b border-exo-border">
+          {/* Avatar + Info + Buttons row */}
+          <div className="flex flex-wrap gap-4">
+            {/* Avatar */}
+            <div className="flex-shrink-0">
+              <button onClick={handleAvatarClick} className="group relative">
+                <img
+                  src={avatarUrl}
+                  alt={preset.name}
+                  className="w-16 h-16 md:w-[72px] md:h-[72px] rounded-md border border-exo-border object-cover bg-exo-bg"
+                />
+                <div className="absolute inset-0 rounded-md bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <Pencil size={16} className="text-white" />
+                </div>
+              </button>
+            </div>
 
-          {/* System Prompt — collapsible */}
-          <div>
-            <button
-              onClick={() => setShowPrompt(!showPrompt)}
-              className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.3em] text-exo-muted hover:text-exo-accent transition-colors"
-            >
-              {showPrompt ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-              System Prompt
-            </button>
-            {showPrompt && (
-              <div className="mt-2">
-                {editingPrompt ? (
-                  <div className="space-y-3">
-                    <textarea
-                      value={promptText}
-                      onChange={(e) => setPromptText(e.target.value)}
-                      rows={6}
-                      className="w-full bg-exo-pure border border-exo-mist-8 rounded-md p-3 text-xs text-exo-text font-mono outline-none focus:border-exo-accent/40 transition-colors resize-y"
-                      placeholder="Enter system prompt..."
-                    />
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={handleSavePrompt}
-                        disabled={saving}
-                        className="px-3 py-1.5 bg-exo-accent/10 border border-exo-accent/30 rounded text-exo-accent text-[10px] font-medium hover:bg-exo-accent/20 disabled:opacity-50 transition-all"
-                      >
-                        {saving ? 'Saving...' : 'Save'}
-                      </button>
-                      <button
-                        onClick={() => { setEditingPrompt(false); setPromptText(preset.system_prompt || ''); }}
-                        className="px-3 py-1.5 text-[10px] text-exo-muted hover:text-exo-text transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
+            {/* Info column */}
+            <div className="flex-1 min-w-0 min-[480px]:min-w-[200px] space-y-2.5">
+              {/* Name + Badge */}
+              <div className="flex items-center gap-3 flex-wrap">
+                {editingName ? (
+                  <input
+                    ref={nameInputRef}
+                    value={nameDraft}
+                    onChange={e => setNameDraft(e.target.value)}
+                    onBlur={handleNameSave}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') handleNameSave();
+                      if (e.key === 'Escape') setEditingName(false);
+                    }}
+                    className="bg-transparent border-b-2 border-exo-accent text-lg font-medium text-white outline-none py-0.5 min-w-[120px]"
+                  />
                 ) : (
-                  <div
-                    onClick={() => setEditingPrompt(true)}
-                    className="group cursor-pointer bg-exo-pure border border-exo-mist-8 rounded-md p-3 hover:border-exo-accent/30 transition-all"
+                  <h2
+                    onClick={() => { setNameDraft(preset.name); setEditingName(true); }}
+                    className="text-lg font-medium text-white cursor-pointer hover:border-b-2 hover:border-exo-accent/30 transition-all"
                   >
-                    <p className="text-xs text-exo-text/80 whitespace-pre-wrap line-clamp-4">
-                      {promptText || 'No system prompt configured. Click to add.'}
-                    </p>
-                    <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Pencil size={10} className="text-exo-accent/60" />
-                      <span className="text-[9px] text-exo-accent/60">Click to edit</span>
-                    </div>
-                  </div>
+                    {preset.name}
+                  </h2>
+                )}
+                <span className={`text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded ${typeBadgeClass}`}>
+                  {preset.agent_type}
+                </span>
+                {savingField === 'name' && (
+                  <span className="text-[10px] text-exo-accent animate-pulse">saving...</span>
                 )}
               </div>
-            )}
+
+              {/* Description */}
+              {editingDesc ? (
+                <input
+                  ref={descInputRef}
+                  value={descDraft}
+                  onChange={e => setDescDraft(e.target.value)}
+                  onBlur={handleDescSave}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') handleDescSave();
+                    if (e.key === 'Escape') setEditingDesc(false);
+                  }}
+                  className="bg-transparent border-b-2 border-exo-accent text-sm text-exo-muted italic outline-none py-0.5 w-full"
+                  placeholder="Add a description..."
+                />
+              ) : (
+                <p
+                  onClick={() => { setDescDraft(preset.description || ''); setEditingDesc(true); }}
+                  className="text-sm text-exo-muted italic cursor-pointer hover:border-b-2 hover:border-exo-accent/30 transition-all inline-block"
+                >
+                  {preset.description || 'Click to add a description...'}
+                </p>
+              )}
+              {savingField === 'description' && (
+                <span className="text-[10px] text-exo-accent animate-pulse">saving...</span>
+              )}
+
+              {/* Model */}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-exo-muted">Model:</span>
+                <select
+                  value={preset.default_model || ''}
+                  onChange={handleModelChange}
+                  className="bg-exo-panel border border-exo-border rounded px-2 py-1 text-xs text-exo-text outline-none focus:border-exo-accent/40 transition-colors cursor-pointer"
+                >
+                  {AVAILABLE_MODELS.map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+                {savingField === 'default_model' && (
+                  <span className="text-[10px] text-exo-accent animate-pulse">saving...</span>
+                )}
+              </div>
+            </div>
+
+            {/* Action buttons — desktop: inline right; mobile: full-width wrap below */}
+            <div className="flex items-start gap-2 w-full md:w-auto md:self-start">
+              <button
+                onClick={() => openNewSession({ presetId: preset.id })}
+                className="flex items-center gap-2 px-4 py-2 bg-exo-accent/10 border border-exo-accent/30 rounded-md text-exo-accent text-xs font-medium hover:bg-exo-accent/20 active:scale-95 transition-all"
+              >
+                <Plus size={14} strokeWidth={1.5} />
+                New Session
+              </button>
+              {showMemoryBtn && (
+                <button
+                  onClick={() => setView('agent_memory', { agentId: preset.id, agentName: preset.name })}
+                  className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 border border-purple-500/20 rounded-md text-purple-400 text-xs font-medium hover:bg-purple-500/20 active:scale-95 transition-all"
+                >
+                  Manage Memory
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* System Prompt Bar */}
+          <div className="mt-4">
+            <button
+              onClick={() => setShowEditModal(true)}
+              className="w-full group flex items-center gap-2 bg-exo-panel border border-exo-border rounded-md px-4 py-2.5 hover:border-exo-accent/30 transition-all text-left"
+            >
+              <Pencil size={14} className="text-exo-muted group-hover:text-exo-accent transition-colors flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-exo-text/60 truncate">
+                  {preset.system_prompt
+                    ? preset.system_prompt.slice(0, 120) + (preset.system_prompt.length > 120 ? '...' : '')
+                    : 'No system prompt configured.'}
+                </p>
+              </div>
+              <span className="text-[10px] text-exo-muted group-hover:text-exo-accent transition-colors flex-shrink-0">Click to edit</span>
+            </button>
           </div>
         </div>
 
-        {/* Split View */}
-        <div className="flex flex-col md:flex-row">
-          {/* Left: Memory Anchors */}
-          <div className="w-full md:w-[35%] lg:w-[30%] border-b md:border-b-0 md:border-r border-exo-mist-8 overflow-y-auto p-4 space-y-3">
-            <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-exo-muted px-2">Memory Anchors</p>
-            {anchors.length === 0 ? (
-              <p className="text-xs text-exo-muted px-2">No anchors captured yet.</p>
-            ) : (
-              anchors.map(a => (
-                <div key={a.id} className="p-3 bg-exo-pure border border-exo-mist-8 rounded-md">
-                  <p className="text-xs text-exo-text line-clamp-3">{a.content}</p>
-                  {a.tags && a.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {a.tags.map(t => (
-                        <span key={t} className="text-[9px] px-1.5 py-0.5 bg-exo-accent/10 text-exo-accent rounded">{t}</span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Right: Session Timeline */}
-          <div className="flex-1 p-4">
-            <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-exo-muted mb-3">Sessions</p>
-            {sessions.length === 0 ? (
-              <p className="text-xs text-exo-muted">No sessions yet.</p>
-            ) : (
-              <div className="space-y-2">
-                {sessions.map(s => (
-                  <button
-                    key={s.id}
-                    onClick={() => handleSessionClick(s)}
-                    className="group flex items-center gap-3 w-full p-3 bg-exo-pure border border-exo-mist-8 rounded-md hover:border-exo-accent/30 transition-all text-left"
-                  >
-                    <div className="p-2 rounded-md bg-exo-accent/5 border border-exo-mist-10 text-exo-accent group-hover:shadow-glow-gold transition-all">
-                      <MessageSquare size={14} strokeWidth={1.5} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-white truncate">{s.name || `Session #${s.id}`}</p>
-                      <p className="text-[9px] text-exo-muted mt-0.5">{s.agent_type || 'chat'}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+        {/* Sessions List */}
+        <div className="px-4 md:px-12 py-6">
+          <h3 className="text-[10px] font-mono uppercase tracking-[0.3em] text-exo-muted mb-4">Sessions</h3>
+          {sessions.length === 0 ? (
+            <p className="text-xs text-exo-muted">No sessions yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {sessions.map(s => (
+                <button
+                  key={s.id}
+                  onClick={() => handleSessionClick(s)}
+                  className="group flex items-center gap-3 w-full p-3 bg-exo-panel border border-exo-border rounded-md hover:border-exo-accent/30 transition-all text-left"
+                >
+                  <div className="p-2 rounded-md bg-exo-accent/5 border border-exo-border text-exo-accent group-hover:shadow-glow-gold transition-all">
+                    <MessageSquare size={14} strokeWidth={1.5} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-white truncate">{s.name || `Session #${s.id}`}</p>
+                    <p className="text-[10px] text-exo-muted mt-0.5">
+                      {formatLastActive(s.last_message_at)}
+                      {s.message_count != null && ` · ${s.message_count} msgs`}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* EditPresetModal for system prompt editing */}
+      <EditPresetModal
+        isOpen={showEditModal}
+        preset={preset}
+        onClose={() => setShowEditModal(false)}
+        onSaved={() => { refreshPresets(); setShowEditModal(false); }}
+      />
+
+      {/* AvatarCropModal */}
+      {cropFile && (
+        <AvatarCropModal
+          file={cropFile}
+          onConfirm={handleCropConfirm}
+          onCancel={() => setCropFile(null)}
+        />
+      )}
     </div>
   );
 }
