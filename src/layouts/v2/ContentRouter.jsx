@@ -2,6 +2,7 @@ import React from 'react';
 import Dashboard from './views/Dashboard';
 import AgentHub from './views/AgentHub';
 import AgentProfile from './views/AgentProfile';
+import AgentMemory from './views/AgentMemory';
 import ProjectList from './views/ProjectList';
 import CouncilList from './views/CouncilList';
 import TaskPanel from './views/TaskPanel';
@@ -24,6 +25,9 @@ export default function ContentRouter({ view, setView, viewParams, appState }) {
 
     case 'agent_profile':
       return <AgentProfile appState={appState} setView={setView} viewParams={viewParams} />;
+
+    case 'agent_memory':
+      return <AgentMemory appState={appState} setView={setView} viewParams={viewParams} />;
 
     case 'project':
       return <ProjectList appState={appState} setView={setView} />;
