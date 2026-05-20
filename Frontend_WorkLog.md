@@ -183,4 +183,76 @@ GCalEvent 字段：id, title, start, end, calendar_id, color_id, all_day
 - 切换会话时自动重置累积数据和展开状态。
 - 延迟字段（latency）暂未由后端下发，已标注在计划文档中待后续补充。
 
+---
+
+## 2026-05-19
+
+### V2 Agent Hub & AgentProfile 重构
+
+**背景**：v2 Agent Hub 卡片信息密度不足（无锚点跑马灯），AgentProfile 缺少预设编辑和 Memory 管理入口。本次按设计方案 `Plan/v2-agent-hub-profile-design.md` 对 Agent Hub、AgentProfile 和锚点组件进行整体翻新。
+
+**设计文档**：`Plan/v2-agent-hub-profile-design.md` | **实现计划**：`Plan/v2-agent-hub-profile-plan.md`
+
+**修改文件**
+
+| 文件 | 改动 |
+|---|---|
+| `src/components/agent/MemoryAnchorTicker.jsx` | 完整重写：keywords 横向滚动区右端 `linear-gradient` 淡出（无可见分界线）；weight badge 改为纯数字（移除 "W:" 前缀）；essential_note 从 `requestAnimationFrame` 跳滚改为 CSS `@keyframes ticker-scroll` + `transform: translateY()` 平滑动画，仅 >80 字符时启用，锚点切换时通过 `key={currentIndex}` 重启动画 |
+| `src/layouts/v2/views/AgentHub.jsx` | 完整重写（88→290 行）：三个分区（G045 金色单卡 / Superior 紫色 2-3 列 / Standard 蓝色 2-3 列）；卡片包含 avatar、名称+type badge、一句话简介、拖拽手柄 ⋮⋮（移动端隐藏）、G045/Superior 卡片底部嵌入 MemoryAnchorTicker；HTML5 拖拽排序仅在各自 section 内生效，顺序持久化到 `localStorage agentHubOrder`；G045/Superior 锚点通过 `Promise.all` 并行拉取 `/api/agents/presets/{id}/anchors/snapshot/`；点击卡片任意位置 → AgentProfile；无编辑/删除/新建按钮 |
+| `src/layouts/v2/views/AgentProfile.jsx` | 完整重写（210→400+ 行）：上方社交媒体式 Profile 编辑区——头像 click → `AvatarCropModal` 裁剪保存到 `localStorage exo_agent_avatar_{id}`；名称/简介 click → inline 编辑（Enter/blur PATCH 保存，Escape 取消，失败时保持编辑态并显示错误）；Model `<select>` onBlur 自动 PATCH；System Prompt 预览条 click → `EditPresetModal`（复用已有模态框）；New Session 按钮 + Manage Memory 按钮（仅 G045/Superior 可见）→ 导航到 `agent_memory`；下方会话列表按 `last_message_at` 倒序平铺，AbortController 防止竞态 |
+| `src/components/settings/MemoryManager.jsx` | 新增可选 `presetId` prop：传入时隐藏预设下拉选择器，锁定为指定 preset，内部 `selectedPresetId` 自动同步 |
+
+**新增文件**
+
+| 文件 | 说明 |
+|---|---|
+| `src/layouts/v2/views/AgentMemory.jsx` | Agent Memory 管理独立视图：顶部 header 显示 agent 名称 + 返回按钮（返回 AgentProfile），下方嵌入 `MemoryManager` 并传入 `presetId={viewParams.agentId}` 锁定预设 |
+
+**路由更新**
+
+- `src/layouts/v2/ContentRouter.jsx`：新增 `agent_memory` case，导入并渲染 `AgentMemory`
+
+**关键约定**
+
+- Agent Hub 拖拽仅在各 section 内部生效（G045 仅 1 张卡无需拖拽），移动端隐藏拖拽手柄
+- 锚点跑马灯仅 G045 和 Superior 卡片展示，Standard 无锚点、无 Memory 管理入口
+- 所有 PATCH 操作统一使用 `getCsrfToken()` + `credentials: 'include'`，失败时在 UI 中显示错误
+- 无动态 Tailwind 模板字符串（保持与 lightningcss 构建兼容）
+- MemoryManager 的 `presetId` prop 向后兼容（SettingsPanel 不传此 prop 时行为不变）
+
+**响应式**
+
+| 断点 | G045 | Superior/Standard | 拖拽 | 锚点详情 |
+|---|---|---|---|---|
+| lg+ (≥1024px) | 1 列全宽 | 3 列 | 开启 | 完整跑马灯 |
+| md (768-1023px) | 1 列全宽 | 2 列 | 开启 | 完整跑马灯 |
+| sm (<768px) | 1 列全宽 | 1 列堆叠 | 关闭 | 仅 keywords 行 |
+
+---
+
+## 2026-05-20
+
+### V2 Task 面板完整功能接入
+
+**背景**：v2 `task` 视图（`src/layouts/v2/views/TaskPanel.jsx`）只能展示任务列表，无法点击完成、无法新建任务、没有编辑/删除/挂起等操作入口。本次将 v1 TaskPanel 的完整 TaskRow 组件和 TaskCreateModal 接入 v2。
+
+**修改文件**
+
+| 文件 | 改动 |
+|---|---|
+| `src/layouts/v2/views/TaskPanel.jsx` | 完整重写（430→490 行）：1. 侧边栏保留紧凑任务卡片 + hover 勾选打卡按钮 + `+` 新建入口；2. 主内容区新增完整 TaskRow 分组展示（Pinned 金色边框 / TODO / 周期 / 目标），支持展开折叠、三点菜单（编辑/置顶/GCal同步/挂起/删除）；3. 删除走 DestructorModal 确认弹窗；4. 三个新建入口（侧边栏 `+`、主任务区 "New" 按钮、移动端顶栏 `+`）统一打开 TaskCreateModal；5. 编辑复用同一弹窗，预填表单 |
+
+**关键约定**
+
+- TaskRow 和 TaskCreateModal 均为 v1 已有组件，v2 直接复用，不改动组件接口
+- 所有 API 操作通过 `src/utils/tasksApi.js` 统一封装（CSRF token + credentials: 'include'）
+- 侧边栏任务卡片与主内容区 TaskRow 共享同一份过滤后数据，分组逻辑沿用 v1：pinned > todo > periodic > goal
+- 删除操作复用 `appState.openDestructor`，不单独实现确认逻辑
+
+**未改动文件**
+
+- `src/components/tasks/TaskRow.jsx` — v1/v2 共用，无需修改
+- `src/components/tasks/TaskCreateModal.jsx` — v1/v2 共用，无需修改
+- `src/utils/tasksApi.js` — API 层无需变更
+
 
