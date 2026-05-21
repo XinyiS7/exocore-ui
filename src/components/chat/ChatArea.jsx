@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  Menu, Save, Plus, RefreshCw, X, FileText,
-  Paperclip, Send, Cpu, Activity, Files, ImageIcon, ArrowLeft, Edit2
+  Save, Plus, RefreshCw, X, FileText,
+  Paperclip, Send, Cpu, Activity, Files, ImageIcon, ArrowLeft, Edit2, SlidersHorizontal
 } from 'lucide-react';
 import { baseUrl, getCsrfToken, AVAILABLE_MODELS } from '../../utils/api';
 import { getUserAvatarUrl, getAgentAvatarUrl } from '../../utils/avatar';
@@ -32,6 +32,8 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
   const [lastTelemetry, setLastTelemetry] = useState(null);
   const sessionTelemetryRef = useRef({ totalInput: 0, totalOutput: 0, totalCached: 0, totalTools: 0, requests: 0 });
   const [telemetryExpanded, setTelemetryExpanded] = useState(false);
+  const [controlsExpanded, setControlsExpanded] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
   const [userNick, setUserNick] = useState(() => localStorage.getItem('exo_user_nick') || 'You');
   const [userAvatarUrl] = useState(() => getUserAvatarUrl());
 
@@ -597,101 +599,106 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
 
   return (
     <div className="flex-1 min-w-0 flex flex-col h-full bg-exo-bg relative">
-      <div className="h-14 border-b border-exo-mist-10 flex items-center justify-between px-4 md:px-6 bg-exo-pure/40 backdrop-blur-md relative z-20">
-        <div className="flex items-center gap-2 md:gap-3">
-          {onBack
-            ? <button onClick={onBack} className="p-1.5 rounded-[4px] text-exo-muted hover:text-exo-text hover:bg-white/5"><ArrowLeft size={18} /></button>
-            : <button onClick={() => setShowConvList(true)} className="md:hidden p-1.5 rounded-[4px] text-exo-muted hover:bg-white/5"><Menu size={20} /></button>
-          }
-          <div className="flex items-center gap-2 overflow-hidden">
-            <span className="label-caps px-1.5 py-0.5 rounded-[2px] bg-exo-accent/10 border border-exo-accent/20 text-exo-accent shrink-0">{sessionInfo?.session_type || 'CHAT'}</span>
-            <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isGenerating ? 'bg-exo-accent animate-blink-sharp' : 'bg-green-500/70'}`}></div>
-            <div className="flex flex-col overflow-hidden">
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm font-display font-medium text-white tracking-wide truncate">{headerTitleOverride || sessionInfo?.name || `Session #${activeSessionId}`}</span>
-                <span className="font-mono text-[10px] text-exo-muted/40 shrink-0">#{activeSessionId}</span>
-              </div>
+      <div className="relative flex-shrink-0">
+        {/* v1 standalone header: back + session name + ID */}
+        {!onBack && (
+          <div className="border-b border-exo-mist-10 bg-exo-pure/40 backdrop-blur-md z-20 px-4 md:px-6 py-2 flex items-center gap-2 min-w-0">
+            <button onClick={() => setShowConvList(true)} className="md:hidden p-0.5 -ml-0.5 text-exo-muted hover:text-exo-text transition-colors flex-shrink-0"><ArrowLeft size={16} strokeWidth={1.5} /></button>
+            <span className="text-sm font-sans font-medium text-white/90 truncate">{headerTitleOverride || sessionInfo?.name || `Session`}</span>
+            <span className="text-[10px] font-sans text-exo-muted/30 flex-shrink-0">#{activeSessionId}</span>
+          </div>
+        )}
+
+        {/* v2 minimal header: status + agent name (left) | cache + tools (right) */}
+        {onBack && (
+          <div className="border-b border-exo-mist-10 bg-exo-pure/40 backdrop-blur-md z-20 px-4 md:px-6 py-2 flex items-center justify-between">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isGenerating ? 'bg-exo-accent animate-blink-sharp' : 'bg-green-500/50'}`} />
               {sessionInfo?.agent_preset_id && presets.find(x => x.id === sessionInfo.agent_preset_id) && (
-                <span className="text-[10px] font-mono text-exo-muted/50 truncate leading-tight uppercase tracking-tighter">{presets.find(x => x.id === sessionInfo.agent_preset_id)?.name}</span>
+                <span className="text-[10px] font-sans text-exo-muted/30 truncate">
+                  {presets.find(x => x.id === sessionInfo.agent_preset_id)?.name}
+                </span>
               )}
             </div>
+            <div className="flex items-center gap-0.5 flex-shrink-0 ml-2">
+              <ContextCacheIndicator ref={cacheRef} activeSessionId={activeSessionId} />
+              <button
+                onClick={() => setShowAttachPanel(p => !p)}
+                className={`p-1 transition-colors relative ${showAttachPanel ? 'text-exo-accent/70' : 'text-exo-muted/20 hover:text-exo-muted/50'}`}
+                title="Session Docs"
+              >
+                <Files size={14} strokeWidth={1.5} />
+                {(filteredSessionAttachments.length + filteredPendingAttachments.length) > 0 && (
+                  <span className="absolute top-0.5 right-0.5 w-1 h-1 rounded-full bg-exo-accent" />
+                )}
+              </button>
+              <button onClick={handleCompress} className="p-1 text-exo-muted/20 hover:text-exo-muted/50 transition-colors hidden sm:block" title="Save & Compress"><Save size={14} strokeWidth={1.5} /></button>
+              <button onClick={() => openNewSession()} className="p-1 text-exo-muted/20 hover:text-exo-muted/50 transition-colors hidden sm:block" title="New Session"><Plus size={14} strokeWidth={1.5} /></button>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-1 md:gap-2 relative">
-          <button
-            onClick={() => setShowAttachPanel(p => !p)}
-            className={`p-2 transition-colors relative ${showAttachPanel ? 'text-exo-accent' : 'text-exo-muted hover:text-exo-accent'}`}
-            title="Session Docs"
-          >
-            <Files size={18} />
-            {(filteredSessionAttachments.length + filteredPendingAttachments.length) > 0 && (
-              <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-exo-accent shadow-glow-gold" />
-            )}
-          </button>
-          {showAttachPanel && (
-            <div className="absolute top-full right-0 mt-2 w-80 max-h-[70vh] bg-exo-pure border border-exo-mist-12 rounded-[4px] shadow-2xl z-50 overflow-hidden flex flex-col animate-fade-in" style={{ maxWidth: 'calc(100vw - 2rem)', width: 'min(20rem, calc(100vw - 2rem))' }}>
-              <div className="px-4 py-3 border-b border-exo-mist-10 bg-white/5 flex items-center justify-between">
-                <span className="label-caps text-exo-muted">挂载文档 ({filteredSessionAttachments.length + filteredPendingAttachments.length})</span>
-                <button onClick={() => setShowAttachPanel(false)} className="text-exo-muted hover:text-white transition-colors"><X size={14} /></button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-hide">
-                {filteredSessionAttachments.map(att => (
-                  <div key={att.id} className="flex items-center gap-2 px-2 py-1.5 hover:bg-white/5 rounded-[2px] group transition-colors border border-transparent hover:border-exo-mist-10">
-                    <FileText size={14} className="text-blue-400 shrink-0" />
-                    <span className="flex-1 text-xs text-exo-muted group-hover:text-white break-all leading-tight">{att.display_name || att.original_filename}</span>
-                    <button onClick={() => handleRemoveAttachment(att)} className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 transition-all"><X size={12} /></button>
+        )}
+
+        {/* Attachment panel — positioned below header */}
+        {showAttachPanel && (
+          <div className="absolute top-full right-4 md:right-6 mt-1 w-80 max-h-[70vh] bg-exo-pure border border-exo-mist-12 rounded-[4px] shadow-2xl z-50 overflow-hidden flex flex-col animate-fade-in" style={{ maxWidth: 'calc(100vw - 2rem)', width: 'min(20rem, calc(100vw - 2rem))' }}>
+            <div className="px-4 py-3 border-b border-exo-mist-10 bg-white/5 flex items-center justify-between">
+              <span className="label-caps text-exo-muted">挂载文档 ({filteredSessionAttachments.length + filteredPendingAttachments.length})</span>
+              <button onClick={() => setShowAttachPanel(false)} className="text-exo-muted hover:text-white transition-colors"><X size={14} /></button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-hide">
+              {filteredSessionAttachments.map(att => (
+                <div key={att.id} className="flex items-center gap-2 px-2 py-1.5 hover:bg-white/5 rounded-[2px] group transition-colors border border-transparent hover:border-exo-mist-10">
+                  <FileText size={14} className="text-blue-400 shrink-0" />
+                  <span className="flex-1 text-xs text-exo-muted group-hover:text-white break-all leading-tight">{att.display_name || att.original_filename}</span>
+                  <button onClick={() => handleRemoveAttachment(att)} className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 transition-all"><X size={12} /></button>
+                </div>
+              ))}
+              {filteredPendingAttachments.map((att, i) => (
+                <div key={i} className="flex items-center gap-2 px-2 py-1.5 bg-exo-accent/5 rounded-[2px] border border-exo-accent/20 group">
+                  <FileText size={14} className="text-exo-accent/50 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-exo-accent/80 break-all leading-tight">{att.display_name || att.original_filename}</div>
+                    <div className="text-[9px] text-exo-accent/40 font-mono tracking-widest uppercase">PENDING</div>
                   </div>
-                ))}
-                {filteredPendingAttachments.map((att, i) => (
-                  <div key={i} className="flex items-center gap-2 px-2 py-1.5 bg-exo-accent/5 rounded-[2px] border border-exo-accent/20 group">
-                    <FileText size={14} className="text-exo-accent/50 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs text-exo-accent/80 break-all leading-tight">{att.display_name || att.original_filename}</div>
-                      <div className="text-[9px] text-exo-accent/40 font-mono tracking-widest uppercase">PENDING</div>
-                    </div>
-                    <button onClick={() => setPendingAttachments(p => p.filter((_, j) => j !== i))} className="p-1 hover:text-red-400 transition-colors"><X size={12} /></button>
+                  <button onClick={() => setPendingAttachments(p => p.filter((_, j) => j !== i))} className="p-1 hover:text-red-400 transition-colors"><X size={12} /></button>
+                </div>
+              ))}
+              {filteredSessionAttachments.length === 0 && filteredPendingAttachments.length === 0 && !isAddingAttach && (
+                <div className="py-8 text-center text-[10px] text-exo-muted/30 font-mono tracking-widest uppercase">
+                  [ 无挂载文档 ]
+                </div>
+              )}
+              {isAddingAttach && (
+                <div className="p-2 space-y-2 bg-exo-pure/40 rounded-[2px] border border-exo-mist-10">
+                  <input
+                    value={newAttachPath}
+                    onChange={e => setNewAttachPath(e.target.value)}
+                    placeholder="文件绝对路径..."
+                    autoFocus
+                    className="w-full bg-exo-bg border border-exo-mist-10 rounded-[2px] px-2 py-1.5 text-xs text-white outline-none focus:border-exo-accent/50 transition-colors font-mono"
+                  />
+                  <input
+                    value={newAttachName}
+                    onChange={e => setNewAttachName(e.target.value)}
+                    placeholder="显示名（可选）"
+                    className="w-full bg-exo-bg border border-exo-mist-10 rounded-[2px] px-2 py-1.5 text-xs text-white outline-none focus:border-exo-accent/50 transition-colors"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button onClick={() => { setIsAddingAttach(false); setNewAttachPath(''); setNewAttachName(''); }} className="px-3 py-1 text-exo-muted hover:text-white text-[11px] uppercase tracking-widest">取消</button>
+                    <button onClick={handleAddAttachment} className="px-3 py-1 bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded-[2px] text-[11px] uppercase tracking-widest hover:bg-exo-accent hover:text-black transition-all">确认</button>
                   </div>
-                ))}
-                {filteredSessionAttachments.length === 0 && filteredPendingAttachments.length === 0 && !isAddingAttach && (
-                  <div className="py-8 text-center text-[10px] text-exo-muted/30 font-mono tracking-widest uppercase">
-                    [ 无挂载文档 ]
-                  </div>
-                )}
-                {isAddingAttach && (
-                  <div className="p-2 space-y-2 bg-exo-pure/40 rounded-[2px] border border-exo-mist-10">
-                    <input
-                      value={newAttachPath}
-                      onChange={e => setNewAttachPath(e.target.value)}
-                      placeholder="文件绝对路径..."
-                      autoFocus
-                      className="w-full bg-exo-bg border border-exo-mist-10 rounded-[2px] px-2 py-1.5 text-xs text-white outline-none focus:border-exo-accent/50 transition-colors font-mono"
-                    />
-                    <input
-                      value={newAttachName}
-                      onChange={e => setNewAttachName(e.target.value)}
-                      placeholder="显示名（可选）"
-                      className="w-full bg-exo-bg border border-exo-mist-10 rounded-[2px] px-2 py-1.5 text-xs text-white outline-none focus:border-exo-accent/50 transition-colors"
-                    />
-                    <div className="flex justify-end gap-2">
-                      <button onClick={() => { setIsAddingAttach(false); setNewAttachPath(''); setNewAttachName(''); }} className="px-3 py-1 text-exo-muted hover:text-white text-[11px] uppercase tracking-widest">取消</button>
-                      <button onClick={handleAddAttachment} className="px-3 py-1 bg-exo-accent/10 text-exo-accent border border-exo-accent/20 rounded-[2px] text-[11px] uppercase tracking-widest hover:bg-exo-accent hover:text-black transition-all">确认</button>
-                    </div>
-                  </div>
-                )}
-              </div>
-              {!isAddingAttach && (
-                <div className="p-2 border-t border-exo-mist-10 bg-white/5">
-                  <button onClick={() => setIsAddingAttach(true)} className="w-full py-2 text-[11px] uppercase tracking-widest text-exo-muted hover:text-white hover:bg-white/5 flex items-center justify-center gap-2 rounded-[2px] border border-dashed border-exo-mist-10 hover:border-exo-mist-20 transition-all">
-                    <Plus size={14} /> 挂载外部路径
-                  </button>
                 </div>
               )}
             </div>
-          )}
-          <ContextCacheIndicator ref={cacheRef} activeSessionId={activeSessionId} />
-          <button onClick={handleCompress} className="p-2 text-exo-muted hover:text-exo-accent transition-colors" title="Save & Compress"><Save size={18} /></button>
-          <button onClick={() => openNewSession()} className="p-2 text-exo-muted hover:text-exo-accent transition-colors" title="New Session"><Plus size={18} /></button>
-        </div>
+            {!isAddingAttach && (
+              <div className="p-2 border-t border-exo-mist-10 bg-white/5">
+                <button onClick={() => setIsAddingAttach(true)} className="w-full py-2 text-[11px] uppercase tracking-widest text-exo-muted hover:text-white hover:bg-white/5 flex items-center justify-center gap-2 rounded-[2px] border border-dashed border-exo-mist-10 hover:border-exo-mist-20 transition-all">
+                  <Plus size={14} /> 挂载外部路径
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 space-y-8 scrollbar-hide">
@@ -729,7 +736,7 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
         isSubmitting={isBranching}
       />
 
-      <div className="p-4 border-t border-exo-mist-10 bg-exo-pure/80 backdrop-blur-xl flex flex-col gap-3">
+      <div className="p-4 border-t border-exo-mist-10 bg-exo-pure/80 backdrop-blur-xl flex flex-col gap-2">
         {editingMessageId && (
           <div className="flex items-center justify-between px-3 py-1.5 bg-exo-accent/10 border border-exo-accent/20 rounded-[2px] animate-fade-in">
             <div className="flex items-center gap-2 text-exo-accent text-[10px] font-mono uppercase tracking-widest">
@@ -739,106 +746,104 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
             <button onClick={() => { setEditingMessageId(null); setInputValue(''); }} className="text-exo-accent/50 hover:text-exo-accent transition-colors"><X size={14} /></button>
           </div>
         )}
-        <div className="flex flex-wrap items-center gap-4 px-1 text-exo-muted">
-          <div className="flex items-center gap-2 text-exo-accent/80 bg-exo-accent/5 px-2 py-1 rounded-[2px] border border-exo-accent/10">
-            <Cpu size={12} />
+
+        {/* Collapsible controls panel */}
+        {controlsExpanded && (
+          <div className="flex items-center gap-2.5 px-1 text-exo-muted overflow-x-auto scrollbar-hide flex-shrink-0 h-6 animate-fade-in">
+            <Cpu size={10} className="text-exo-muted/25 flex-shrink-0" />
             <select
               value={currentModel}
               onChange={(e) => updatePreference({ model: e.target.value })}
-              className="bg-transparent outline-none text-[11px] font-mono uppercase tracking-widest text-exo-accent cursor-pointer"
+              className="bg-transparent outline-none text-[11px] font-sans text-white/50 cursor-pointer max-w-[110px] truncate hover:text-white/80 transition-colors"
             >
               {AVAILABLE_MODELS.map(m => (
                 <option key={m} value={m} className="bg-exo-pure text-white">{m}</option>
               ))}
             </select>
-          </div>
 
-          <div className="flex items-center gap-2 bg-white/[0.04] px-2 py-1 rounded-[2px] border border-white/[0.08]">
-            <span className="text-[10px] font-mono uppercase tracking-tighter opacity-40">Mode</span>
+            <span className="text-exo-muted/12 text-[9px] select-none flex-shrink-0">|</span>
+
             <select value={chatMode} onChange={(e) => {
               const mode = e.target.value;
               setChatMode(mode);
               localStorage.setItem('exo_chat_mode', mode);
-            }} className="bg-transparent outline-none text-[11px] font-mono text-white/80 cursor-pointer">
+            }} className="bg-transparent outline-none text-[11px] font-sans text-white/40 cursor-pointer hover:text-white/70 transition-colors">
               <option value="sse" className="bg-exo-pure">SSE</option>
               <option value="async" className="bg-exo-pure">Async</option>
             </select>
-          </div>
 
-          <div className="flex items-center gap-2 bg-white/[0.04] px-2 py-1 rounded-[2px] border border-white/[0.08]">
-            <span className="text-[10px] font-mono uppercase tracking-tighter opacity-40">Think</span>
-            <select value={thinkingLevel} onChange={(e) => updatePreference({ thinking_level: e.target.value })} className="bg-transparent outline-none text-[11px] font-mono text-white/80 cursor-pointer">
+            <span className="text-exo-muted/12 text-[9px] select-none flex-shrink-0">|</span>
+
+            <select value={thinkingLevel} onChange={(e) => updatePreference({ thinking_level: e.target.value })} className="bg-transparent outline-none text-[11px] font-sans text-white/40 cursor-pointer hover:text-white/70 transition-colors">
               <option value="off" className="bg-exo-pure">Off</option>
               <option value="auto" className="bg-exo-pure">Auto</option>
               <option value="low" className="bg-exo-pure">Low</option>
               <option value="medium" className="bg-exo-pure">Med</option>
               <option value="high" className="bg-exo-pure">High</option>
             </select>
-          </div>
 
-          <div className="flex items-center gap-2 bg-white/[0.04] px-2 py-1 rounded-[2px] border border-white/[0.08]">
-            <span className="text-[10px] font-mono uppercase tracking-tighter opacity-40">Temp</span>
-            <select value={temperature} onChange={(e) => updatePreference({ temperature: e.target.value })} className="bg-transparent outline-none text-[11px] font-mono text-white/80 cursor-pointer">
-              <option value="1.0" className="bg-exo-pure">Precise</option>
-              <option value="1.3" className="bg-exo-pure">Balanced</option>
-              <option value="1.8" className="bg-exo-pure">Creative</option>
+            <span className="text-exo-muted/12 text-[9px] select-none flex-shrink-0">|</span>
+
+            <select value={temperature} onChange={(e) => updatePreference({ temperature: e.target.value })} className="bg-transparent outline-none text-[11px] font-sans text-white/40 cursor-pointer hover:text-white/70 transition-colors">
+              <option value="1.0" className="bg-exo-pure">1.0</option>
+              <option value="1.3" className="bg-exo-pure">1.3</option>
+              <option value="1.8" className="bg-exo-pure">1.8</option>
             </select>
-          </div>
-          {lastTelemetry && (
-            <div className="ml-auto flex items-center gap-2 relative">
-              <button
-                onClick={() => setTelemetryExpanded(v => !v)}
-                className="font-mono text-[10px] text-exo-muted/40 tabular-nums tracking-widest hover:text-exo-accent/60 transition-colors flex items-center gap-1.5"
-              >
-                <span className="inline-block w-1 h-1 rounded-full bg-exo-accent/60" />
-                <span>{lastTelemetry.model_name || lastTelemetry.platform}</span>
-                <span className="opacity-50">TX:{lastTelemetry.input_chars?.toLocaleString()}</span>
-                <span className="opacity-50">RX:{lastTelemetry.output_chars?.toLocaleString()}</span>
-                {lastTelemetry.cached_input_chars > 0 && (
-                  <span className="opacity-50">
-                    CACHE:{Math.round(lastTelemetry.cached_input_chars / (lastTelemetry.input_chars || 1) * 100)}%
-                  </span>
-                )}
-                {lastTelemetry.tool_calls > 0 && (
-                  <span className="opacity-50">TOOLS:{lastTelemetry.tool_calls}</span>
-                )}
-              </button>
-              {telemetryExpanded && (
-                <div className="absolute bottom-full right-0 mb-2 px-4 py-3 bg-exo-panel border border-exo-border rounded-[4px] font-mono text-[10px] text-exo-muted shadow-xl z-50 min-w-[260px] animate-fade-in">
-                  <div className="text-exo-accent/60 text-[9px] uppercase tracking-[0.2em] mb-2 font-bold">Session Totals</div>
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
-                    <span className="opacity-50">Requests</span>
-                    <span className="text-white/80 tabular-nums text-right">{sessionTelemetryRef.current.requests}</span>
-                    <span className="opacity-50">Total TX</span>
-                    <span className="text-white/80 tabular-nums text-right">{sessionTelemetryRef.current.totalInput.toLocaleString()}</span>
-                    <span className="opacity-50">Total RX</span>
-                    <span className="text-white/80 tabular-nums text-right">{sessionTelemetryRef.current.totalOutput.toLocaleString()}</span>
-                    <span className="opacity-50">Total Cached</span>
-                    <span className="text-white/80 tabular-nums text-right">{sessionTelemetryRef.current.totalCached.toLocaleString()}</span>
-                    <span className="opacity-50">Cache Hit Rate</span>
-                    <span className="text-white/80 tabular-nums text-right">
-                      {sessionTelemetryRef.current.totalInput > 0
-                        ? Math.round(sessionTelemetryRef.current.totalCached / sessionTelemetryRef.current.totalInput * 100)
-                        : 0}%
-                    </span>
-                    <span className="opacity-50">Tool Calls</span>
-                    <span className="text-white/80 tabular-nums text-right">{sessionTelemetryRef.current.totalTools}</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
 
-        <div className="flex flex-col bg-exo-pure border border-exo-mist-10 rounded-[4px] focus-within:border-exo-accent/40 focus-within:shadow-glow-gold transition-all overflow-hidden">
+            {lastTelemetry && (
+              <div className="ml-auto flex items-center gap-2 relative flex-shrink-0">
+                <button
+                  onClick={() => setTelemetryExpanded(v => !v)}
+                  className="font-sans text-[10px] text-exo-muted/25 tabular-nums tracking-wider hover:text-exo-accent/50 transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                >
+                  <span className="inline-block w-1 h-1 rounded-full bg-exo-accent/50" />
+                  <span className="text-exo-muted/35">{lastTelemetry.model_name || lastTelemetry.platform}</span>
+                  <span>TX:{lastTelemetry.input_chars?.toLocaleString()}</span>
+                  <span>RX:{lastTelemetry.output_chars?.toLocaleString()}</span>
+                  {lastTelemetry.cached_input_chars > 0 && (
+                    <span>CACHE:{Math.round(lastTelemetry.cached_input_chars / (lastTelemetry.input_chars || 1) * 100)}%</span>
+                  )}
+                  {lastTelemetry.tool_calls > 0 && (
+                    <span>TOOLS:{lastTelemetry.tool_calls}</span>
+                  )}
+                </button>
+                {telemetryExpanded && (
+                  <div className="absolute bottom-full right-0 mb-2 px-4 py-3 bg-exo-panel border border-exo-border rounded-[4px] font-mono text-[10px] text-exo-muted shadow-xl z-50 min-w-[260px] animate-fade-in">
+                    <div className="text-exo-accent/60 text-[9px] uppercase tracking-[0.2em] mb-2 font-bold">Session Totals</div>
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
+                      <span className="opacity-50">Requests</span>
+                      <span className="text-white/80 tabular-nums text-right">{sessionTelemetryRef.current.requests}</span>
+                      <span className="opacity-50">Total TX</span>
+                      <span className="text-white/80 tabular-nums text-right">{sessionTelemetryRef.current.totalInput.toLocaleString()}</span>
+                      <span className="opacity-50">Total RX</span>
+                      <span className="text-white/80 tabular-nums text-right">{sessionTelemetryRef.current.totalOutput.toLocaleString()}</span>
+                      <span className="opacity-50">Total Cached</span>
+                      <span className="text-white/80 tabular-nums text-right">{sessionTelemetryRef.current.totalCached.toLocaleString()}</span>
+                      <span className="opacity-50">Cache Hit Rate</span>
+                      <span className="text-white/80 tabular-nums text-right">
+                        {sessionTelemetryRef.current.totalInput > 0
+                          ? Math.round(sessionTelemetryRef.current.totalCached / sessionTelemetryRef.current.totalInput * 100)
+                          : 0}%
+                      </span>
+                      <span className="opacity-50">Tool Calls</span>
+                      <span className="text-white/80 tabular-nums text-right">{sessionTelemetryRef.current.totalTools}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className={`flex flex-col bg-exo-pure border rounded-[4px] transition-all overflow-hidden ${inputFocused || inputValue ? 'border-exo-accent/40 shadow-glow-gold' : 'border-exo-mist-10'}`}>
           {attachedFilePreviews.length > 0 && (
             <div className="flex flex-wrap gap-2 px-3 pt-3 pb-2 border-b border-exo-mist-10 bg-white/[0.02]">
               {attachedFilePreviews.map((fp, i) => (
                 fp.preview
                   ? <div key={i} className="relative group h-14 w-14 shrink-0 bg-exo-bg rounded-[2px] overflow-hidden border border-exo-mist-10">
-                      <img 
-                        src={fp.preview} 
-                        alt={fp.name} 
+                      <img
+                        src={fp.preview}
+                        alt={fp.name}
                         className="h-full w-full object-cover grayscale hover:grayscale-0 transition-all duration-500"
                         onError={(e) => {
                           e.target.onerror = null;
@@ -869,6 +874,8 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
               setInputValue(v);
               autoResize();
             }}
+            onFocus={() => setInputFocused(true)}
+            onBlur={() => { if (!inputValue) setInputFocused(false); }}
             onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey && !e.isComposing) { e.preventDefault(); handleSend(); } }}
             onPaste={e => {
               const items = Array.from(e.clipboardData?.items || []);
@@ -881,35 +888,43 @@ const ChatArea = ({ activeSessionId, setActiveSessionId, setRefreshKey, setShowC
                 setAttachedFiles(prev => [...prev, ...imageFiles]);
               }
             }}
-            placeholder="正在建立加密通讯链路..."
-            className="w-full bg-transparent text-sm text-white/90 outline-none resize-none px-4 pt-4 pb-2 disabled:opacity-50 overflow-y-auto min-h-[2.5rem] md:min-h-[5rem] max-h-[40vh] font-sans font-normal"
+            placeholder="Message..."
+            className="w-full bg-transparent text-sm text-white/90 outline-none resize-none px-4 pt-2.5 pb-1 disabled:opacity-50 overflow-y-auto max-h-[40vh] font-sans font-normal placeholder:text-exo-muted/40"
+            style={{ minHeight: (inputFocused || inputValue) ? '4.5rem' : '2.5rem' }}
             disabled={isGenerating}
           />
-          <div className="flex items-center justify-between px-3 pb-3">
-            <div className="flex items-center gap-1">
-              <button onClick={() => imageInputRef.current?.click()} title="上传视讯数据" className="p-2 text-exo-muted hover:text-exo-accent transition-colors"><ImageIcon size={16} /></button>
-              <button onClick={() => fileInputRef.current?.click()} title="挂载文档区块" className="p-2 text-exo-muted hover:text-exo-accent transition-colors"><Paperclip size={16} /></button>
+          <div className="flex items-center justify-between px-3 pb-2.5">
+            <div className="flex items-center gap-0.5">
+              <button
+                onClick={() => setControlsExpanded(v => !v)}
+                className={`p-1.5 transition-colors ${controlsExpanded ? 'text-exo-accent/70' : 'text-exo-muted/30 hover:text-exo-muted/60'}`}
+                title="会话控制"
+              >
+                <SlidersHorizontal size={14} strokeWidth={1.5} />
+              </button>
+              <button onClick={() => imageInputRef.current?.click()} title="上传视讯数据" className="p-1.5 text-exo-muted/30 hover:text-exo-muted/60 transition-colors"><ImageIcon size={15} strokeWidth={1.5} /></button>
+              <button onClick={() => fileInputRef.current?.click()} title="挂载文档区块" className="p-1.5 text-exo-muted/30 hover:text-exo-muted/60 transition-colors"><Paperclip size={15} strokeWidth={1.5} /></button>
               <input type="file" ref={imageInputRef} className="hidden" multiple accept="image/*" onChange={(e) => setAttachedFiles(prev => [...prev, ...Array.from(e.target.files)])} />
               <input type="file" ref={fileInputRef} className="hidden" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md,.csv,.json,.zip,.py,.js,.ts,.jsx,.tsx,.html,.css,.xml,.yaml,.yml,.toml,.sh,.log" onChange={(e) => setAttachedFiles(prev => [...prev, ...Array.from(e.target.files)])} />
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               {rightExtraButton}
               {isGenerating ? (
                 <button
                   onClick={handleStop}
-                  className="px-4 py-1.5 bg-red-500/10 text-red-500 border border-red-500/30 rounded-[2px] hover:bg-red-500 hover:text-white transition-all flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.2em]"
+                  className="px-3 py-1 bg-red-500/10 text-red-500 border border-red-500/30 rounded-[2px] hover:bg-red-500 hover:text-white transition-all flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.2em]"
                   title="中止上行链路"
                 >
-                  <X size={14} />
+                  <X size={12} />
                   <span>ABORT</span>
                 </button>
               ) : (
                 <button
                   onClick={() => handleSend(editingMessageId ? { editMessageId: editingMessageId } : {})}
                   disabled={isGenerating || (!inputValue.trim() && attachedFiles.length === 0)}
-                  className="p-2 bg-exo-accent text-exo-pure rounded-[2px] hover:shadow-glow-gold hover:bg-exo-accentGlow disabled:opacity-20 disabled:grayscale transition-all"
+                  className="p-1.5 bg-exo-accent text-exo-pure rounded-[2px] hover:shadow-glow-gold hover:bg-exo-accentGlow disabled:opacity-20 disabled:grayscale transition-all"
                 >
-                  <Send size={18} />
+                  <Send size={16} />
                 </button>
               )}
             </div>

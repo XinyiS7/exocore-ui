@@ -9,9 +9,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Outfit', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'Segoe UI', 'Outfit', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
-        display: ['Outfit', 'system-ui', 'sans-serif'],
+        display: ['Inter', 'Segoe UI', 'Outfit', 'system-ui', 'sans-serif'],
       },
       lineHeight: {
         'ultra-tight': '0.87',

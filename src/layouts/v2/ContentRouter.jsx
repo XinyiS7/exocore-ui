@@ -58,6 +58,8 @@ export default function ContentRouter({ view, setView, viewParams, appState }) {
           setShowConvList={() => {}}
           openNewSession={openNewSession}
           presets={presets}
+          onBack={() => setView('dashboard')}
+          headerTitleOverride={viewParams.sessionTitle || viewParams.agentName}
         />
       );
 

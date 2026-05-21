@@ -7,6 +7,7 @@ export default function MobileHeader({ view, viewParams, onBack }) {
   if (isTopLevel && view !== 'settings') return null;
 
   const title = viewParams.sessionTitle || viewParams.agentName || view;
+  const subtitle = viewParams.sessionId ? `#${viewParams.sessionId}` : null;
 
   return (
     <div className="md:hidden flex-shrink-0 h-10 bg-exo-pure border-b border-exo-mist-6 flex items-center px-3 gap-2">
@@ -17,6 +18,7 @@ export default function MobileHeader({ view, viewParams, onBack }) {
         <ArrowLeft size={16} strokeWidth={1.5} />
       </button>
       <span className="text-xs font-medium text-exo-text truncate">{title}</span>
+      {subtitle && <span className="text-[10px] text-exo-muted/30 flex-shrink-0">{subtitle}</span>}
     </div>
   );
 }

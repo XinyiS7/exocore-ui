@@ -383,6 +383,7 @@ export default function AgentProfile({ appState, setView, viewParams }) {
       <EditPresetModal
         isOpen={showEditModal}
         preset={preset}
+        mode="system_prompt"
         onClose={() => setShowEditModal(false)}
         onSaved={() => { refreshPresets(); setShowEditModal(false); }}
       />
