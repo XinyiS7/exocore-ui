@@ -86,7 +86,7 @@ Presets have an `agent_type` field. `g045` agents are "Superior Cores" — they 
 
 ### Available models
 
-Defined in `src/utils/api.js` as `AVAILABLE_MODELS`. Currently: `gemini-3-flash-preview`, `gemini-3.1-pro-preview`, `gemini-3.1-flash-lite-preview`, `deepseek-reasoner`, `deepseek-chat`.
+Defined in `src/utils/api.js` as `AVAILABLE_MODELS`. Currently: `gemini-3-flash-preview`, `gemini-3.1-pro-preview`, `gemini-3.5-flash`, `deepseek-v4-flash`, `deepseek-v4-pro`.
 
 ### localStorage keys
 

@@ -88,7 +88,7 @@ const AvatarCropModal = ({ file, onConfirm, onCancel }) => {
       el.removeEventListener('touchmove', onTouchMove);
       el.removeEventListener('wheel', onWheel);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);  
 
   const handleConfirm = () => {
     const imgEl = imgRef.current;
